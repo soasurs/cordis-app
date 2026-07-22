@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.tanstack/
+
+.env
+.env.*
+!.env.example
+!.env.template
+
+.DS_Store
+*.local
