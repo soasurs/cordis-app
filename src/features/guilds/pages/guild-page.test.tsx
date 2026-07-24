@@ -102,6 +102,9 @@ describe('GuildPage', () => {
     expect(screen.getAllByRole('button', { name: 'Lounge' })).toHaveLength(2)
     expect(screen.queryByText('Text channels')).not.toBeInTheDocument()
     expect(screen.queryByText('Voice channels')).not.toBeInTheDocument()
+    expect(screen.queryByText('Move to top level')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move general' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move Projects' })).not.toBeInTheDocument()
   })
 
   it('requests navigation when another channel is selected', async () => {

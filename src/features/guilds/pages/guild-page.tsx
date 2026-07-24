@@ -4,12 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { getApiErrorMessage } from '@/api/errors'
 
+import { ChannelNavigation } from '../components/channel-navigation'
+import { TextChannelIcon, VoiceChannelIcon } from '../components/channel-icons'
 import { CreateGuildChannelDialog } from '../components/create-guild-channel-dialog'
 import {
   guildChannelsQueryOptions,
   guildsQueryOptions,
   type GuildChannelSummary,
 } from '../guild-queries'
+import { useChannelReordering } from '../use-channel-reordering'
 
 interface GuildPageProps {
   channelId?: string
@@ -31,6 +34,7 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
   const [createChannelTarget, setCreateChannelTarget] = useState<CreateChannelTarget>()
   const { data: guilds } = useQuery(guildsQueryOptions)
   const channelsQuery = useQuery(guildChannelsQueryOptions(guildId))
+  const channelReordering = useChannelReordering(guildId)
   const guild = guilds?.find((item) => item.id === guildId)
   const channels = [...(channelsQuery.data ?? [])].sort(compareChannels)
   const selectedChannel = channels.find((channel) => channel.id === channelId)
@@ -40,6 +44,19 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
       if (next.has(categoryId)) next.delete(categoryId)
       else next.add(categoryId)
       return next
+    })
+  }
+  const moveChannel = (nextChannels: GuildChannelSummary[], parentId?: string) => {
+    if (parentId) {
+      setCollapsedCategoryIds((current) => {
+        const next = new Set(current)
+        next.delete(parentId)
+        return next
+      })
+    }
+    channelReordering.mutate({
+      nextChannels,
+      previousChannels: channels,
     })
   }
 
@@ -63,10 +80,13 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
             <ChannelNavigation
               channels={channels}
               collapsedCategoryIds={collapsedCategoryIds}
+              moveError={channelReordering.error}
+              movePending={channelReordering.isPending}
               selectedChannelId={selectedChannel?.id}
               onCreateChannel={(parentCategory) =>
                 setCreateChannelTarget({ kind: 'channel', parentCategory })
               }
+              onMoveChannel={moveChannel}
               onSelectChannel={onSelectChannel}
               onToggleCategory={toggleCategory}
             />
@@ -98,10 +118,13 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
                   channels={channels}
                   compact
                   collapsedCategoryIds={collapsedCategoryIds}
+                  moveError={channelReordering.error}
+                  movePending={channelReordering.isPending}
                   selectedChannelId={selectedChannel?.id}
                   onCreateChannel={(parentCategory) =>
                     setCreateChannelTarget({ kind: 'channel', parentCategory })
                   }
+                  onMoveChannel={moveChannel}
                   onSelectChannel={onSelectChannel}
                   onToggleCategory={toggleCategory}
                 />
@@ -242,166 +265,6 @@ function ChannelHeader({
   )
 }
 
-function ChannelNavigation({
-  channels,
-  compact = false,
-  collapsedCategoryIds,
-  selectedChannelId,
-  onCreateChannel,
-  onSelectChannel,
-  onToggleCategory,
-}: {
-  channels: GuildChannelSummary[]
-  compact?: boolean
-  collapsedCategoryIds: Set<string>
-  onCreateChannel: (category: GuildChannelSummary) => void
-  onSelectChannel?: (channelId: string) => void
-  onToggleCategory: (categoryId: string) => void
-  selectedChannelId?: string
-}) {
-  const topLevelChannels = channels.filter(
-    (channel) =>
-      !channel.parentId &&
-      (channel.type === channelType.category ||
-        channel.type === channelType.text ||
-        channel.type === channelType.voice),
-  )
-
-  if (topLevelChannels.length === 0) {
-    return (
-      <div
-        className={`${compact ? 'mt-3' : ''} rounded-control border border-dashed border-line px-3 py-4`}
-      >
-        <p className="text-xs font-medium text-muted">No channels available</p>
-      </div>
-    )
-  }
-
-  return (
-    <nav
-      aria-label="Community channels"
-      className={compact ? 'mt-3 grid min-w-0 gap-2' : 'grid min-w-0 gap-2'}
-    >
-      {topLevelChannels.map((channel) =>
-        channel.type === channelType.category ? (
-          <CategoryChannelGroup
-            key={channel.id}
-            category={channel}
-            channels={channels.filter(
-              (child) =>
-                child.parentId === channel.id &&
-                (child.type === channelType.text || child.type === channelType.voice),
-            )}
-            collapsed={collapsedCategoryIds.has(channel.id)}
-            onCreateChannel={onCreateChannel}
-            onSelectChannel={onSelectChannel}
-            onToggleCategory={onToggleCategory}
-            selectedChannelId={selectedChannelId}
-          />
-        ) : (
-          <ChannelButton
-            key={channel.id}
-            channel={channel}
-            onSelectChannel={onSelectChannel}
-            selected={channel.id === selectedChannelId}
-            type={channel.type === channelType.voice ? 'voice' : 'text'}
-          />
-        ),
-      )}
-    </nav>
-  )
-}
-
-function CategoryChannelGroup({
-  category,
-  channels,
-  collapsed,
-  onCreateChannel,
-  onSelectChannel,
-  onToggleCategory,
-  selectedChannelId,
-}: {
-  category: GuildChannelSummary
-  channels: GuildChannelSummary[]
-  collapsed: boolean
-  onCreateChannel: (category: GuildChannelSummary) => void
-  onSelectChannel?: (channelId: string) => void
-  onToggleCategory: (categoryId: string) => void
-  selectedChannelId?: string
-}) {
-  return (
-    <section className="min-w-0">
-      <div className="flex items-center gap-1 px-1">
-        <button
-          type="button"
-          aria-expanded={!collapsed}
-          className="flex min-h-7 min-w-0 flex-1 items-center gap-1.5 rounded-control px-1 text-left text-[0.9rem] font-semibold tracking-[0.01em] text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
-          onClick={() => onToggleCategory(category.id)}
-        >
-          <ChevronIcon collapsed={collapsed} />
-          <span className="truncate">{category.name}</span>
-        </button>
-        <button
-          type="button"
-          aria-label={`Create a channel in ${category.name}`}
-          className="grid size-7 shrink-0 place-items-center rounded-control text-base leading-none text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
-          onClick={() => onCreateChannel(category)}
-        >
-          +
-        </button>
-      </div>
-      {!collapsed ? (
-        <div className="mt-0.5 grid gap-0.5">
-          {channels.length > 0 ? (
-            channels.map((channel) => (
-              <ChannelButton
-                key={channel.id}
-                channel={channel}
-                onSelectChannel={onSelectChannel}
-                selected={channel.id === selectedChannelId}
-                type={channel.type === channelType.voice ? 'voice' : 'text'}
-              />
-            ))
-          ) : (
-            <p className="px-2.5 py-1.5 text-xs text-subtle">No channels yet</p>
-          )}
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
-function ChannelButton({
-  channel,
-  onSelectChannel,
-  selected,
-  type,
-}: {
-  channel: GuildChannelSummary
-  onSelectChannel?: (channelId: string) => void
-  selected: boolean
-  type: 'text' | 'voice'
-}) {
-  return (
-    <button
-      type="button"
-      aria-current={selected ? 'page' : undefined}
-      disabled={selected || !onSelectChannel}
-      onClick={() => onSelectChannel?.(channel.id)}
-      className={`flex min-h-9 items-center gap-2 rounded-control px-2.5 text-left text-sm transition ${
-        selected
-          ? 'bg-brand-soft font-semibold text-brand-text'
-          : 'text-muted hover:bg-surface-hover hover:text-ink disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted'
-      }`}
-    >
-      <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center text-subtle">
-        {type === 'voice' ? <VoiceChannelIcon /> : <TextChannelIcon />}
-      </span>
-      <span className="min-w-0 flex-1 truncate">{channel.name}</span>
-    </button>
-  )
-}
-
 function ChannelWelcome({ channel }: { channel: GuildChannelSummary }) {
   const isVoiceChannel = channel.type === channelType.voice
   return (
@@ -421,51 +284,6 @@ function ChannelWelcome({ channel }: { channel: GuildChannelSummary }) {
         {channel.topic || 'This is the beginning of this channel. Message history comes next.'}
       </p>
     </div>
-  )
-}
-
-function ChevronIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={`size-3 shrink-0 transition-transform ${collapsed ? '-rotate-90' : ''}`}
-      fill="none"
-      viewBox="0 0 12 12"
-    >
-      <path d="m3 4.5 3 3 3-3" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-function VoiceChannelIcon({ className = 'size-4' }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 20 20">
-      <path
-        d="M4 8.25h2.25L10 5.25v9.5l-3.75-3H4v-3.5Z"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12.5 7.1a4 4 0 0 1 0 5.8M14.7 5a7 7 0 0 1 0 10"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.4"
-      />
-    </svg>
-  )
-}
-
-function TextChannelIcon({ className = 'size-4' }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 20 20">
-      <path
-        d="M7.25 3.5 5.75 16.5M14.25 3.5l-1.5 13M3.5 7.25h13M3 12.75h13"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.7"
-      />
-    </svg>
   )
 }
 
