@@ -1,7 +1,7 @@
 import * as Avatar from '@radix-ui/react-avatar'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import type { PropsWithChildren, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 
 import type { GatewayStatus } from '@/app/gateway-context'
 
@@ -10,8 +10,18 @@ export interface AppUserSummary {
   username: string
 }
 
+export interface AppGuildSummary {
+  id: string
+  name: string
+}
+
 interface AppShellProps extends PropsWithChildren {
+  activeGuildId?: string
   gatewayStatus?: GatewayStatus
+  guilds?: AppGuildSummary[]
+  onCreateCommunity?: () => void
+  onSelectGuild?: (guildId: string) => void
+  onSelectHome?: () => void
   user: AppUserSummary
 }
 
@@ -40,11 +50,13 @@ function RailButton({
   children,
   disabled = false,
   label,
+  onClick,
 }: {
   active?: boolean
   children: ReactNode
   disabled?: boolean
   label: string
+  onClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick']
 }) {
   return (
     <Tooltip.Root>
@@ -54,6 +66,7 @@ function RailButton({
           aria-current={active ? 'page' : undefined}
           aria-label={label}
           disabled={disabled}
+          onClick={onClick}
           className={`group relative grid size-10 place-items-center rounded-panel border text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 ${
             active
               ? 'border-brand bg-brand text-white shadow-brand'
@@ -80,22 +93,61 @@ function RailButton({
   )
 }
 
-function SpaceRail() {
+function getGuildMark(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase()
+}
+
+function SpaceRail({
+  activeGuildId,
+  guilds,
+  onCreateCommunity,
+  onSelectGuild,
+  onSelectHome,
+}: {
+  activeGuildId?: string
+  guilds: AppGuildSummary[]
+  onCreateCommunity?: () => void
+  onSelectGuild?: (guildId: string) => void
+  onSelectHome?: () => void
+}) {
   return (
     <nav
       aria-label="Spaces"
       className="hidden w-[4.5rem] shrink-0 flex-col items-center gap-3 border-r border-line bg-canvas py-3 md:flex"
     >
-      <RailButton active label="Cordis home">
+      <RailButton active={!activeGuildId} label="Cordis home" onClick={onSelectHome}>
         C
       </RailButton>
       <div className="h-px w-8 bg-line" />
 
-      <div className="flex min-h-0 flex-1 flex-col items-center gap-3">
-        <p className="sr-only">Your communities will appear here.</p>
+      <div className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto px-2">
+        {guilds.length === 0 ? (
+          <p className="sr-only">Your communities will appear here.</p>
+        ) : (
+          guilds.map((guild) => (
+            <RailButton
+              active={guild.id === activeGuildId}
+              disabled={!onSelectGuild}
+              key={guild.id}
+              label={guild.name}
+              onClick={() => onSelectGuild?.(guild.id)}
+            >
+              {getGuildMark(guild.name) || 'C'}
+            </RailButton>
+          ))
+        )}
       </div>
 
-      <RailButton disabled label="Add or join a community">
+      <RailButton
+        disabled={!onCreateCommunity}
+        label="Create a community"
+        onClick={onCreateCommunity}
+      >
         <span className="text-lg font-normal">+</span>
       </RailButton>
       <RailButton disabled label="Settings">
@@ -200,9 +252,11 @@ function HomeSidebar({
 }
 
 function MobileHeader({
+  contextName,
   gatewayStatus,
   user,
 }: {
+  contextName: string
   gatewayStatus: GatewayStatus
   user: AppUserSummary
 }) {
@@ -213,9 +267,9 @@ function MobileHeader({
       </span>
       <div className="min-w-0">
         <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-brand-text">
-          Personal space
+          {contextName === 'Home' ? 'Personal space' : 'Community'}
         </p>
-        <p className="truncate text-sm font-semibold text-ink">Home</p>
+        <p className="truncate text-sm font-semibold text-ink">{contextName}</p>
       </div>
       <span
         aria-label={`Realtime status: ${gatewayStatus.state}`}
@@ -229,16 +283,33 @@ function MobileHeader({
 }
 
 export function AppShell({
+  activeGuildId,
   children,
   gatewayStatus = { errorCode: null, state: 'idle' },
+  guilds = [],
+  onCreateCommunity,
+  onSelectGuild,
+  onSelectHome,
   user,
 }: AppShellProps) {
+  const activeGuild = guilds.find((guild) => guild.id === activeGuildId)
+
   return (
     <div className="flex h-svh min-h-[32rem] overflow-hidden bg-canvas text-ink">
-      <SpaceRail />
-      <HomeSidebar gatewayStatus={gatewayStatus} user={user} />
+      <SpaceRail
+        activeGuildId={activeGuildId}
+        guilds={guilds}
+        onCreateCommunity={onCreateCommunity}
+        onSelectGuild={onSelectGuild}
+        onSelectHome={onSelectHome}
+      />
+      {!activeGuildId ? <HomeSidebar gatewayStatus={gatewayStatus} user={user} /> : null}
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader gatewayStatus={gatewayStatus} user={user} />
+        <MobileHeader
+          contextName={activeGuild?.name ?? (activeGuildId ? 'Community' : 'Home')}
+          gatewayStatus={gatewayStatus}
+          user={user}
+        />
         {children}
       </div>
     </div>

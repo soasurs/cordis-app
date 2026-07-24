@@ -5,20 +5,14 @@ import { refreshAuthentication } from '@/api/refresh'
 import { getUsableAccessToken } from '@/api/session'
 import {
   GatewayClient,
-  isGatewayDispatch,
   type GatewayClientError,
   type GatewayConnectionState,
   type GatewayDispatch,
-  type GatewayReadyData,
   type GatewayStateChange,
 } from '@/gateway'
 
-import {
-  GatewayStatusContext,
-  gatewayReadyQueryKey,
-  idleGatewayStatus,
-  type GatewayStatus,
-} from './gateway-context'
+import { GatewayStatusContext, idleGatewayStatus, type GatewayStatus } from './gateway-context'
+import { clearGatewayQueries, syncGatewayDispatch } from './gateway-query-sync'
 
 interface GatewayConnection {
   readonly state: GatewayConnectionState
@@ -69,9 +63,7 @@ export function GatewayProvider({
       setStatus((currentStatus) => ({ ...currentStatus, errorCode: error.code }))
     })
     const unsubscribeDispatch = client.onDispatch((dispatch) => {
-      if (isGatewayDispatch(dispatch, 'READY')) {
-        queryClient.setQueryData<GatewayReadyData>(gatewayReadyQueryKey, dispatch.data)
-      }
+      syncGatewayDispatch(queryClient, dispatch)
     })
 
     client.connect()
@@ -81,7 +73,7 @@ export function GatewayProvider({
       unsubscribeError()
       unsubscribeState()
       client.disconnect()
-      queryClient.removeQueries({ queryKey: gatewayReadyQueryKey })
+      clearGatewayQueries(queryClient)
     }
   }, [connectionResult.client, queryClient])
 
