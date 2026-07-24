@@ -42,6 +42,10 @@ Every commit message must contain both a header and a body:
 <body describing the concrete changes in this commit>
 ```
 
+Commit messages must contain real newline characters. Do not place literal `\n` escape sequences
+in a `git commit -m` argument; use multiple `-m` arguments or a commit message file when the body
+needs separate paragraphs.
+
 Keep commits focused and exclude generated changes unrelated to the update. Write the body in enough detail to explain what the current commit actually changes; a title-only commit is not acceptable. Pull requests should explain behavior and verification, link relevant issues, identify backend tag changes, and include screenshots for visible UI changes.
 
 Create every commit with `git commit -s` so it includes a `Signed-off-by` trailer.
