@@ -1,14 +1,21 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { GatewayStatus } from '@/app/gateway-context'
+import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
 
 interface HomePageProps {
   displayName: string
   gatewayStatus?: GatewayStatus
 }
 
-const startingPoints = [
+const startingPoints: Array<{
+  action?: 'create-community'
+  copy: string
+  mark: string
+  title: string
+}> = [
   {
+    action: 'create-community',
     mark: '+',
     title: 'Create a community',
     copy: 'Start a focused space for your team, group, or community.',
@@ -34,6 +41,7 @@ export function HomePage({
   gatewayStatus = { errorCode: null, state: 'idle' },
 }: HomePageProps) {
   const realtimeStatus = getRealtimeStatus(gatewayStatus)
+  const openCreateGuildDialog = useCreateGuildDialog((state) => state.open)
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-canvas">
@@ -96,8 +104,16 @@ export function HomePage({
                     </span>
                     <h3 className="mt-5 text-sm font-semibold text-ink">{item.title}</h3>
                     <p className="mt-2 text-xs leading-5 text-muted">{item.copy}</p>
-                    <Button className="mt-5 w-full" disabled size="small" variant="secondary">
-                      Coming next
+                    <Button
+                      className="mt-5 w-full"
+                      disabled={item.action !== 'create-community'}
+                      size="small"
+                      variant="secondary"
+                      onClick={
+                        item.action === 'create-community' ? openCreateGuildDialog : undefined
+                      }
+                    >
+                      {item.action === 'create-community' ? 'Create community' : 'Coming next'}
                     </Button>
                   </article>
                 ))}
