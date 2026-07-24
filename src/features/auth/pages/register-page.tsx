@@ -1,9 +1,38 @@
-import { Link } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
+import { Link, useNavigate } from '@tanstack/react-router'
 
+import { registerAccount } from '@/api/authenticator'
+import { getApiErrorMessage } from '@/api/errors'
 import { AuthCard } from '../components/auth-card'
 import { RegisterForm } from '../components/register-form'
+import type { RegisterFormValues } from '../validation'
 
 export function RegisterPage() {
+  const navigate = useNavigate()
+  const registerMutation = useMutation({
+    mutationFn: (values: RegisterFormValues) =>
+      registerAccount({
+        email: values.email,
+        inviteCode: values.inviteCode,
+        name: values.name,
+        password: values.password,
+        username: values.username,
+      }),
+  })
+
+  async function handleSubmit(values: RegisterFormValues) {
+    try {
+      await registerMutation.mutateAsync(values)
+    } catch {
+      return
+    }
+
+    await navigate({
+      to: '/verify-email',
+      search: { email: values.email },
+    })
+  }
+
   return (
     <AuthCard
       description="Create one identity that stays with you across Cordis communities."
@@ -18,7 +47,18 @@ export function RegisterPage() {
         </p>
       }
     >
-      <RegisterForm onSubmit={() => undefined} />
+      <RegisterForm
+        error={
+          registerMutation.isError
+            ? getApiErrorMessage(
+                registerMutation.error,
+                'Unable to create your account. Please try again.',
+              )
+            : undefined
+        }
+        loading={registerMutation.isPending}
+        onSubmit={handleSubmit}
+      />
     </AuthCard>
   )
 }

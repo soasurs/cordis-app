@@ -6,6 +6,7 @@ import { ForgotPasswordForm } from './forgot-password-form'
 import { LoginForm } from './login-form'
 import { PasswordResetSent } from './password-reset-sent'
 import { RegisterForm } from './register-form'
+import { ResetPasswordForm } from './reset-password-form'
 
 describe('LoginForm', () => {
   it('collects credentials and toggles password visibility', async () => {
@@ -95,10 +96,12 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/^Username/), 'alex_chen')
     await user.type(screen.getByLabelText('Email address'), 'alex@example.com')
     await user.type(screen.getByLabelText(/^Password/), 'cordis-password')
+    await user.type(screen.getByLabelText(/^Confirm password/), 'cordis-password')
     await user.type(screen.getByLabelText(/^Invite code \(optional\)/), 'INVITE')
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(onSubmit).toHaveBeenCalledWith({
+      confirmPassword: 'cordis-password',
       email: 'alex@example.com',
       inviteCode: 'INVITE',
       name: 'Alex Chen',
@@ -123,6 +126,52 @@ describe('RegisterForm', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Enter a valid email address')).toBeInTheDocument()
     expect(screen.getByText('Password must contain at least 8 characters')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('blocks registration when the passwords do not match', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<RegisterForm onSubmit={onSubmit} />)
+
+    await user.type(screen.getByLabelText('Display name'), 'Alex Chen')
+    await user.type(screen.getByLabelText(/^Username/), 'alex_chen')
+    await user.type(screen.getByLabelText('Email address'), 'alex@example.com')
+    await user.type(screen.getByLabelText(/^Password/), 'cordis-password')
+    await user.type(screen.getByLabelText(/^Confirm password/), 'different-password')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    expect(await screen.findByText('Passwords do not match')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+describe('ResetPasswordForm', () => {
+  it('submits a matching new password', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<ResetPasswordForm onSubmit={onSubmit} />)
+
+    await user.type(screen.getByLabelText(/^New password/), 'new-cordis-password')
+    await user.type(screen.getByLabelText(/^Confirm new password/), 'new-cordis-password')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      confirmPassword: 'new-cordis-password',
+      newPassword: 'new-cordis-password',
+    })
+  })
+
+  it('blocks passwords that do not match', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<ResetPasswordForm onSubmit={onSubmit} />)
+
+    await user.type(screen.getByLabelText(/^New password/), 'new-cordis-password')
+    await user.type(screen.getByLabelText(/^Confirm new password/), 'different-password')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    expect(await screen.findByText('Passwords do not match')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
