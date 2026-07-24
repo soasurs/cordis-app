@@ -44,6 +44,12 @@ interface CreateGuildCategoryDetails {
 export type CreateGuildChannelDetails =
   CreateTextOrVoiceGuildChannelDetails | CreateGuildCategoryDetails
 
+export interface GuildChannelPosition {
+  channelId: string
+  parentId?: string | null
+  position: number
+}
+
 export async function createGuild(name: string): Promise<Guild> {
   const response = await guildClient.createGuild({ name })
 
@@ -91,6 +97,33 @@ export async function createGuildChannel(
   }
 
   return toGuildChannel(response.channel)
+}
+
+export async function reorderGuildChannels(
+  guildId: string,
+  positions: GuildChannelPosition[],
+): Promise<GuildChannel[]> {
+  assertIdentifier(guildId, 'guild')
+  for (const item of positions) {
+    assertIdentifier(item.channelId, 'channel')
+    if (item.parentId) assertIdentifier(item.parentId, 'parent channel')
+    if (!Number.isInteger(item.position) || item.position < 0) {
+      throw new Error('channel position is invalid')
+    }
+  }
+
+  const response = await guildClient.reorderGuildChannels({
+    guildId: BigInt(guildId),
+    positions: positions.map((item) => ({
+      channelId: BigInt(item.channelId),
+      ...(item.parentId !== undefined
+        ? { parentId: item.parentId === null ? 0n : BigInt(item.parentId) }
+        : {}),
+      position: item.position,
+    })),
+  })
+
+  return response.channels.map(toGuildChannel)
 }
 
 function toGuildChannel(channel: {

@@ -4,6 +4,7 @@ const guildClient = vi.hoisted(() => ({
   createGuild: vi.fn(),
   createGuildChannel: vi.fn(),
   listGuildChannels: vi.fn(),
+  reorderGuildChannels: vi.fn(),
 }))
 
 vi.mock('@connectrpc/connect', () => ({
@@ -11,7 +12,7 @@ vi.mock('@connectrpc/connect', () => ({
 }))
 vi.mock('./client', () => ({ apiTransport: {} }))
 
-import { createGuildChannel, listGuildChannels } from './guild'
+import { createGuildChannel, listGuildChannels, reorderGuildChannels } from './guild'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -120,6 +121,26 @@ describe('guild API', () => {
       parentId: 0n,
       topic: '',
       type: 2,
+    })
+  })
+
+  it('reorders guild channels with validated positions', async () => {
+    guildClient.reorderGuildChannels.mockResolvedValue({ channels: [] })
+
+    await expect(
+      reorderGuildChannels('42', [
+        { channelId: '44', parentId: '45', position: 0 },
+        { channelId: '43', parentId: null, position: 1 },
+        { channelId: '42', position: 2 },
+      ]),
+    ).resolves.toEqual([])
+    expect(guildClient.reorderGuildChannels).toHaveBeenCalledWith({
+      guildId: 42n,
+      positions: [
+        { channelId: 44n, parentId: 45n, position: 0 },
+        { channelId: 43n, parentId: 0n, position: 1 },
+        { channelId: 42n, position: 2 },
+      ],
     })
   })
 })

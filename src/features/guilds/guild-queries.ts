@@ -105,6 +105,16 @@ export function upsertGuildChannelFromApi(queryClient: QueryClient, channel: Gui
   )
 }
 
+export function upsertGuildChannelsFromApi(
+  queryClient: QueryClient,
+  guildId: string,
+  channels: GuildChannelSummary[],
+) {
+  queryClient.setQueryData<GuildChannelSummary[]>(guildChannelsQueryKey(guildId), (current = []) =>
+    channels.reduce((nextChannels, channel) => upsertByRevision(nextChannels, channel), current),
+  )
+}
+
 export function removeGuildChannelFromGateway(
   queryClient: QueryClient,
   guildId: string,

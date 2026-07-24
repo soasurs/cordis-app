@@ -182,8 +182,32 @@ describe('GatewayProvider', () => {
 
     act(() =>
       connection.dispatch({
-        data: { id: '52', revision: 2, deleted_at: 3_000 },
+        data: {
+          created_at: 2_000,
+          guild_id: '52',
+          id: '53',
+          name: 'general',
+          parent_id: '54',
+          position: 2,
+          revision: 2,
+          topic: '',
+          type: 1,
+          updated_at: 2_500,
+        },
         sequence: 4,
+        type: 'guild.channel.updated',
+      }),
+    )
+    expect(
+      queryClient
+        .getQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('52'))
+        ?.find((channel) => channel.id === '53'),
+    ).toMatchObject({ parentId: '54', position: 2, revision: 2 })
+
+    act(() =>
+      connection.dispatch({
+        data: { id: '52', revision: 2, deleted_at: 3_000 },
+        sequence: 5,
         type: 'guild.deleted',
       }),
     )
