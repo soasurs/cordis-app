@@ -1,5 +1,6 @@
 dist/
 coverage/
 playwright-report/
-src/routeTree.gen.ts
 pnpm-lock.yaml
+src/gen/
+src/routeTree.gen.ts

@@ -11,4 +11,9 @@ pnpm dev
 ```
 
 Run `pnpm check` before opening a pull request. The public API generation pipeline will be
-added once the first stable Cordis backend tag is available.
+pinned to Cordis `v0.1.0`. Regenerate the checked-in TypeScript descriptors after changing
+the pinned backend tag:
+
+```bash
+pnpm generate
+```
