@@ -1,0 +1,13 @@
+version: v2
+clean: true
+inputs:
+  - git_repo: https://github.com/soasurs/cordis.git
+    branch: v0.1.0
+    subdir: proto
+    depth: 1
+plugins:
+  - local: protoc-gen-es
+    out: src/gen
+    opt:
+      - target=ts
+      - import_extension=none
