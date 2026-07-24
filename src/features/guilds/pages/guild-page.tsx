@@ -259,17 +259,15 @@ function ChannelNavigation({
   onToggleCategory: (categoryId: string) => void
   selectedChannelId?: string
 }) {
-  const textChannels = channels.filter(
-    (channel) => channel.type === channelType.text && !channel.parentId,
-  )
-  const voiceChannels = channels.filter(
-    (channel) => channel.type === channelType.voice && !channel.parentId,
-  )
-  const categories = channels.filter(
-    (channel) => channel.type === channelType.category && !channel.parentId,
+  const topLevelChannels = channels.filter(
+    (channel) =>
+      !channel.parentId &&
+      (channel.type === channelType.category ||
+        channel.type === channelType.text ||
+        channel.type === channelType.voice),
   )
 
-  if (textChannels.length === 0 && voiceChannels.length === 0 && categories.length === 0) {
+  if (topLevelChannels.length === 0) {
     return (
       <div
         className={`${compact ? 'mt-3' : ''} rounded-control border border-dashed border-line px-3 py-4`}
@@ -282,74 +280,35 @@ function ChannelNavigation({
   return (
     <nav
       aria-label="Community channels"
-      className={compact ? 'mt-3 grid min-w-0 gap-3' : 'grid min-w-0 gap-3'}
+      className={compact ? 'mt-3 grid min-w-0 gap-2' : 'grid min-w-0 gap-2'}
     >
-      <ChannelGroup
-        channels={textChannels}
-        label="Text channels"
-        onSelectChannel={onSelectChannel}
-        selectedChannelId={selectedChannelId}
-        type="text"
-      />
-      <ChannelGroup
-        channels={voiceChannels}
-        label="Voice channels"
-        onSelectChannel={onSelectChannel}
-        selectedChannelId={selectedChannelId}
-        type="voice"
-      />
-      {categories.map((category) => (
-        <CategoryChannelGroup
-          key={category.id}
-          category={category}
-          channels={channels.filter(
-            (channel) =>
-              channel.parentId === category.id &&
-              (channel.type === channelType.text || channel.type === channelType.voice),
-          )}
-          collapsed={collapsedCategoryIds.has(category.id)}
-          onCreateChannel={onCreateChannel}
-          onSelectChannel={onSelectChannel}
-          onToggleCategory={onToggleCategory}
-          selectedChannelId={selectedChannelId}
-        />
-      ))}
-    </nav>
-  )
-}
-
-function ChannelGroup({
-  channels,
-  label,
-  onSelectChannel,
-  selectedChannelId,
-  type,
-}: {
-  channels: GuildChannelSummary[]
-  label: string
-  onSelectChannel?: (channelId: string) => void
-  selectedChannelId?: string
-  type: 'text' | 'voice'
-}) {
-  if (channels.length === 0) return null
-
-  return (
-    <section className="min-w-0">
-      <p className="px-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-subtle">
-        {label}
-      </p>
-      <div className="mt-2 grid gap-0.5">
-        {channels.map((channel) => (
+      {topLevelChannels.map((channel) =>
+        channel.type === channelType.category ? (
+          <CategoryChannelGroup
+            key={channel.id}
+            category={channel}
+            channels={channels.filter(
+              (child) =>
+                child.parentId === channel.id &&
+                (child.type === channelType.text || child.type === channelType.voice),
+            )}
+            collapsed={collapsedCategoryIds.has(channel.id)}
+            onCreateChannel={onCreateChannel}
+            onSelectChannel={onSelectChannel}
+            onToggleCategory={onToggleCategory}
+            selectedChannelId={selectedChannelId}
+          />
+        ) : (
           <ChannelButton
             key={channel.id}
             channel={channel}
             onSelectChannel={onSelectChannel}
             selected={channel.id === selectedChannelId}
-            type={type}
+            type={channel.type === channelType.voice ? 'voice' : 'text'}
           />
-        ))}
-      </div>
-    </section>
+        ),
+      )}
+    </nav>
   )
 }
 

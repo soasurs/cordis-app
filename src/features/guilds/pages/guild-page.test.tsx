@@ -93,6 +93,17 @@ describe('GuildPage', () => {
     expect(guildApi.listGuildChannels).not.toHaveBeenCalled()
   })
 
+  it('renders channels without a parent directly instead of adding type groups', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onSelectChannel: vi.fn() })
+
+    expect(await screen.findAllByRole('button', { name: 'general' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Lounge' })).toHaveLength(2)
+    expect(screen.queryByText('Text channels')).not.toBeInTheDocument()
+    expect(screen.queryByText('Voice channels')).not.toBeInTheDocument()
+  })
+
   it('requests navigation when another channel is selected', async () => {
     const queryClient = createQueryClient()
     const onSelectChannel = vi.fn()
