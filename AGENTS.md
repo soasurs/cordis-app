@@ -33,3 +33,5 @@ Use Vitest and React Testing Library for unit and component tests, colocated as 
 ## Commit & Pull Request Guidelines
 
 Use scoped Conventional Commits, for example `feat(gateway): add resume handling`. Keep commits focused and exclude generated changes unrelated to the update. Pull requests should explain behavior and verification, link relevant issues, identify backend tag changes, and include screenshots for visible UI changes.
+
+Create every commit with `git commit -s` so it includes a `Signed-off-by` trailer.
