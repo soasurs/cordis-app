@@ -6,6 +6,7 @@ import { subscribeToAuthenticationCleared } from '@/api/session'
 import { authSessionQueryOptions, setAuthSession } from '@/features/auth/auth-session'
 
 import { queryClient } from './query-client'
+import { GatewayProvider } from './gateway-provider'
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -51,7 +52,11 @@ function AuthenticationBootstrap({ children }: PropsWithChildren) {
     )
   }
 
-  return <Tooltip.Provider delayDuration={250}>{children}</Tooltip.Provider>
+  return (
+    <GatewayProvider enabled={Boolean(sessionQuery.data)}>
+      <Tooltip.Provider delayDuration={250}>{children}</Tooltip.Provider>
+    </GatewayProvider>
+  )
 }
 
 function AuthenticationLoading() {
