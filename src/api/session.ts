@@ -4,6 +4,7 @@ const accessTokenExpiresAtStorageKey = 'cordis.accessTokenExpiresAt'
 const accessTokenExpirySkewMs = 30_000
 
 let accessToken: string | undefined
+let accessTokenExpiresAt: number | undefined
 const authenticationClearedListeners = new Set<() => void>()
 
 export interface AuthenticationTokens {
@@ -14,6 +15,7 @@ export interface AuthenticationTokens {
 
 export function storeAuthenticationTokens(tokens: AuthenticationTokens) {
   accessToken = tokens.accessToken
+  accessTokenExpiresAt = Number(tokens.accessTokenExpiresAt)
 
   try {
     window.sessionStorage.setItem(accessTokenStorageKey, tokens.accessToken)
@@ -36,6 +38,21 @@ export function getAccessToken() {
   return accessToken
 }
 
+export function getUsableAccessToken() {
+  if (
+    !accessToken ||
+    !accessTokenExpiresAt ||
+    accessTokenExpiresAt <= Date.now() + accessTokenExpirySkewMs
+  ) {
+    accessToken = undefined
+    accessTokenExpiresAt = undefined
+    clearPersistedAccessToken()
+    return undefined
+  }
+
+  return accessToken
+}
+
 export function restoreAccessToken() {
   try {
     const storedAccessToken = window.sessionStorage.getItem(accessTokenStorageKey)
@@ -53,9 +70,11 @@ export function restoreAccessToken() {
     }
 
     accessToken = storedAccessToken
+    accessTokenExpiresAt = expiresAt
     return true
   } catch {
     accessToken = undefined
+    accessTokenExpiresAt = undefined
     return false
   }
 }
@@ -70,6 +89,7 @@ export function getRefreshToken() {
 
 export function clearAuthenticationTokens() {
   accessToken = undefined
+  accessTokenExpiresAt = undefined
   clearPersistedAccessToken()
 
   try {

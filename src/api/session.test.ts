@@ -4,6 +4,7 @@ import {
   clearAuthenticationTokens,
   getAccessToken,
   getRefreshToken,
+  getUsableAccessToken,
   restoreAccessToken,
   storeAuthenticationTokens,
   subscribeToAuthenticationCleared,
@@ -78,6 +79,18 @@ describe('authentication token storage', () => {
     expect(restoreAccessToken()).toBe(false)
     expect(getAccessToken()).toBeUndefined()
     expect(window.sessionStorage).toHaveLength(0)
+  })
+
+  it('returns only an access token that is not close to expiring', () => {
+    storeAuthenticationTokens({
+      accessToken: 'expiring-access-token',
+      accessTokenExpiresAt: BigInt(Date.now() + 10_000),
+      refreshToken: 'refresh-token',
+    })
+
+    expect(getUsableAccessToken()).toBeUndefined()
+    expect(getAccessToken()).toBeUndefined()
+    expect(getRefreshToken()).toBe('refresh-token')
   })
 
   it('notifies subscribers when authentication is cleared', () => {
