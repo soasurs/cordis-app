@@ -16,6 +16,7 @@ interface RegisterFormProps {
 export function RegisterForm({ error, loading = false, onSubmit }: RegisterFormProps) {
   const form = useForm({
     defaultValues: {
+      confirmPassword: '',
       email: '',
       inviteCode: '',
       name: '',
@@ -97,6 +98,21 @@ export function RegisterForm({ error, loading = false, onSubmit }: RegisterFormP
             label="Password"
             name={field.name}
             placeholder="Create a secure password"
+            value={field.state.value}
+            onBlur={field.handleBlur}
+            onChange={(event) => field.handleChange(event.target.value)}
+          />
+        )}
+      </form.Field>
+      <form.Field name="confirmPassword">
+        {(field) => (
+          <PasswordInput
+            required
+            autoComplete="new-password"
+            error={getFieldError(field.state.meta.errors)}
+            label="Confirm password"
+            name={field.name}
+            placeholder="Enter your password again"
             value={field.state.value}
             onBlur={field.handleBlur}
             onChange={(event) => field.handleChange(event.target.value)}

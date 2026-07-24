@@ -1,8 +1,11 @@
 import { Button } from '@/components/ui/button'
+import { FormAlert } from './form-alert'
 
 export type EmailVerificationState = 'invalid' | 'pending' | 'resent' | 'success' | 'verifying'
 
 interface EmailVerificationPanelProps {
+  error?: string
+  loading?: boolean
   onResend?: () => void
   state: EmailVerificationState
 }
@@ -45,7 +48,12 @@ const content: Record<
   },
 }
 
-export function EmailVerificationPanel({ onResend, state }: EmailVerificationPanelProps) {
+export function EmailVerificationPanel({
+  error,
+  loading = false,
+  onResend,
+  state,
+}: EmailVerificationPanelProps) {
   const current = content[state]
 
   return (
@@ -61,9 +69,10 @@ export function EmailVerificationPanel({ onResend, state }: EmailVerificationPan
       <h1 className="mt-3 text-2xl font-semibold tracking-[-0.035em]">{current.title}</h1>
       <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted">{current.description}</p>
 
-      {state === 'pending' || state === 'invalid' ? (
-        <div className="mt-6">
-          <Button className="w-full" onClick={onResend} variant="secondary">
+      {onResend && (state === 'pending' || state === 'invalid') ? (
+        <div className="mt-6 space-y-3">
+          <FormAlert>{error}</FormAlert>
+          <Button className="w-full" loading={loading} onClick={onResend} variant="secondary">
             Resend verification email
           </Button>
         </div>
