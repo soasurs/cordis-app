@@ -1,7 +1,56 @@
 @import 'tailwindcss';
 
+@theme inline {
+  --color-canvas: var(--cordis-color-canvas);
+  --color-surface: var(--cordis-color-surface);
+  --color-surface-raised: var(--cordis-color-surface-raised);
+  --color-surface-hover: var(--cordis-color-surface-hover);
+  --color-line: var(--cordis-color-line);
+  --color-line-strong: var(--cordis-color-line-strong);
+  --color-ink: var(--cordis-color-ink);
+  --color-muted: var(--cordis-color-muted);
+  --color-subtle: var(--cordis-color-subtle);
+  --color-brand: var(--cordis-color-brand);
+  --color-brand-strong: var(--cordis-color-brand-strong);
+  --color-brand-soft: var(--cordis-color-brand-soft);
+  --color-brand-text: var(--cordis-color-brand-text);
+  --color-accent: var(--cordis-color-accent);
+  --color-accent-soft: var(--cordis-color-accent-soft);
+  --color-accent-text: var(--cordis-color-accent-text);
+  --color-positive: var(--cordis-color-positive);
+  --color-warning: var(--cordis-color-warning);
+  --color-negative: var(--cordis-color-negative);
+  --radius-control: 0.5rem;
+  --radius-panel: 0.625rem;
+  --radius-shell: 0.75rem;
+  --shadow-panel: var(--cordis-shadow-panel);
+  --shadow-brand: var(--cordis-shadow-brand);
+}
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --cordis-color-canvas: #f5f6f8;
+  --cordis-color-surface: #ffffff;
+  --cordis-color-surface-raised: #fafbfc;
+  --cordis-color-surface-hover: #eef1f5;
+  --cordis-color-line: #e0e4eb;
+  --cordis-color-line-strong: #c9d0dc;
+  --cordis-color-ink: #171a22;
+  --cordis-color-muted: #596273;
+  --cordis-color-subtle: #7c8799;
+  --cordis-color-brand: #6738dc;
+  --cordis-color-brand-strong: #5525c4;
+  --cordis-color-brand-soft: #eee9ff;
+  --cordis-color-brand-text: #6240c7;
+  --cordis-color-accent: #d86486;
+  --cordis-color-accent-soft: #fceaf1;
+  --cordis-color-accent-text: #a83e62;
+  --cordis-color-positive: #087f5b;
+  --cordis-color-warning: #a15c08;
+  --cordis-color-negative: #c93652;
+  --cordis-grid-color: rgb(23 26 34 / 5%);
+  --cordis-shadow-panel: 0 8px 28px rgb(37 43 58 / 7%);
+  --cordis-shadow-brand: 0 6px 18px rgb(103 56 220 / 17%);
   font-family:
     Inter,
     ui-sans-serif,
@@ -14,6 +63,137 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'],
+[data-theme='dark'] {
+  color-scheme: dark;
+  --cordis-color-canvas: #080b12;
+  --cordis-color-surface: #0d111b;
+  --cordis-color-surface-raised: #121824;
+  --cordis-color-surface-hover: #192131;
+  --cordis-color-line: #202839;
+  --cordis-color-line-strong: #344057;
+  --cordis-color-ink: #f7f8fb;
+  --cordis-color-muted: #a6afbf;
+  --cordis-color-subtle: #717d91;
+  --cordis-color-brand: #7c3aed;
+  --cordis-color-brand-strong: #6d28d9;
+  --cordis-color-brand-soft: #241b41;
+  --cordis-color-brand-text: #b9a5ff;
+  --cordis-color-accent: #f07c9e;
+  --cordis-color-accent-soft: #3d2230;
+  --cordis-color-accent-text: #f0a2b8;
+  --cordis-color-positive: #34d399;
+  --cordis-color-warning: #fbbf24;
+  --cordis-color-negative: #fb7185;
+  --cordis-grid-color: rgb(255 255 255 / 2.4%);
+  --cordis-shadow-panel: 0 10px 32px rgb(0 0 0 / 22%);
+  --cordis-shadow-brand: 0 6px 20px rgb(124 58 237 / 20%);
+}
+
+:root[data-palette='morandi'],
+[data-palette='morandi'] {
+  --cordis-color-canvas: #f2f1ed;
+  --cordis-color-surface: #faf9f6;
+  --cordis-color-surface-raised: #f6f4ef;
+  --cordis-color-surface-hover: #e9e7e1;
+  --cordis-color-line: #d7d4cd;
+  --cordis-color-line-strong: #c2beb6;
+  --cordis-color-ink: #26272b;
+  --cordis-color-muted: #65686d;
+  --cordis-color-subtle: #737574;
+  --cordis-color-brand: #665672;
+  --cordis-color-brand-strong: #55465f;
+  --cordis-color-brand-soft: #ebe6ed;
+  --cordis-color-brand-text: #665672;
+  --cordis-color-accent: #b36f68;
+  --cordis-color-accent-soft: #f1e4e0;
+  --cordis-color-accent-text: #8c504c;
+  --cordis-color-positive: #52705f;
+  --cordis-color-warning: #805a35;
+  --cordis-color-negative: #985b63;
+  --cordis-grid-color: rgb(38 39 43 / 5%);
+  --cordis-shadow-panel: 0 8px 28px rgb(49 47 43 / 7%);
+  --cordis-shadow-brand: 0 6px 18px rgb(102 86 114 / 16%);
+}
+
+:root[data-theme='dark'][data-palette='morandi'],
+[data-theme='dark'][data-palette='morandi'] {
+  --cordis-color-canvas: #181918;
+  --cordis-color-surface: #1f201f;
+  --cordis-color-surface-raised: #252625;
+  --cordis-color-surface-hover: #2d2e2c;
+  --cordis-color-line: #383a37;
+  --cordis-color-line-strong: #4b4e49;
+  --cordis-color-ink: #eeede8;
+  --cordis-color-muted: #b0aea7;
+  --cordis-color-subtle: #898781;
+  --cordis-color-brand: #76677f;
+  --cordis-color-brand-strong: #66586e;
+  --cordis-color-brand-soft: #302a33;
+  --cordis-color-brand-text: #c4b8ca;
+  --cordis-color-accent: #c98b82;
+  --cordis-color-accent-soft: #3a2b2a;
+  --cordis-color-accent-text: #dca59d;
+  --cordis-color-positive: #96ae9c;
+  --cordis-color-warning: #c1a078;
+  --cordis-color-negative: #c48e93;
+  --cordis-grid-color: rgb(238 237 232 / 2.5%);
+  --cordis-shadow-panel: 0 10px 32px rgb(0 0 0 / 20%);
+  --cordis-shadow-brand: 0 6px 20px rgb(118 103 127 / 18%);
+}
+
+:root[data-palette='pulse'],
+[data-palette='pulse'] {
+  --cordis-color-canvas: #f7f5fa;
+  --cordis-color-surface: #fffaff;
+  --cordis-color-surface-raised: #f2eef6;
+  --cordis-color-surface-hover: #e9e3f0;
+  --cordis-color-line: #ded7e5;
+  --cordis-color-line-strong: #c8bdd4;
+  --cordis-color-ink: #242029;
+  --cordis-color-muted: #68616f;
+  --cordis-color-subtle: #756b7d;
+  --cordis-color-brand: #7546c8;
+  --cordis-color-brand-strong: #6334b3;
+  --cordis-color-brand-soft: #eee5fa;
+  --cordis-color-brand-text: #693bb7;
+  --cordis-color-accent: #d65f72;
+  --cordis-color-accent-soft: #f8e2e7;
+  --cordis-color-accent-text: #a93d50;
+  --cordis-color-positive: #20785f;
+  --cordis-color-warning: #a96323;
+  --cordis-color-negative: #b83d55;
+  --cordis-grid-color: rgb(36 32 41 / 4%);
+  --cordis-shadow-panel: 0 8px 28px rgb(53 42 62 / 7%);
+  --cordis-shadow-brand: 0 6px 18px rgb(117 70 200 / 17%);
+}
+
+:root[data-theme='dark'][data-palette='pulse'],
+[data-theme='dark'][data-palette='pulse'] {
+  --cordis-color-canvas: #121015;
+  --cordis-color-surface: #1a171e;
+  --cordis-color-surface-raised: #211d26;
+  --cordis-color-surface-hover: #2c2633;
+  --cordis-color-line: #39313f;
+  --cordis-color-line-strong: #504459;
+  --cordis-color-ink: #f5f0f7;
+  --cordis-color-muted: #b5acba;
+  --cordis-color-subtle: #8c8292;
+  --cordis-color-brand: #7546c8;
+  --cordis-color-brand-strong: #6639b4;
+  --cordis-color-brand-soft: #302440;
+  --cordis-color-brand-text: #c5abf2;
+  --cordis-color-accent: #e97688;
+  --cordis-color-accent-soft: #3c232b;
+  --cordis-color-accent-text: #f2a1ae;
+  --cordis-color-positive: #4bc19b;
+  --cordis-color-warning: #e6a052;
+  --cordis-color-negative: #ec7388;
+  --cordis-grid-color: rgb(245 240 247 / 2.5%);
+  --cordis-shadow-panel: 0 10px 32px rgb(0 0 0 / 22%);
+  --cordis-shadow-brand: 0 6px 20px rgb(117 70 200 / 20%);
 }
 
 * {
@@ -30,7 +210,7 @@ body,
 
 body {
   min-height: 100vh;
-  background: #080b12;
+  background: var(--cordis-color-canvas);
 }
 
 button,
@@ -45,4 +225,12 @@ button:not(:disabled) {
 ::selection {
   color: #fff;
   background: rgb(124 58 237 / 55%);
+}
+
+.design-grid {
+  background-image:
+    linear-gradient(var(--cordis-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cordis-grid-color) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
 }
