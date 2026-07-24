@@ -495,6 +495,24 @@ export class GatewayClient {
 }
 
 function defaultGatewayUrl(): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${window.location.host}/ws`
+  const configuredUrl = import.meta.env.VITE_GATEWAY_URL?.trim()
+  if (!configuredUrl) {
+    throw new Error('VITE_GATEWAY_URL is not configured')
+  }
+
+  let url: URL
+  try {
+    url = new URL(configuredUrl)
+  } catch (cause) {
+    throw new Error('VITE_GATEWAY_URL is invalid', { cause })
+  }
+
+  if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
+    throw new Error('VITE_GATEWAY_URL must use ws or wss')
+  }
+  if (url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('VITE_GATEWAY_URL must not include a path, query, or fragment')
+  }
+
+  return url.origin
 }

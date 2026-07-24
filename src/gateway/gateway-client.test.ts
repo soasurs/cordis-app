@@ -42,7 +42,7 @@ function createHarness(
 ) {
   const sockets: FakeGatewaySocket[] = []
   const client = new GatewayClient({
-    url: 'ws://cordis.test/ws',
+    url: 'ws://cordis.test',
     getAccessToken,
     identify: {
       deviceType: 'web',
@@ -75,9 +75,38 @@ async function receiveHello(socket: FakeGatewaySocket, interval = 1_000) {
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.unstubAllEnvs()
 })
 
 describe('GatewayClient', () => {
+  it('uses the build-time Gateway host without a path', () => {
+    vi.stubEnv('VITE_GATEWAY_URL', 'wss://gateway.cordis.test')
+    const urls: string[] = []
+    const client = new GatewayClient({
+      getAccessToken: () => 'token',
+      webSocketFactory: (url) => {
+        urls.push(url)
+        return new FakeGatewaySocket()
+      },
+    })
+
+    client.connect()
+
+    expect(urls).toEqual(['wss://gateway.cordis.test'])
+    client.disconnect()
+  })
+
+  it('rejects a configured Gateway URL with a path', () => {
+    vi.stubEnv('VITE_GATEWAY_URL', 'wss://gateway.cordis.test/ws')
+
+    expect(
+      () =>
+        new GatewayClient({
+          getAccessToken: () => 'token',
+        }),
+    ).toThrow('VITE_GATEWAY_URL must not include a path, query, or fragment')
+  })
+
   it('identifies, dispatches READY, and maintains heartbeat acknowledgements', async () => {
     vi.useFakeTimers()
     const { client, sockets } = createHarness()
