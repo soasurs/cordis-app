@@ -13,6 +13,19 @@ export const GatewayOpcode = {
 
 export type GatewayOpcode = (typeof GatewayOpcode)[keyof typeof GatewayOpcode]
 
+export const GatewayEventType = {
+  Hello: 'hello',
+  Identify: 'identify',
+  Ready: 'ready',
+  Resume: 'resume',
+  Resumed: 'resumed',
+  Heartbeat: 'heartbeat',
+  HeartbeatAck: 'heartbeat.ack',
+  Error: 'error',
+} as const
+
+export type GatewayEventType = (typeof GatewayEventType)[keyof typeof GatewayEventType]
+
 export interface GatewayEnvelope<T = unknown> {
   op: number
   s?: number
@@ -89,6 +102,7 @@ export interface ReadyGuild {
   id: string
   owner_id: string
   name: string
+  description: string
   icon_asset_id: string
   revision: number
   access_revision: number
@@ -103,6 +117,7 @@ export interface ReadyGuild {
 export interface ReadyDmChannel {
   id: string
   recipient_id: string
+  recipient: UserProfilePayload
   created_at: number
 }
 
@@ -132,6 +147,7 @@ export interface GuildPayload {
   id: string
   owner_id: string
   name: string
+  description: string
   icon_asset_id: string
   revision: number
   created_at: number
@@ -147,6 +163,7 @@ export interface GuildDeletedPayload {
 export interface GuildMemberPayload {
   guild_id: string
   user_id: string
+  profile: UserProfilePayload
   nickname: string
   revision: number
   joined_at: number
@@ -164,6 +181,8 @@ export interface GuildMemberBannedPayload {
   guild_id: string
   user_id: string
   actor_user_id: string
+  profile: UserProfilePayload
+  actor_profile: UserProfilePayload
   reason: string
   banned_at: number
 }
@@ -171,6 +190,7 @@ export interface GuildMemberBannedPayload {
 export interface GuildMemberUnbannedPayload {
   guild_id: string
   user_id: string
+  profile: UserProfilePayload
   unbanned_at: number
 }
 
@@ -217,7 +237,7 @@ export interface GuildChannelOverwriteDeletedPayload {
   target_id: string
 }
 
-export interface MessageAuthorPayload {
+export interface UserProfilePayload {
   user_id: string
   name: string
   avatar_asset_id: string
@@ -225,6 +245,8 @@ export interface MessageAuthorPayload {
   updated_at: number
   username: string
 }
+
+export type MessageAuthorPayload = UserProfilePayload
 
 export interface MessageAttachmentPayload {
   asset_id: string
@@ -279,6 +301,7 @@ export interface MessageReadUpdatedPayload {
 export interface RelationshipPayload {
   user_id: string
   target_id: string
+  profile: UserProfilePayload
   type: number
   created_at: number
   updated_at: number
@@ -293,6 +316,7 @@ export interface DmChannelCreatedPayload {
   channel_id: string
   user_id: string
   recipient_id: string
+  recipient: UserProfilePayload
   created_at: number
 }
 

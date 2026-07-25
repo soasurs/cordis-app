@@ -1,4 +1,5 @@
 import {
+  GatewayEventType,
   GatewayOpcode,
   getReadySessionId,
   parseGatewayEnvelope,
@@ -239,12 +240,18 @@ export class GatewayClient {
 
     switch (envelope.op) {
       case GatewayOpcode.Hello:
+        if (!this.validateEventType(socket, envelope, GatewayEventType.Hello)) {
+          return
+        }
         void this.handleHello(socket, envelope.d)
         break
       case GatewayOpcode.Dispatch:
         this.handleDispatch(envelope)
         break
       case GatewayOpcode.HeartbeatAck:
+        if (!this.validateEventType(socket, envelope, GatewayEventType.HeartbeatAck)) {
+          return
+        }
         this.heartbeatUnacknowledged = false
         break
       case GatewayOpcode.Reconnect:
@@ -255,6 +262,9 @@ export class GatewayClient {
         this.forceReconnect(socket)
         break
       case GatewayOpcode.Error:
+        if (!this.validateEventType(socket, envelope, GatewayEventType.Error)) {
+          return
+        }
         this.handleGatewayError(envelope.d)
         break
       default:
@@ -296,7 +306,11 @@ export class GatewayClient {
         session_id: this.sessionValue.sessionId,
         seq: this.sessionValue.sequence,
       }
-      this.sendOnSocket(socket, { op: GatewayOpcode.Resume, d: resume })
+      this.sendOnSocket(socket, {
+        op: GatewayOpcode.Resume,
+        t: GatewayEventType.Resume,
+        d: resume,
+      })
       return
     }
 
@@ -306,7 +320,11 @@ export class GatewayClient {
       status: this.identify.status,
       client_state: this.identify.clientState,
     }
-    this.sendOnSocket(socket, { op: GatewayOpcode.Identify, d: identify })
+    this.sendOnSocket(socket, {
+      op: GatewayOpcode.Identify,
+      t: GatewayEventType.Identify,
+      d: identify,
+    })
   }
 
   private handleDispatch(envelope: GatewayEnvelope): void {
@@ -316,7 +334,7 @@ export class GatewayClient {
     }
 
     const sequence = envelope.s ?? this.sessionValue?.sequence ?? 0
-    if (envelope.t === 'ready') {
+    if (envelope.t === GatewayEventType.Ready) {
       const sessionId = getReadySessionId(envelope.d)
       if (!sessionId) {
         this.reportError('invalid_ready', 'gateway ready session id is missing')
@@ -328,7 +346,7 @@ export class GatewayClient {
       if (this.sessionValue && sequence > this.sessionValue.sequence) {
         this.sessionValue.sequence = sequence
       }
-      if (envelope.t === 'resumed') {
+      if (envelope.t === GatewayEventType.Resumed) {
         this.markReady()
       }
     }
@@ -377,6 +395,7 @@ export class GatewayClient {
 
     this.sendOnSocket(socket, {
       op: GatewayOpcode.Heartbeat,
+      t: GatewayEventType.Heartbeat,
       d: this.sessionValue?.sequence ?? 0,
     })
     this.heartbeatUnacknowledged = true
@@ -399,6 +418,22 @@ export class GatewayClient {
       return
     }
     this.reportError('gateway_error', 'gateway returned an invalid error payload')
+  }
+
+  private validateEventType(
+    socket: GatewaySocket,
+    envelope: GatewayEnvelope,
+    expected: GatewayEventType,
+  ): boolean {
+    if (envelope.t === expected) {
+      return true
+    }
+    this.reportError(
+      'invalid_event_type',
+      `gateway opcode ${envelope.op} must use event type ${expected}`,
+    )
+    this.forceReconnect(socket)
+    return false
   }
 
   private forceReconnect(socket: GatewaySocket): void {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { GatewayClient, type GatewaySocket } from './gateway-client'
-import { GatewayOpcode, type GatewayEnvelope } from './protocol'
+import { GatewayEventType, GatewayOpcode, type GatewayEnvelope } from './protocol'
 
 class FakeGatewaySocket implements GatewaySocket {
   readyState = 0
@@ -67,7 +67,7 @@ async function receiveHello(socket: FakeGatewaySocket, interval = 1_000) {
   socket.open()
   socket.receive({
     op: GatewayOpcode.Hello,
-    t: 'hello',
+    t: GatewayEventType.Hello,
     d: { heartbeat_interval_ms: interval, gateway_id: 'gw-1' },
   })
   await Promise.resolve()
@@ -121,6 +121,7 @@ describe('GatewayClient', () => {
     expect(socket.sent).toEqual([
       {
         op: GatewayOpcode.Identify,
+        t: GatewayEventType.Identify,
         d: {
           token: 'token',
           device_type: 'web',
@@ -133,7 +134,7 @@ describe('GatewayClient', () => {
     socket.receive({
       op: GatewayOpcode.Dispatch,
       s: 1,
-      t: 'ready',
+      t: GatewayEventType.Ready,
       d: { session_id: 'session-1' },
     })
     expect(client.state).toBe('ready')
@@ -145,11 +146,23 @@ describe('GatewayClient', () => {
     })
 
     vi.advanceTimersByTime(1_000)
-    expect(socket.sent.at(-1)).toEqual({ op: GatewayOpcode.Heartbeat, d: 1 })
+    expect(socket.sent.at(-1)).toEqual({
+      op: GatewayOpcode.Heartbeat,
+      t: GatewayEventType.Heartbeat,
+      d: 1,
+    })
 
-    socket.receive({ op: GatewayOpcode.HeartbeatAck, t: 'heartbeat.ack', d: null })
+    socket.receive({
+      op: GatewayOpcode.HeartbeatAck,
+      t: GatewayEventType.HeartbeatAck,
+      d: null,
+    })
     vi.advanceTimersByTime(1_000)
-    expect(socket.sent.at(-1)).toEqual({ op: GatewayOpcode.Heartbeat, d: 1 })
+    expect(socket.sent.at(-1)).toEqual({
+      op: GatewayOpcode.Heartbeat,
+      t: GatewayEventType.Heartbeat,
+      d: 1,
+    })
   })
 
   it('resumes a session after an unexpected disconnect', async () => {
@@ -162,7 +175,7 @@ describe('GatewayClient', () => {
     sockets[0].receive({
       op: GatewayOpcode.Dispatch,
       s: 42,
-      t: 'ready',
+      t: GatewayEventType.Ready,
       d: { session_id: 'session-1' },
     })
     sockets[0].fail()
@@ -174,6 +187,7 @@ describe('GatewayClient', () => {
     expect(sockets[1].sent).toEqual([
       {
         op: GatewayOpcode.Resume,
+        t: GatewayEventType.Resume,
         d: { token: 'refreshed-token', session_id: 'session-1', seq: 42 },
       },
     ])
@@ -181,7 +195,7 @@ describe('GatewayClient', () => {
     sockets[1].receive({
       op: GatewayOpcode.Dispatch,
       s: 48,
-      t: 'resumed',
+      t: GatewayEventType.Resumed,
       d: { session_id: 'session-1' },
     })
     expect(client.state).toBe('ready')
@@ -197,7 +211,7 @@ describe('GatewayClient', () => {
     sockets[0].receive({
       op: GatewayOpcode.Dispatch,
       s: 2,
-      t: 'ready',
+      t: GatewayEventType.Ready,
       d: { session_id: 'session-1' },
     })
     sockets[0].fail()
@@ -222,7 +236,7 @@ describe('GatewayClient', () => {
     sockets[0].receive({
       op: GatewayOpcode.Dispatch,
       s: 1,
-      t: 'ready',
+      t: GatewayEventType.Ready,
       d: { session_id: 'session-1' },
     })
 
@@ -232,6 +246,27 @@ describe('GatewayClient', () => {
 
     expect(client.state).toBe('reconnecting')
     expect(errors.mock.calls.at(-1)?.[0]).toMatchObject({ code: 'heartbeat_timeout' })
+    vi.runOnlyPendingTimers()
+    expect(sockets).toHaveLength(2)
+  })
+
+  it('reconnects when a lifecycle opcode has the wrong event type', async () => {
+    vi.useFakeTimers()
+    const { client, sockets } = createHarness()
+    const errors = vi.fn()
+    client.onError(errors)
+
+    client.connect()
+    sockets[0].open()
+    sockets[0].receive({
+      op: GatewayOpcode.Hello,
+      t: 'HELLO',
+      d: { heartbeat_interval_ms: 1_000, gateway_id: 'gw-1' },
+    })
+
+    expect(client.state).toBe('reconnecting')
+    expect(sockets[0].sent).toEqual([])
+    expect(errors).toHaveBeenCalledWith(expect.objectContaining({ code: 'invalid_event_type' }))
     vi.runOnlyPendingTimers()
     expect(sockets).toHaveLength(2)
   })
