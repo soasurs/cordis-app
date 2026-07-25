@@ -29,6 +29,7 @@ import type {
 
 export interface GuildSummary {
   createdAt: number
+  description: string
   iconAssetId: string
   id: string
   name: string
@@ -207,6 +208,7 @@ export function upsertGuildFromApi(queryClient: QueryClient, guild: Guild) {
 export function upsertGuildFromGateway(queryClient: QueryClient, guild: GuildPayload) {
   upsertGuild(queryClient, {
     createdAt: guild.created_at,
+    description: guild.description,
     iconAssetId: guild.icon_asset_id,
     id: guild.id,
     name: guild.name,
@@ -283,6 +285,7 @@ function upsertByRevision<T extends { id: string; revision: number }>(current: T
 function toGuildSummary(guild: GatewayReadyData['guilds'][number]): GuildSummary {
   return {
     createdAt: guild.created_at,
+    description: guild.description,
     iconAssetId: guild.icon_asset_id,
     id: guild.id,
     name: guild.name,

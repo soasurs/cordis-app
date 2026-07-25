@@ -93,6 +93,7 @@ const readyData = {
         },
       ],
       created_at: 1_000,
+      description: 'A community for thoughtful tools.',
       icon_asset_id: '0',
       id: '42',
       member_role_ids: [],
@@ -148,9 +149,10 @@ describe('GatewayProvider', () => {
       }),
     )
     expect(queryClient.getQueryData(gatewayReadyQueryKey)).toEqual(readyData)
-    expect(queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.[0]?.name).toBe(
-      'Cordis Studio',
-    )
+    expect(queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.[0]).toMatchObject({
+      description: 'A community for thoughtful tools.',
+      name: 'Cordis Studio',
+    })
     expect(
       queryClient.getQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('42'))?.[0]?.name,
     ).toBe('general')
@@ -260,6 +262,7 @@ describe('GatewayProvider', () => {
       connection.dispatch({
         data: {
           created_at: 2_000,
+          description: 'Design-focused workspace',
           icon_asset_id: '0',
           id: '52',
           name: 'Design Team',
@@ -274,6 +277,10 @@ describe('GatewayProvider', () => {
     expect(
       queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.map((guild) => guild.name),
     ).toEqual(['Cordis Studio', 'Design Team'])
+    expect(
+      queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.find((guild) => guild.id === '52')
+        ?.description,
+    ).toBe('Design-focused workspace')
 
     act(() =>
       connection.dispatch({

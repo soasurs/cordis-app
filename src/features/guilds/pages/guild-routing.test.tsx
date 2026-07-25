@@ -141,6 +141,7 @@ function createQueryClient() {
   queryClient.setQueryData(guildsQueryKey, [
     {
       createdAt: 1_000,
+      description: '',
       iconAssetId: '0',
       id: '42',
       name: 'Cordis Studio',

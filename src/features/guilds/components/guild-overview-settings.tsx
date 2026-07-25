@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getApiErrorMessage } from '@/api/errors'
 import { updateGuild } from '@/api/guild'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { TextInput } from '@/components/ui/text-input'
 
 import { upsertGuildFromApi, type GuildSummary } from '../guild-queries'
@@ -12,15 +13,21 @@ import { getGuildFieldError, updateGuildSchema, type UpdateGuildFormValues } fro
 export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
   const queryClient = useQueryClient()
   const mutation = useMutation({
-    mutationFn: ({ name }: UpdateGuildFormValues) => updateGuild(guild.id, name),
+    mutationFn: (details: UpdateGuildFormValues) => updateGuild(guild.id, details),
   })
   const form = useForm({
-    defaultValues: { name: guild.name } satisfies UpdateGuildFormValues,
+    defaultValues: {
+      description: guild.description,
+      name: guild.name,
+    } satisfies UpdateGuildFormValues,
     validators: { onSubmit: updateGuildSchema },
     onSubmit: async ({ value }) => {
       try {
         const updatedGuild = await mutation.mutateAsync(updateGuildSchema.parse(value))
-        form.reset({ name: updatedGuild.name })
+        form.reset({
+          description: updatedGuild.description,
+          name: updatedGuild.name,
+        })
         upsertGuildFromApi(queryClient, updatedGuild)
       } catch {
         // The mutation error is rendered below while the form remains available.
@@ -41,7 +48,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
           Community overview
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Choose the name members see throughout Cordis.
+          Choose the name and description members see throughout Cordis.
         </p>
       </div>
 
@@ -56,25 +63,46 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
       >
         <GuildOverviewStatus error={error} saved={mutation.isSuccess} />
 
-        <form.Field name="name">
-          {(field) => (
-            <TextInput
-              required
-              autoComplete="off"
-              disabled={mutation.isPending}
-              error={getGuildFieldError(field.state.meta.errors)}
-              hint="This name appears in the community rail, channel list, and member views."
-              label="Community name"
-              name={field.name}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => {
-                if (mutation.isError || mutation.isSuccess) mutation.reset()
-                field.handleChange(event.target.value)
-              }}
-            />
-          )}
-        </form.Field>
+        <div className="grid gap-5">
+          <form.Field name="name">
+            {(field) => (
+              <TextInput
+                required
+                autoComplete="off"
+                disabled={mutation.isPending}
+                error={getGuildFieldError(field.state.meta.errors)}
+                hint="This name appears in the community rail, channel list, and member views."
+                label="Community name"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => {
+                  if (mutation.isError || mutation.isSuccess) mutation.reset()
+                  field.handleChange(event.target.value)
+                }}
+              />
+            )}
+          </form.Field>
+
+          <form.Field name="description">
+            {(field) => (
+              <Textarea
+                autoComplete="off"
+                disabled={mutation.isPending}
+                error={getGuildFieldError(field.state.meta.errors)}
+                hint="Shown on invites and the community profile. Leave blank for no description."
+                label="Description"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => {
+                  if (mutation.isError || mutation.isSuccess) mutation.reset()
+                  field.handleChange(event.target.value)
+                }}
+              />
+            )}
+          </form.Field>
+        </div>
 
         <div className="mt-6 flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
           <Button
@@ -83,15 +111,24 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
             variant="ghost"
             onClick={() => {
               mutation.reset()
-              form.reset({ name: guild.name })
+              form.reset({
+                description: guild.description,
+                name: guild.name,
+              })
             }}
           >
             Reset
           </Button>
-          <form.Subscribe selector={(state) => [state.isSubmitting, state.values.name] as const}>
-            {([isSubmitting, name]) => (
+          <form.Subscribe
+            selector={(state) =>
+              [state.isSubmitting, state.values.description, state.values.name] as const
+            }
+          >
+            {([isSubmitting, description, name]) => (
               <Button
-                disabled={name.trim() === guild.name}
+                disabled={
+                  name.trim() === guild.name && description.trim() === guild.description
+                }
                 loading={mutation.isPending || isSubmitting}
                 type="submit"
               >
