@@ -6,6 +6,19 @@ export const createGuildSchema = z.object({
 
 export type CreateGuildFormValues = z.infer<typeof createGuildSchema>
 
+export const updateGuildSchema = z.object({
+  name: z.string().trim().min(1, 'Enter a community name'),
+})
+
+export type UpdateGuildFormValues = z.infer<typeof updateGuildSchema>
+
+export const guildRoleSchema = z.object({
+  name: z.string().trim().min(1, 'Enter a role name'),
+  permissions: z.string().regex(/^\d+$/, 'Role permissions are invalid'),
+})
+
+export type GuildRoleFormValues = z.infer<typeof guildRoleSchema>
+
 export const createGuildChannelSchema = z.object({
   name: z.string().trim().min(1, 'Enter a channel name'),
   type: z.enum(['category', 'text', 'voice']),

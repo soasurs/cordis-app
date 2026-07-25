@@ -10,8 +10,12 @@ import {
 } from '@/gateway'
 import {
   guildChannelsQueryKey,
+  guildMemberRolesQueryKey,
+  guildMembersQueryKey,
+  guildRolesQueryKey,
   guildsQueryKey,
   type GuildChannelSummary,
+  type GuildRoleSummary,
   type GuildSummary,
 } from '@/features/guilds/guild-queries'
 
@@ -96,7 +100,19 @@ const readyData = {
       owner_id: '7',
       permission_overwrites: [],
       revision: 1,
-      roles: [],
+      roles: [
+        {
+          created_at: 1_000,
+          guild_id: '42',
+          id: '50',
+          is_default: true,
+          name: 'Everyone',
+          permissions: '1',
+          position: 0,
+          revision: 1,
+          updated_at: 1_000,
+        },
+      ],
       updated_at: 1_000,
     },
   ],
@@ -138,6 +154,107 @@ describe('GatewayProvider', () => {
     expect(
       queryClient.getQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('42'))?.[0]?.name,
     ).toBe('general')
+    expect(queryClient.getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))?.[0]?.name).toBe(
+      'Everyone',
+    )
+
+    act(() =>
+      connection.dispatch({
+        data: {
+          created_at: 2_000,
+          guild_id: '42',
+          id: '51',
+          is_default: false,
+          name: 'Helpers',
+          permissions: '2',
+          position: 1,
+          revision: 1,
+          updated_at: 2_000,
+        },
+        sequence: 2,
+        type: 'guild.role.created',
+      }),
+    )
+    expect(
+      queryClient
+        .getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))
+        ?.find((role) => role.id === '51'),
+    ).toMatchObject({ name: 'Helpers', permissions: '2' })
+
+    act(() =>
+      connection.dispatch({
+        data: {
+          created_at: 2_000,
+          guild_id: '42',
+          id: '51',
+          is_default: false,
+          name: 'Moderators',
+          permissions: '6',
+          position: 1,
+          revision: 2,
+          updated_at: 2_500,
+        },
+        sequence: 3,
+        type: 'guild.role.updated',
+      }),
+    )
+    expect(
+      queryClient
+        .getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))
+        ?.find((role) => role.id === '51'),
+    ).toMatchObject({ name: 'Moderators', permissions: '6', revision: 2 })
+
+    act(() =>
+      connection.dispatch({
+        data: { deleted_at: 3_000, guild_id: '42', id: '51', revision: 3 },
+        sequence: 4,
+        type: 'guild.role.deleted',
+      }),
+    )
+    expect(
+      queryClient
+        .getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))
+        ?.some((role) => role.id === '51'),
+    ).toBe(false)
+
+    queryClient.setQueryData(guildMembersQueryKey('42'), {
+      pageParams: [undefined],
+      pages: [{ members: [] }],
+    })
+    expect(queryClient.getQueryState(guildMembersQueryKey('42'))?.isInvalidated).toBe(false)
+    act(() =>
+      connection.dispatch({
+        data: {
+          guild_id: '42',
+          joined_at: 1_000,
+          nickname: 'Alex',
+          revision: 2,
+          updated_at: 3_000,
+          user_id: '7',
+        },
+        sequence: 5,
+        type: 'guild.member.updated',
+      }),
+    )
+    expect(queryClient.getQueryState(guildMembersQueryKey('42'))?.isInvalidated).toBe(true)
+
+    queryClient.setQueryData(guildMemberRolesQueryKey('42', '7'), [])
+    expect(queryClient.getQueryState(guildMemberRolesQueryKey('42', '7'))?.isInvalidated).toBe(
+      false,
+    )
+    act(() =>
+      connection.dispatch({
+        data: {
+          guild_id: '42',
+          role_ids: ['50'],
+          updated_at: 3_000,
+          user_id: '7',
+        },
+        sequence: 6,
+        type: 'guild.member.roles.updated',
+      }),
+    )
+    expect(queryClient.getQueryState(guildMemberRolesQueryKey('42', '7'))?.isInvalidated).toBe(true)
 
     act(() =>
       connection.dispatch({
@@ -150,7 +267,7 @@ describe('GatewayProvider', () => {
           revision: 1,
           updated_at: 2_000,
         },
-        sequence: 2,
+        sequence: 7,
         type: 'guild.created',
       }),
     )
@@ -172,7 +289,7 @@ describe('GatewayProvider', () => {
           type: 1,
           updated_at: 2_000,
         },
-        sequence: 3,
+        sequence: 7,
         type: 'guild.channel.created',
       }),
     )
@@ -194,7 +311,7 @@ describe('GatewayProvider', () => {
           type: 1,
           updated_at: 2_500,
         },
-        sequence: 4,
+        sequence: 8,
         type: 'guild.channel.updated',
       }),
     )
@@ -204,10 +321,13 @@ describe('GatewayProvider', () => {
         ?.find((channel) => channel.id === '53'),
     ).toMatchObject({ parentId: '54', position: 2, revision: 2 })
 
+    queryClient.setQueryData(guildRolesQueryKey('52'), [])
+    queryClient.setQueryData(guildMembersQueryKey('52'), { pageParams: [], pages: [] })
+
     act(() =>
       connection.dispatch({
         data: { id: '52', revision: 2, deleted_at: 3_000 },
-        sequence: 5,
+        sequence: 9,
         type: 'guild.deleted',
       }),
     )
@@ -215,6 +335,19 @@ describe('GatewayProvider', () => {
       queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.map((guild) => guild.id),
     ).toEqual(['42'])
     expect(queryClient.getQueryData(guildChannelsQueryKey('52'))).toBeUndefined()
+    expect(queryClient.getQueryData(guildRolesQueryKey('52'))).toBeUndefined()
+    expect(queryClient.getQueryData(guildMembersQueryKey('52'))).toBeUndefined()
+
+    act(() =>
+      connection.dispatch({
+        data: { ...readyData, guilds: [] },
+        sequence: 10,
+        type: 'READY',
+      }),
+    )
+    expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toBeUndefined()
+    expect(queryClient.getQueryData(guildRolesQueryKey('42'))).toBeUndefined()
+    expect(queryClient.getQueryData(guildMembersQueryKey('42'))).toBeUndefined()
 
     view.unmount()
     expect(connection.disconnect).toHaveBeenCalledOnce()

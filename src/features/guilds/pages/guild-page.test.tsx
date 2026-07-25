@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { authSessionQueryKey } from '@/features/auth/auth-session'
+
 import {
   guildChannelsQueryKey,
   guildsQueryKey,
@@ -220,6 +222,19 @@ describe('GuildPage', () => {
     expect(onSelectChannel).toHaveBeenCalledWith('48')
   })
 
+  it('opens community settings from the community menu for the owner', async () => {
+    const queryClient = createQueryClient()
+    const onOpenSettings = vi.fn()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenSettings })
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Community menu' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Community settings' }))
+
+    expect(onOpenSettings).toHaveBeenCalledOnce()
+  })
+
   it('creates a top-level category from the community menu without selecting it', async () => {
     const queryClient = createQueryClient()
     const onSelectChannel = vi.fn()
@@ -261,13 +276,21 @@ function createQueryClient() {
       queries: { retry: false },
     },
   })
+  queryClient.setQueryData(authSessionQueryKey, {
+    profile: { name: 'Alex Chen', username: 'alex_chen' },
+    user: { email: 'alex@example.com', userId: 7n },
+  })
   queryClient.setQueryData(guildsQueryKey, [guild])
   return queryClient
 }
 
 function renderGuildPage(
   queryClient: QueryClient,
-  props: { channelId?: string; onSelectChannel?: (channelId: string) => void } = {},
+  props: {
+    channelId?: string
+    onOpenSettings?: () => void
+    onSelectChannel?: (channelId: string) => void
+  } = {},
 ) {
   render(
     <QueryClientProvider client={queryClient}>
