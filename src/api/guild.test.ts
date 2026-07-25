@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const guildClient = vi.hoisted(() => ({
+  abortGuildIconUpload: vi.fn(),
   addGuildMemberRole: vi.fn(),
+  completeGuildIconUpload: vi.fn(),
   createGuild: vi.fn(),
   createGuildChannel: vi.fn(),
+  createGuildIconUpload: vi.fn(),
   createGuildRole: vi.fn(),
   deleteGuildRole: vi.fn(),
   listGuildChannels: vi.fn(),
@@ -20,11 +23,14 @@ const guildClient = vi.hoisted(() => ({
 vi.mock('@connectrpc/connect', () => ({
   createClient: () => guildClient,
 }))
-vi.mock('./client', () => ({ apiTransport: {} }))
+vi.mock('@/api/client', () => ({ apiTransport: {} }))
 
 import {
+  abortGuildIconUpload,
   addGuildMemberRole,
+  completeGuildIconUpload,
   createGuildChannel,
+  createGuildIconUpload,
   createGuildRole,
   deleteGuildRole,
   listGuildChannels,
@@ -36,7 +42,7 @@ import {
   removeGuildMemberRole,
   updateGuild,
   updateGuildRole,
-} from './guild'
+} from '@/api/guild'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -411,6 +417,108 @@ describe('guild API', () => {
         { channelId: 42n, position: 2 },
       ],
     })
+  })
+
+  it('creates a guild icon upload contract', async () => {
+    guildClient.createGuildIconUpload.mockResolvedValue({
+      expiresAt: 1_800_000n,
+      presignedUrl: 'https://storage.example/upload',
+      requestHeaders: {
+        'Content-Length': '12',
+        'Content-Type': 'image/png',
+      },
+      uploadId: 99n,
+    })
+
+    await expect(
+      createGuildIconUpload('42', {
+        contentType: 'image/png',
+        expectedSize: 12,
+      }),
+    ).resolves.toEqual({
+      expiresAt: 1_800_000,
+      presignedUrl: 'https://storage.example/upload',
+      requestHeaders: {
+        'Content-Length': '12',
+        'Content-Type': 'image/png',
+      },
+      uploadId: '99',
+    })
+    expect(guildClient.createGuildIconUpload).toHaveBeenCalledWith({
+      contentType: 'image/png',
+      expectedSize: 12n,
+      guildId: 42n,
+    })
+  })
+
+  it('completes a guild icon upload and maps the updated guild', async () => {
+    guildClient.completeGuildIconUpload.mockResolvedValue({
+      guild: {
+        createdAt: 1_000n,
+        description: 'A community for thoughtful tools.',
+        iconAssetId: 99n,
+        id: 42n,
+        name: 'Cordis Community',
+        ownerId: 7n,
+        revision: 3n,
+        updatedAt: 3_000n,
+      },
+    })
+
+    await expect(completeGuildIconUpload('42', '99')).resolves.toEqual({
+      createdAt: 1_000,
+      description: 'A community for thoughtful tools.',
+      iconAssetId: '99',
+      id: '42',
+      name: 'Cordis Community',
+      ownerId: '7',
+      revision: 3,
+      updatedAt: 3_000,
+    })
+    expect(guildClient.completeGuildIconUpload).toHaveBeenCalledWith({
+      guildId: 42n,
+      uploadId: 99n,
+    })
+  })
+
+  it('aborts a guild icon upload', async () => {
+    guildClient.abortGuildIconUpload.mockResolvedValue({})
+
+    await expect(abortGuildIconUpload('42', '99')).resolves.toBeUndefined()
+    expect(guildClient.abortGuildIconUpload).toHaveBeenCalledWith({
+      guildId: 42n,
+      uploadId: 99n,
+    })
+  })
+
+  it('rejects invalid guild icon upload identifiers before calling the API', async () => {
+    await expect(
+      createGuildIconUpload('not-an-id', {
+        contentType: 'image/png',
+        expectedSize: 12,
+      }),
+    ).rejects.toThrow('guild id is invalid')
+    await expect(completeGuildIconUpload('42', 'bad')).rejects.toThrow('upload id is invalid')
+    await expect(abortGuildIconUpload('42', 'bad')).rejects.toThrow('upload id is invalid')
+    expect(guildClient.createGuildIconUpload).not.toHaveBeenCalled()
+    expect(guildClient.completeGuildIconUpload).not.toHaveBeenCalled()
+    expect(guildClient.abortGuildIconUpload).not.toHaveBeenCalled()
+  })
+
+  it('rejects invalid expected upload sizes before calling the API', async () => {
+    await expect(
+      createGuildIconUpload('42', {
+        contentType: 'image/png',
+        expectedSize: 0,
+      }),
+    ).rejects.toThrow('expected upload size is invalid')
+    await expect(
+      createGuildIconUpload('42', {
+        contentType: 'image/png',
+        expectedSize: 1.5,
+      }),
+    ).rejects.toThrow('expected upload size is invalid')
+    expect(guildClient.createGuildIconUpload).not.toHaveBeenCalled()
   })
 })
 

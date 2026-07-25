@@ -5,15 +5,16 @@ import { Button } from '@/components/ui/button'
 import { getApiErrorMessage } from '@/api/errors'
 import { authSessionQueryOptions } from '@/features/auth/auth-session'
 
-import { ChannelNavigation } from '../components/channel-navigation'
-import { TextChannelIcon, VoiceChannelIcon } from '../components/channel-icons'
-import { CreateGuildChannelDialog } from '../components/create-guild-channel-dialog'
+import { ChannelNavigation } from '@/features/guilds/components/channel-navigation'
+import { TextChannelIcon, VoiceChannelIcon } from '@/features/guilds/components/channel-icons'
+import { CreateGuildChannelDialog } from '@/features/guilds/components/create-guild-channel-dialog'
+import { GuildIcon } from '@/features/guilds/components/guild-icon'
 import {
   guildChannelsQueryOptions,
   guildsQueryOptions,
   type GuildChannelSummary,
-} from '../guild-queries'
-import { useChannelReordering } from '../use-channel-reordering'
+} from '@/features/guilds/guild-queries'
+import { useChannelReordering } from '@/features/guilds/use-channel-reordering'
 
 interface GuildPageProps {
   channelId?: string
@@ -68,6 +69,8 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
     <main className="flex min-h-0 flex-1 bg-surface">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface-raised sm:flex">
         <GuildHeader
+          guildId={guildId}
+          iconAssetId={guild?.iconAssetId ?? '0'}
           name={guild?.name ?? 'Community'}
           onCreateCategory={() => setCreateChannelTarget({ kind: 'category' })}
           onCreateChannel={() => setCreateChannelTarget({ kind: 'channel' })}
@@ -181,11 +184,15 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
 }
 
 function GuildHeader({
+  guildId,
+  iconAssetId,
   name,
   onCreateCategory,
   onCreateChannel,
   onOpenSettings,
 }: {
+  guildId: string
+  iconAssetId: string
   name: string
   onCreateCategory: () => void
   onCreateChannel: () => void
@@ -194,7 +201,10 @@ function GuildHeader({
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <header className="relative flex h-16 shrink-0 items-center border-b border-line px-4">
+    <header className="relative flex h-16 shrink-0 items-center gap-3 border-b border-line px-4">
+      <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-control border border-line bg-surface text-brand-text">
+        <GuildIcon guildId={guildId} iconAssetId={iconAssetId} name={name} size="header" />
+      </span>
       <div className="min-w-0">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-brand-text">
           Community

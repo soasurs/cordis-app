@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { HomePage } from '@/features/home/pages/home-page'
 
-import { AppShell } from './app-shell'
+import { AppShell } from '@/components/layout/app-shell'
 
 describe('AppShell', () => {
   it('renders the personal home layout for the current user', () => {
@@ -15,6 +15,7 @@ describe('AppShell', () => {
           gatewayStatus={{ errorCode: null, state: 'ready' }}
           guilds={[
             {
+              iconAssetId: '0',
               id: '42',
               name: 'Cordis Studio',
             },

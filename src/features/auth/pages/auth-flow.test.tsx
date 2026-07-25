@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import * as Tooltip from '@radix-ui/react-tooltip'
 import {
   createMemoryHistory,
   createRouter,
@@ -208,7 +209,9 @@ async function renderRoute(entry: string, session: unknown = null): Promise<AnyR
   await router.load()
   render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <Tooltip.Provider>
+        <RouterProvider router={router} />
+      </Tooltip.Provider>
     </QueryClientProvider>,
   )
 
