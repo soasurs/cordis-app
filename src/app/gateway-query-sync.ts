@@ -2,18 +2,22 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import {
   guildsQueryKey,
+  invalidateGuildMemberRolesFromGateway,
+  invalidateGuildMembersFromGateway,
   removeGuildChannelFromGateway,
   removeGuildFromGateway,
+  removeGuildRoleFromGateway,
   replaceGuildsFromReady,
   upsertGuildChannelFromGateway,
   upsertGuildFromGateway,
+  upsertGuildRoleFromGateway,
 } from '@/features/guilds/guild-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
 import { gatewayReadyQueryKey } from './gateway-context'
 
 export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayDispatch) {
-  if (isGatewayDispatch(dispatch, 'READY')) {
+  if (isGatewayDispatch(dispatch, 'ready')) {
     queryClient.setQueryData<GatewayReadyData>(gatewayReadyQueryKey, dispatch.data)
     replaceGuildsFromReady(queryClient, dispatch.data)
     return
@@ -31,6 +35,37 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'guild.deleted')) {
     removeGuildFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (
+    isGatewayDispatch(dispatch, 'guild.member.joined') ||
+    isGatewayDispatch(dispatch, 'guild.member.updated') ||
+    isGatewayDispatch(dispatch, 'guild.member.removed')
+  ) {
+    invalidateGuildMembersFromGateway(queryClient, dispatch.data.guild_id)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'guild.member.roles.updated')) {
+    invalidateGuildMemberRolesFromGateway(
+      queryClient,
+      dispatch.data.guild_id,
+      dispatch.data.user_id,
+    )
+    return
+  }
+
+  if (
+    isGatewayDispatch(dispatch, 'guild.role.created') ||
+    isGatewayDispatch(dispatch, 'guild.role.updated')
+  ) {
+    upsertGuildRoleFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'guild.role.deleted')) {
+    removeGuildRoleFromGateway(queryClient, dispatch.data.guild_id, dispatch.data.id)
     return
   }
 

@@ -11,6 +11,15 @@ export interface CurrentUser {
   user: User
 }
 
+export interface PublicUserProfile {
+  avatarAssetId: string
+  createdAt: number
+  name: string
+  updatedAt: number
+  userId: string
+  username: string
+}
+
 export async function getCurrentUser(): Promise<CurrentUser> {
   const response = await userClient.getCurrentUser({})
 
@@ -21,5 +30,30 @@ export async function getCurrentUser(): Promise<CurrentUser> {
   return {
     profile: response.profile,
     user: response.user,
+  }
+}
+
+export async function getUserProfile(userId: string): Promise<PublicUserProfile> {
+  if (!/^\d+$/.test(userId)) {
+    throw new Error('user id is invalid')
+  }
+
+  const response = await userClient.getUserProfile({ userId: BigInt(userId) })
+
+  if (!response.profile) {
+    throw new Error('user profile response was incomplete')
+  }
+
+  return toPublicUserProfile(response.profile)
+}
+
+export function toPublicUserProfile(profile: UserProfile): PublicUserProfile {
+  return {
+    avatarAssetId: profile.avatarAssetId.toString(),
+    createdAt: Number(profile.createdAt),
+    name: profile.name,
+    updatedAt: Number(profile.updatedAt),
+    userId: profile.userId.toString(),
+    username: profile.username,
   }
 }

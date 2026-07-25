@@ -267,7 +267,7 @@ export class GatewayClient {
     try {
       heartbeatIntervalMs = parseHelloData(data).heartbeat_interval_ms
     } catch (cause) {
-      this.reportError('invalid_hello', 'parse gateway HELLO failed', cause)
+      this.reportError('invalid_hello', 'parse gateway hello failed', cause)
       this.forceReconnect(socket)
       return
     }
@@ -316,10 +316,10 @@ export class GatewayClient {
     }
 
     const sequence = envelope.s ?? this.sessionValue?.sequence ?? 0
-    if (envelope.t === 'READY') {
+    if (envelope.t === 'ready') {
       const sessionId = getReadySessionId(envelope.d)
       if (!sessionId) {
-        this.reportError('invalid_ready', 'gateway READY session id is missing')
+        this.reportError('invalid_ready', 'gateway ready session id is missing')
         return
       }
       this.sessionValue = { sessionId, sequence }
@@ -328,7 +328,7 @@ export class GatewayClient {
       if (this.sessionValue && sequence > this.sessionValue.sequence) {
         this.sessionValue.sequence = sequence
       }
-      if (envelope.t === 'RESUMED') {
+      if (envelope.t === 'resumed') {
         this.markReady()
       }
     }

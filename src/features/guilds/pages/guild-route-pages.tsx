@@ -9,6 +9,12 @@ export function EmptyGuildRoutePage() {
   return (
     <GuildPage
       guildId={guildId}
+      onOpenSettings={() => {
+        void navigate({
+          params: { guildId, section: 'overview' },
+          to: '/guilds/$guildId/settings/$section',
+        })
+      }}
       onSelectChannel={(channelId) => {
         void navigate({
           params: { channelId, guildId },
@@ -29,6 +35,12 @@ export function GuildChannelRoutePage() {
     <GuildPage
       channelId={channelId}
       guildId={guildId}
+      onOpenSettings={() => {
+        void navigate({
+          params: { guildId, section: 'overview' },
+          to: '/guilds/$guildId/settings/$section',
+        })
+      }}
       onSelectChannel={(nextChannelId) => {
         void navigate({
           params: { channelId: nextChannelId, guildId },

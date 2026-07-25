@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { getApiErrorMessage } from '@/api/errors'
+import { authSessionQueryOptions } from '@/features/auth/auth-session'
 
 import { ChannelNavigation } from '../components/channel-navigation'
 import { TextChannelIcon, VoiceChannelIcon } from '../components/channel-icons'
@@ -17,6 +18,7 @@ import { useChannelReordering } from '../use-channel-reordering'
 interface GuildPageProps {
   channelId?: string
   guildId: string
+  onOpenSettings?: () => void
   onSelectChannel?: (channelId: string) => void
 }
 
@@ -29,13 +31,15 @@ const channelType = {
 type CreateChannelTarget =
   { kind: 'category' } | { kind: 'channel'; parentCategory?: GuildChannelSummary }
 
-export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProps) {
+export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel }: GuildPageProps) {
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => new Set())
   const [createChannelTarget, setCreateChannelTarget] = useState<CreateChannelTarget>()
+  const { data: session } = useQuery(authSessionQueryOptions)
   const { data: guilds } = useQuery(guildsQueryOptions)
   const channelsQuery = useQuery(guildChannelsQueryOptions(guildId))
   const channelReordering = useChannelReordering(guildId)
   const guild = guilds?.find((item) => item.id === guildId)
+  const canManageGuild = guild?.ownerId === session?.user.userId.toString()
   const channels = [...(channelsQuery.data ?? [])].sort(compareChannels)
   const selectedChannel = channels.find((channel) => channel.id === channelId)
   const toggleCategory = (categoryId: string) => {
@@ -67,6 +71,7 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
           name={guild?.name ?? 'Community'}
           onCreateCategory={() => setCreateChannelTarget({ kind: 'category' })}
           onCreateChannel={() => setCreateChannelTarget({ kind: 'channel' })}
+          onOpenSettings={canManageGuild ? onOpenSettings : undefined}
         />
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 py-3">
           {channelsQuery.isPending ? <ChannelListSkeleton /> : null}
@@ -92,10 +97,6 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
             />
           ) : null}
         </div>
-        <div className="m-3 rounded-control border border-line bg-surface px-3 py-2.5">
-          <p className="text-xs font-semibold text-ink">Community space</p>
-          <p className="mt-1 text-[0.68rem] leading-4 text-subtle">Settings are coming next.</p>
-        </div>
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col bg-surface">
@@ -103,9 +104,21 @@ export function GuildPage({ channelId, guildId, onSelectChannel }: GuildPageProp
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-7 sm:px-8 sm:py-10">
             <div className="mb-7 sm:hidden">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
-                Channels
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="min-w-0 flex-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
+                  Channels
+                </p>
+                {canManageGuild && onOpenSettings ? (
+                  <Button
+                    aria-label="Open community settings"
+                    size="small"
+                    variant="ghost"
+                    onClick={onOpenSettings}
+                  >
+                    Settings
+                  </Button>
+                ) : null}
+              </div>
               {channelsQuery.isPending ? <ChannelListSkeleton /> : null}
               {channelsQuery.isError ? (
                 <ChannelLoadError
@@ -171,10 +184,12 @@ function GuildHeader({
   name,
   onCreateCategory,
   onCreateChannel,
+  onOpenSettings,
 }: {
   name: string
   onCreateCategory: () => void
   onCreateChannel: () => void
+  onOpenSettings?: () => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -212,12 +227,28 @@ function GuildHeader({
           <div
             role="menu"
             aria-label="Community actions"
-            className="absolute top-14 right-3 z-30 grid w-44 gap-1 rounded-panel border border-line bg-surface-raised p-1.5 shadow-panel"
+            className="absolute top-14 right-3 z-30 grid w-52 gap-1 rounded-panel border border-line bg-surface-raised p-1.5 shadow-panel"
           >
+            {onOpenSettings ? (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onOpenSettings()
+                  }}
+                >
+                  Community settings
+                </button>
+                <div role="separator" className="my-0.5 h-px bg-line" />
+              </>
+            ) : null}
             <button
               type="button"
               role="menuitem"
-              className="rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
+              className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
               onClick={() => {
                 setMenuOpen(false)
                 onCreateChannel()
@@ -228,7 +259,7 @@ function GuildHeader({
             <button
               type="button"
               role="menuitem"
-              className="rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
+              className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
               onClick={() => {
                 setMenuOpen(false)
                 onCreateCategory()

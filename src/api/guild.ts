@@ -1,10 +1,29 @@
 import { createClient } from '@connectrpc/connect'
 
-import { GuildService } from '@/gen/api/v1/guild_pb'
+import {
+  GuildPermission,
+  GuildService,
+  type GuildMember as GuildMemberMessage,
+} from '@/gen/api/v1/guild_pb'
 
 import { apiTransport } from './client'
+import { toPublicUserProfile, type PublicUserProfile } from './user'
 
 const guildClient = createClient(GuildService, apiTransport)
+
+export const guildPermission = {
+  administrator: String(GuildPermission.ADMINISTRATOR),
+  banMembers: String(GuildPermission.BAN_MEMBERS),
+  createInvite: String(GuildPermission.CREATE_INVITE),
+  kickMembers: String(GuildPermission.KICK_MEMBERS),
+  manageChannels: String(GuildPermission.MANAGE_CHANNELS),
+  manageGuild: String(GuildPermission.MANAGE_GUILD),
+  manageMembers: String(GuildPermission.MANAGE_MEMBERS),
+  manageMessages: String(GuildPermission.MANAGE_MESSAGES),
+  manageRoles: String(GuildPermission.MANAGE_ROLES),
+  sendMessages: String(GuildPermission.SEND_MESSAGES),
+  viewChannel: String(GuildPermission.VIEW_CHANNEL),
+} as const
 
 export interface Guild {
   createdAt: number
@@ -25,6 +44,43 @@ export interface GuildChannel {
   revision: number
   topic: string
   type: number
+}
+
+export interface GuildMember {
+  guildId: string
+  joinedAt: number
+  nickname: string
+  profile?: PublicUserProfile
+  revision: number
+  updatedAt: number
+  userId: string
+}
+
+export interface GuildMemberPage {
+  beforeUserId?: string
+  members: GuildMember[]
+}
+
+export interface GuildRole {
+  createdAt: number
+  guildId: string
+  id: string
+  isDefault: boolean
+  name: string
+  permissions: string
+  position: number
+  revision: number
+  updatedAt: number
+}
+
+export interface GuildRoleDetails {
+  name: string
+  permissions: string
+}
+
+export interface GuildRolePosition {
+  position: number
+  roleId: string
 }
 
 interface CreateTextOrVoiceGuildChannelDetails {
@@ -57,15 +113,19 @@ export async function createGuild(name: string): Promise<Guild> {
     throw new Error('create guild response was incomplete')
   }
 
-  return {
-    createdAt: Number(response.guild.createdAt),
-    iconAssetId: response.guild.iconAssetId.toString(),
-    id: response.guild.id.toString(),
-    name: response.guild.name,
-    ownerId: response.guild.ownerId.toString(),
-    revision: Number(response.guild.revision),
-    updatedAt: Number(response.guild.updatedAt),
+  return toGuild(response.guild)
+}
+
+export async function updateGuild(guildId: string, name: string): Promise<Guild> {
+  assertIdentifier(guildId, 'guild')
+
+  const response = await guildClient.updateGuild({ guildId: BigInt(guildId), name })
+
+  if (!response.guild) {
+    throw new Error('update guild response was incomplete')
   }
+
+  return toGuild(response.guild)
 }
 
 export async function listGuildChannels(guildId: string): Promise<GuildChannel[]> {
@@ -74,6 +134,141 @@ export async function listGuildChannels(guildId: string): Promise<GuildChannel[]
   const response = await guildClient.listGuildChannels({ guildId: BigInt(guildId) })
 
   return response.channels.map(toGuildChannel)
+}
+
+export async function listGuildMembers(
+  guildId: string,
+  beforeUserId?: string,
+): Promise<GuildMemberPage> {
+  assertIdentifier(guildId, 'guild')
+  if (beforeUserId) assertIdentifier(beforeUserId, 'member cursor')
+
+  const response = await guildClient.listGuildMembers({
+    beforeUserId: beforeUserId ? BigInt(beforeUserId) : 0n,
+    guildId: BigInt(guildId),
+    limit: 50,
+  })
+
+  return {
+    beforeUserId: response.beforeUserId > 0n ? response.beforeUserId.toString() : undefined,
+    members: response.members.map(toGuildMember),
+  }
+}
+
+export async function listGuildRoles(guildId: string): Promise<GuildRole[]> {
+  assertIdentifier(guildId, 'guild')
+
+  const response = await guildClient.listGuildRoles({ guildId: BigInt(guildId) })
+
+  return response.roles.map(toGuildRole)
+}
+
+export async function createGuildRole(
+  guildId: string,
+  details: GuildRoleDetails,
+): Promise<GuildRole> {
+  assertIdentifier(guildId, 'guild')
+  const permissions = parsePermissions(details.permissions)
+
+  const response = await guildClient.createGuildRole({
+    guildId: BigInt(guildId),
+    name: details.name,
+    permissions,
+  })
+
+  if (!response.role) {
+    throw new Error('create guild role response was incomplete')
+  }
+
+  return toGuildRole(response.role)
+}
+
+export async function updateGuildRole(
+  guildId: string,
+  roleId: string,
+  details: GuildRoleDetails,
+): Promise<GuildRole> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(roleId, 'role')
+  const permissions = parsePermissions(details.permissions)
+
+  const response = await guildClient.updateGuildRole({
+    guildId: BigInt(guildId),
+    name: details.name,
+    permissions,
+    roleId: BigInt(roleId),
+  })
+
+  if (!response.role) {
+    throw new Error('update guild role response was incomplete')
+  }
+
+  return toGuildRole(response.role)
+}
+
+export async function deleteGuildRole(guildId: string, roleId: string): Promise<void> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(roleId, 'role')
+
+  const response = await guildClient.deleteGuildRole({
+    guildId: BigInt(guildId),
+    roleId: BigInt(roleId),
+  })
+
+  if (!response.ok) {
+    throw new Error('delete guild role was not accepted')
+  }
+}
+
+export async function reorderGuildRoles(
+  guildId: string,
+  positions: GuildRolePosition[],
+): Promise<GuildRole[]> {
+  assertIdentifier(guildId, 'guild')
+  for (const item of positions) {
+    assertIdentifier(item.roleId, 'role')
+    if (!Number.isInteger(item.position) || item.position < 0) {
+      throw new Error('role position is invalid')
+    }
+  }
+
+  const response = await guildClient.reorderGuildRoles({
+    guildId: BigInt(guildId),
+    positions: positions.map((item) => ({
+      position: item.position,
+      roleId: BigInt(item.roleId),
+    })),
+  })
+
+  return response.roles.map(toGuildRole)
+}
+
+export async function listGuildMemberRoles(guildId: string, userId: string): Promise<GuildRole[]> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(userId, 'user')
+
+  const response = await guildClient.listGuildMemberRoles({
+    guildId: BigInt(guildId),
+    userId: BigInt(userId),
+  })
+
+  return response.roles.map(toGuildRole)
+}
+
+export async function addGuildMemberRole(
+  guildId: string,
+  userId: string,
+  roleId: string,
+): Promise<void> {
+  await updateGuildMemberRole('add', guildId, userId, roleId)
+}
+
+export async function removeGuildMemberRole(
+  guildId: string,
+  userId: string,
+  roleId: string,
+): Promise<void> {
+  await updateGuildMemberRole('remove', guildId, userId, roleId)
 }
 
 export async function createGuildChannel(
@@ -148,8 +343,101 @@ function toGuildChannel(channel: {
   }
 }
 
+function toGuildMember(member: GuildMemberMessage): GuildMember {
+  return {
+    guildId: member.guildId.toString(),
+    joinedAt: Number(member.joinedAt),
+    nickname: member.nickname,
+    profile: member.profile ? toPublicUserProfile(member.profile) : undefined,
+    revision: Number(member.revision),
+    updatedAt: Number(member.updatedAt),
+    userId: member.userId.toString(),
+  }
+}
+
+function toGuildRole(role: {
+  createdAt: bigint
+  guildId: bigint
+  id: bigint
+  isDefault: boolean
+  name: string
+  permissions: bigint
+  position: number
+  revision: bigint
+  updatedAt: bigint
+}): GuildRole {
+  return {
+    createdAt: Number(role.createdAt),
+    guildId: role.guildId.toString(),
+    id: role.id.toString(),
+    isDefault: role.isDefault,
+    name: role.name,
+    permissions: role.permissions.toString(),
+    position: role.position,
+    revision: Number(role.revision),
+    updatedAt: Number(role.updatedAt),
+  }
+}
+
+function toGuild(guild: {
+  createdAt: bigint
+  iconAssetId: bigint
+  id: bigint
+  name: string
+  ownerId: bigint
+  revision: bigint
+  updatedAt: bigint
+}): Guild {
+  return {
+    createdAt: Number(guild.createdAt),
+    iconAssetId: guild.iconAssetId.toString(),
+    id: guild.id.toString(),
+    name: guild.name,
+    ownerId: guild.ownerId.toString(),
+    revision: Number(guild.revision),
+    updatedAt: Number(guild.updatedAt),
+  }
+}
+
 function assertIdentifier(value: string, field: string) {
   if (!/^\d+$/.test(value)) {
     throw new Error(`${field} id is invalid`)
+  }
+}
+
+async function updateGuildMemberRole(
+  operation: 'add' | 'remove',
+  guildId: string,
+  userId: string,
+  roleId: string,
+) {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(userId, 'user')
+  assertIdentifier(roleId, 'role')
+
+  const request = {
+    guildId: BigInt(guildId),
+    roleId: BigInt(roleId),
+    userId: BigInt(userId),
+  }
+  const response =
+    operation === 'add'
+      ? await guildClient.addGuildMemberRole(request)
+      : await guildClient.removeGuildMemberRole(request)
+
+  if (!response.ok) {
+    throw new Error(`${operation} guild member role was not accepted`)
+  }
+}
+
+function parsePermissions(value: string) {
+  try {
+    const permissions = BigInt(value)
+    if (permissions < 0n || permissions > (1n << 64n) - 1n) {
+      throw new Error('role permissions are invalid')
+    }
+    return permissions
+  } catch {
+    throw new Error('role permissions are invalid')
   }
 }
