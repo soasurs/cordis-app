@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from 'react'
 
-import { BrandMark } from './brand-mark'
+import { BrandMark } from '@/features/auth/components/brand-mark'
 
 export function AuthShell({ children }: PropsWithChildren) {
   return (

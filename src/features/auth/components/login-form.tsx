@@ -4,9 +4,9 @@ import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
-import { getFieldError, loginSchema, type LoginFormValues } from '../validation'
-import { FormAlert } from './form-alert'
-import { PasswordInput } from './password-input'
+import { getFieldError, loginSchema, type LoginFormValues } from '@/features/auth/validation'
+import { FormAlert } from '@/features/auth/components/form-alert'
+import { PasswordInput } from '@/features/auth/components/password-input'
 
 interface LoginFormProps {
   error?: string

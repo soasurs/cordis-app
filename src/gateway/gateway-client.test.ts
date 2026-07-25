@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { GatewayClient, type GatewaySocket } from './gateway-client'
-import { GatewayEventType, GatewayOpcode, type GatewayEnvelope } from './protocol'
+import { GatewayClient, type GatewaySocket } from '@/gateway/gateway-client'
+import { GatewayEventType, GatewayOpcode, type GatewayEnvelope } from '@/gateway/protocol'
 
 class FakeGatewaySocket implements GatewaySocket {
   readyState = 0

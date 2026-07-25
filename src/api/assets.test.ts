@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  putToPresignedUrl,
-  resolveAvatarUrl,
-  resolveGuildIconUrl,
-} from '@/api/assets'
+import { putToPresignedUrl, resolveAvatarUrl, resolveGuildIconUrl } from '@/api/assets'
 
 describe('asset URLs', () => {
   beforeEach(() => {

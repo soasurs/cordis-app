@@ -20,18 +20,18 @@ describe('validateGuildIconFile', () => {
   })
 
   it('rejects unsupported content types', () => {
-    expect(
-      validateGuildIconFile(new File(['x'], 'icon.gif', { type: 'image/gif' })),
-    ).toBe(guildIconValidationMessage.contentType)
+    expect(validateGuildIconFile(new File(['x'], 'icon.gif', { type: 'image/gif' }))).toBe(
+      guildIconValidationMessage.contentType,
+    )
     expect(validateGuildIconFile(new File(['x'], 'icon.bin', { type: '' }))).toBe(
       guildIconValidationMessage.contentType,
     )
   })
 
   it('rejects empty and oversized files', () => {
-    expect(
-      validateGuildIconFile(new File([], 'empty.png', { type: 'image/png' })),
-    ).toBe(guildIconValidationMessage.size)
+    expect(validateGuildIconFile(new File([], 'empty.png', { type: 'image/png' }))).toBe(
+      guildIconValidationMessage.size,
+    )
 
     const oversized = new File([new Uint8Array(GUILD_ICON_MAX_BYTES + 1)], 'big.png', {
       type: 'image/png',

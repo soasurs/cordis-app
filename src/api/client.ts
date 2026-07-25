@@ -1,8 +1,8 @@
 import { Code, ConnectError, type Interceptor } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 
-import { refreshAuthentication } from './refresh'
-import { getAccessToken } from './session'
+import { refreshAuthentication } from '@/api/refresh'
+import { getAccessToken } from '@/api/session'
 
 const authenticationInterceptor: Interceptor = (next) => async (request) => {
   const accessToken = getAccessToken()

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { reorderGuildRoles } from '@/api/guild'
 
-import { type GuildRoleSummary, upsertGuildRolesFromApi } from './guild-queries'
+import { type GuildRoleSummary, upsertGuildRolesFromApi } from '@/features/guilds/guild-queries'
 
 export type GuildRoleMoveDirection = 'down' | 'up'
 

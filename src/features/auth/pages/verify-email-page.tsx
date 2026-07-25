@@ -3,7 +3,7 @@ import { Link, useSearch } from '@tanstack/react-router'
 
 import { confirmEmailVerification, requestEmailVerification } from '@/api/authenticator'
 import { getApiErrorMessage } from '@/api/errors'
-import { EmailVerificationPanel } from '../components/email-verification-panel'
+import { EmailVerificationPanel } from '@/features/auth/components/email-verification-panel'
 
 export function VerifyEmailPage() {
   const { email, token } = useSearch({ from: '/_auth/verify-email' })

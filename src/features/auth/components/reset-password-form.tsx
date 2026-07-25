@@ -2,9 +2,13 @@ import { useForm } from '@tanstack/react-form'
 
 import { Button } from '@/components/ui/button'
 
-import { getFieldError, resetPasswordSchema, type ResetPasswordFormValues } from '../validation'
-import { FormAlert } from './form-alert'
-import { PasswordInput } from './password-input'
+import {
+  getFieldError,
+  resetPasswordSchema,
+  type ResetPasswordFormValues,
+} from '@/features/auth/validation'
+import { FormAlert } from '@/features/auth/components/form-alert'
+import { PasswordInput } from '@/features/auth/components/password-input'
 
 interface ResetPasswordFormProps {
   error?: string

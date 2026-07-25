@@ -9,7 +9,7 @@ vi.mock('@connectrpc/connect', () => ({
 }))
 vi.mock('./client', () => ({ apiTransport: {} }))
 
-import { getUserProfile } from './user'
+import { getUserProfile } from '@/api/user'
 
 beforeEach(() => {
   vi.clearAllMocks()

@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { TextInput } from '@/components/ui/text-input'
-import { ProductSpecimens } from './product-specimens'
+import { ProductSpecimens } from '@/features/design-lab/product-specimens'
 
 type Theme = 'light' | 'dark'
 type ThemePreference = Theme | 'system'

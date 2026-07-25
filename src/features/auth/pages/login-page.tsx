@@ -5,10 +5,10 @@ import { useState } from 'react'
 import { getApiErrorMessage } from '@/api/errors'
 import { login } from '@/api/authenticator'
 import { getCurrentUser } from '@/api/user'
-import { AuthCard } from '../components/auth-card'
-import { LoginForm } from '../components/login-form'
-import type { LoginFormValues } from '../validation'
-import { setAuthSession } from '../auth-session'
+import { AuthCard } from '@/features/auth/components/auth-card'
+import { LoginForm } from '@/features/auth/components/login-form'
+import type { LoginFormValues } from '@/features/auth/validation'
+import { setAuthSession } from '@/features/auth/auth-session'
 
 export function LoginPage() {
   const navigate = useNavigate()

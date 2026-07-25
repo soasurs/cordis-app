@@ -3,9 +3,9 @@ import { useForm } from '@tanstack/react-form'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
-import { getFieldError, registerSchema, type RegisterFormValues } from '../validation'
-import { FormAlert } from './form-alert'
-import { PasswordInput } from './password-input'
+import { getFieldError, registerSchema, type RegisterFormValues } from '@/features/auth/validation'
+import { FormAlert } from '@/features/auth/components/form-alert'
+import { PasswordInput } from '@/features/auth/components/password-input'
 
 interface RegisterFormProps {
   error?: string

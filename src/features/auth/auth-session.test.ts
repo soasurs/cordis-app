@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { authSessionQueryOptions } from './auth-session'
+import { authSessionQueryOptions } from '@/features/auth/auth-session'
 
 const authenticationApi = vi.hoisted(() => ({
   refreshAuthentication: vi.fn(),

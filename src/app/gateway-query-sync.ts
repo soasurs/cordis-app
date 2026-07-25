@@ -14,7 +14,7 @@ import {
 } from '@/features/guilds/guild-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
-import { gatewayReadyQueryKey } from './gateway-context'
+import { gatewayReadyQueryKey } from '@/app/gateway-context'
 
 export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayDispatch) {
   if (isGatewayDispatch(dispatch, 'ready')) {

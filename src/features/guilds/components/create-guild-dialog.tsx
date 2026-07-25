@@ -8,8 +8,12 @@ import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
 
-import { upsertGuildFromApi } from '../guild-queries'
-import { createGuildSchema, getGuildFieldError, type CreateGuildFormValues } from '../validation'
+import { upsertGuildFromApi } from '@/features/guilds/guild-queries'
+import {
+  createGuildSchema,
+  getGuildFieldError,
+  type CreateGuildFormValues,
+} from '@/features/guilds/validation'
 
 interface CreateGuildFormProps {
   error?: string

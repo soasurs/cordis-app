@@ -21,22 +21,18 @@ import {
 } from '@dnd-kit/sortable'
 
 import { getApiErrorMessage } from '@/api/errors'
-
-import { moveGuildChannelInList, type GuildChannelMoveTarget } from '../channel-ordering'
-import type { GuildChannelSummary } from '../guild-queries'
-
+import { GuildChannelType } from '@/api/guild'
+import {
+  moveGuildChannelInList,
+  type GuildChannelMoveTarget,
+} from '@/features/guilds/channel-ordering'
 import {
   CategoryChannelGroup,
   ChannelDragPreview,
   RootChannelDropTarget,
   SortableChannelButton,
-} from './channel-navigation-items'
-
-const channelType = {
-  category: 2,
-  text: 1,
-  voice: 3,
-} as const
+} from '@/features/guilds/components/channel-navigation-items'
+import type { GuildChannelSummary } from '@/features/guilds/guild-queries'
 
 interface ChannelNavigationProps {
   channels: GuildChannelSummary[]
@@ -81,9 +77,9 @@ export function ChannelNavigation({
   const topLevelChannels = channels.filter(
     (channel) =>
       !channel.parentId &&
-      (channel.type === channelType.category ||
-        channel.type === channelType.text ||
-        channel.type === channelType.voice),
+      (channel.type === GuildChannelType.CATEGORY ||
+        channel.type === GuildChannelType.TEXT ||
+        channel.type === GuildChannelType.VOICE),
   )
 
   if (topLevelChannels.length === 0) {
@@ -150,7 +146,7 @@ export function ChannelNavigation({
             {getApiErrorMessage(moveError, 'Unable to move this channel. Please try again.')}
           </p>
         ) : null}
-        {activeChannel && activeChannel.type !== channelType.category ? (
+        {activeChannel && activeChannel.type !== GuildChannelType.CATEGORY ? (
           <RootChannelDropTarget />
         ) : null}
         <SortableContext
@@ -158,17 +154,19 @@ export function ChannelNavigation({
           strategy={verticalListSortingStrategy}
         >
           {topLevelChannels.map((channel) =>
-            channel.type === channelType.category ? (
+            channel.type === GuildChannelType.CATEGORY ? (
               <CategoryChannelGroup
                 key={channel.id}
                 category={channel}
                 channels={channels.filter(
                   (child) =>
                     child.parentId === channel.id &&
-                    (child.type === channelType.text || child.type === channelType.voice),
+                    (child.type === GuildChannelType.TEXT || child.type === GuildChannelType.VOICE),
                 )}
                 collapsed={collapsedCategoryIds.has(channel.id)}
-                dropActive={Boolean(activeChannel && activeChannel.type !== channelType.category)}
+                dropActive={Boolean(
+                  activeChannel && activeChannel.type !== GuildChannelType.CATEGORY,
+                )}
                 dragDisabled={movePending}
                 dropVisual={visibleDropVisual}
                 onCreateChannel={onCreateChannel}
@@ -205,7 +203,7 @@ function resolveDropTarget(
   const overContainer = getDropContainer(over.data.current)
   if (overContainer) {
     if (overContainer.parentId) {
-      return draggedChannel.type === channelType.category
+      return draggedChannel.type === GuildChannelType.CATEGORY
         ? undefined
         : { parentId: overContainer.parentId, placement: 'end' }
     }
@@ -219,7 +217,10 @@ function resolveDropTarget(
 
   const overChannel = getDragChannel(over.data.current)
   if (!overChannel || overChannel.id === draggedChannel.id) return undefined
-  if (draggedChannel.type !== channelType.category && overChannel.type === channelType.category) {
+  if (
+    draggedChannel.type !== GuildChannelType.CATEGORY &&
+    overChannel.type === GuildChannelType.CATEGORY
+  ) {
     return { parentId: overChannel.id, placement: 'end' }
   }
   return {

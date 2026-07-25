@@ -10,12 +10,17 @@ import {
   guildsQueryKey,
   type GuildChannelSummary,
   type GuildSummary,
-} from '../guild-queries'
+} from '@/features/guilds/guild-queries'
 
-import { GuildPage } from './guild-page'
+import { GuildPage } from '@/features/guilds/pages/guild-page'
 
 const guildApi = vi.hoisted(() => ({
   createGuildChannel: vi.fn(),
+  GuildChannelType: {
+    CATEGORY: 2,
+    TEXT: 1,
+    VOICE: 3,
+  },
   listGuildChannels: vi.fn(),
 }))
 

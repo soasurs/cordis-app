@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { PublicErrorInfoSchema } from '@/gen/api/v1/error_pb'
 
-import { getApiErrorMessage } from './errors'
+import { getApiErrorMessage } from '@/api/errors'
 
 describe('getApiErrorMessage', () => {
   it('uses the server-provided public error message', () => {

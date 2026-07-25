@@ -131,7 +131,9 @@ describe('GuildIconCropDialog', () => {
   })
 
   it('keeps the editor open when cropping fails', async () => {
-    cropApi.cropImageToFile.mockRejectedValue(new Error('Unable to crop this image. Please try again.'))
+    cropApi.cropImageToFile.mockRejectedValue(
+      new Error('Unable to crop this image. Please try again.'),
+    )
     render(
       <GuildIconCropDialog
         file={new File(['source'], 'icon.png', { type: 'image/png' })}

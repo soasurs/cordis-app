@@ -3,14 +3,17 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
 
-import { guildMembersInfiniteQueryOptions, type GuildSummary } from '../guild-queries'
-import { GuildMemberRow } from './guild-member-row'
+import {
+  guildMembersInfiniteQueryOptions,
+  type GuildSummary,
+} from '@/features/guilds/guild-queries'
+import { GuildMemberRow } from '@/features/guilds/components/guild-member-row'
 import {
   SettingsEmptyState,
   SettingsListError,
   SettingsListSkeleton,
   SettingsPageHeading,
-} from './guild-settings-list-states'
+} from '@/features/guilds/components/guild-settings-list-states'
 
 export function GuildMembersSettings({ guild }: { guild: GuildSummary }) {
   const membersQuery = useInfiniteQuery(guildMembersInfiniteQueryOptions(guild.id))

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
 import { userProfileQueryOptions } from '@/features/users/user-queries'
 
-import type { GuildMemberSummary } from '../guild-queries'
+import type { GuildMemberSummary } from '@/features/guilds/guild-queries'
 
 interface GuildMemberIdentityProps {
   guildOwnerId?: string

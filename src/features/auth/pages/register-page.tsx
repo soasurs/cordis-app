@@ -3,9 +3,9 @@ import { Link, useNavigate } from '@tanstack/react-router'
 
 import { registerAccount } from '@/api/authenticator'
 import { getApiErrorMessage } from '@/api/errors'
-import { AuthCard } from '../components/auth-card'
-import { RegisterForm } from '../components/register-form'
-import type { RegisterFormValues } from '../validation'
+import { AuthCard } from '@/features/auth/components/auth-card'
+import { RegisterForm } from '@/features/auth/components/register-form'
+import type { RegisterFormValues } from '@/features/auth/validation'
 
 export function RegisterPage() {
   const navigate = useNavigate()

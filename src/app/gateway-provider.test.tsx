@@ -19,8 +19,8 @@ import {
   type GuildSummary,
 } from '@/features/guilds/guild-queries'
 
-import { gatewayReadyQueryKey, useGatewayStatus } from './gateway-context'
-import { GatewayProvider } from './gateway-provider'
+import { gatewayReadyQueryKey, useGatewayStatus } from '@/app/gateway-context'
+import { GatewayProvider } from '@/app/gateway-provider'
 
 class FakeGatewayConnection {
   state: GatewayConnectionState = 'idle'

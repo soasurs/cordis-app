@@ -22,6 +22,11 @@ const guildApi = vi.hoisted(() => ({
   createGuild: vi.fn(),
   createGuildRole: vi.fn(),
   deleteGuildRole: vi.fn(),
+  GuildChannelType: {
+    CATEGORY: 2,
+    TEXT: 1,
+    VOICE: 3,
+  },
   guildPermission: {
     administrator: '1',
     banMembers: '512',

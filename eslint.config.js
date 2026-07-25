@@ -19,5 +19,18 @@ export default defineConfig([
       ecmaVersion: 2022,
       globals: globals.browser,
     },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^\\.\\.?/',
+              message: 'Use the `@/` path alias instead of relative imports.',
+            },
+          ],
+        },
+      ],
+    },
   },
 ])

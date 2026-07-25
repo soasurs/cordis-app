@@ -1,5 +1,5 @@
-import type { GuildMemberSummary } from '../guild-queries'
-import { GuildMemberIdentity } from './guild-member-identity'
+import type { GuildMemberSummary } from '@/features/guilds/guild-queries'
+import { GuildMemberIdentity } from '@/features/guilds/components/guild-member-identity'
 
 interface GuildMemberRowProps {
   guildOwnerId: string

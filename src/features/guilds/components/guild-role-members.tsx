@@ -10,13 +10,13 @@ import {
   setGuildMemberRoleAssignment,
   type GuildMemberSummary,
   type GuildRoleSummary,
-} from '../guild-queries'
-import { GuildMemberIdentity } from './guild-member-identity'
+} from '@/features/guilds/guild-queries'
+import { GuildMemberIdentity } from '@/features/guilds/components/guild-member-identity'
 import {
   SettingsEmptyState,
   SettingsListError,
   SettingsListSkeleton,
-} from './guild-settings-list-states'
+} from '@/features/guilds/components/guild-settings-list-states'
 
 export function GuildRoleMembers({ role }: { role: GuildRoleSummary }) {
   const membersQuery = useInfiniteQuery(guildMembersInfiniteQueryOptions(role.guildId))

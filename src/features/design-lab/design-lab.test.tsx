@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import { DesignLab } from './design-lab'
+import { DesignLab } from '@/features/design-lab/design-lab'
 
 describe('DesignLab', () => {
   it('lets the reviewer try the conversation specimen', async () => {

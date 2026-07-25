@@ -5,15 +5,15 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
-import type { GuildChannelMoveTarget } from '../channel-ordering'
-import type { GuildChannelSummary } from '../guild-queries'
-
-import { ChevronIcon, DragHandleIcon, TextChannelIcon, VoiceChannelIcon } from './channel-icons'
-
-const channelType = {
-  category: 2,
-  voice: 3,
-} as const
+import { GuildChannelType } from '@/api/guild'
+import type { GuildChannelMoveTarget } from '@/features/guilds/channel-ordering'
+import {
+  ChevronIcon,
+  DragHandleIcon,
+  TextChannelIcon,
+  VoiceChannelIcon,
+} from '@/features/guilds/components/channel-icons'
+import type { GuildChannelSummary } from '@/features/guilds/guild-queries'
 
 interface DropVisual {
   overId?: string
@@ -161,7 +161,7 @@ export function SortableChannelButton({
         listeners={listeners}
         onSelectChannel={onSelectChannel}
         selected={selected}
-        type={channel.type === channelType.voice ? 'voice' : 'text'}
+        type={channel.type === GuildChannelType.VOICE ? 'voice' : 'text'}
       />
       {indicatorEdge === 'after' ? <InsertionIndicator edge="after" /> : null}
     </div>
@@ -192,9 +192,9 @@ export function ChannelDragPreview({ channel }: { channel: GuildChannelSummary }
   return (
     <div className="flex min-h-9 w-52 items-center gap-2 rounded-control border border-line bg-surface-raised px-2.5 text-sm font-medium text-ink shadow-panel">
       <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center text-subtle">
-        {channel.type === channelType.category ? (
+        {channel.type === GuildChannelType.CATEGORY ? (
           <ChevronIcon collapsed={false} />
-        ) : channel.type === channelType.voice ? (
+        ) : channel.type === GuildChannelType.VOICE ? (
           <VoiceChannelIcon />
         ) : (
           <TextChannelIcon />

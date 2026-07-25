@@ -2,7 +2,10 @@ import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 
-import { guildSettingsSections, type GuildSettingsSection } from '../guild-settings-types'
+import {
+  guildSettingsSections,
+  type GuildSettingsSection,
+} from '@/features/guilds/guild-settings-types'
 
 interface GuildSettingsLayoutProps {
   children: ReactNode

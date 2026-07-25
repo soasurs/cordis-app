@@ -4,7 +4,7 @@ import {
   guildPermissionGroups,
   hasGuildPermission,
   toggleGuildPermission,
-} from './guild-permissions'
+} from '@/features/guilds/components/guild-permissions'
 
 interface GuildRolePermissionsProps {
   disabled?: boolean

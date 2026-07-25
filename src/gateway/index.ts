@@ -1,2 +1,2 @@
-export * from './gateway-client'
-export * from './protocol'
+export * from '@/gateway/gateway-client'
+export * from '@/gateway/protocol'

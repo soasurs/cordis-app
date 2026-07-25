@@ -2,12 +2,15 @@ import { useQuery } from '@tanstack/react-query'
 
 import { authSessionQueryOptions } from '@/features/auth/auth-session'
 
-import { GuildMembersSettings } from '../components/guild-members-settings'
-import { GuildOverviewSettings } from '../components/guild-overview-settings'
-import { GuildRolesSettings } from '../components/guild-roles-settings'
-import { GuildSettingsLayout, GuildSettingsMessage } from '../components/guild-settings-layout'
-import { guildsQueryOptions } from '../guild-queries'
-import type { GuildSettingsSection } from '../guild-settings-types'
+import { GuildMembersSettings } from '@/features/guilds/components/guild-members-settings'
+import { GuildOverviewSettings } from '@/features/guilds/components/guild-overview-settings'
+import { GuildRolesSettings } from '@/features/guilds/components/guild-roles-settings'
+import {
+  GuildSettingsLayout,
+  GuildSettingsMessage,
+} from '@/features/guilds/components/guild-settings-layout'
+import { guildsQueryOptions } from '@/features/guilds/guild-queries'
+import type { GuildSettingsSection } from '@/features/guilds/guild-settings-types'
 
 interface GuildSettingsPageProps {
   guildId: string

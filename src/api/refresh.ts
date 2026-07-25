@@ -2,8 +2,12 @@ import { Code, ConnectError, createClient } from '@connectrpc/connect'
 
 import { AuthenticatorService } from '@/gen/api/v1/authenticator_pb'
 
-import { clearAuthenticationTokens, getRefreshToken, storeAuthenticationTokens } from './session'
-import { publicApiTransport } from './transport'
+import {
+  clearAuthenticationTokens,
+  getRefreshToken,
+  storeAuthenticationTokens,
+} from '@/api/session'
+import { publicApiTransport } from '@/api/transport'
 
 const refreshClient = createClient(AuthenticatorService, publicApiTransport)
 

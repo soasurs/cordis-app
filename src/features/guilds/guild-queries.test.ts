@@ -8,7 +8,7 @@ import {
   guildsQueryKey,
   replaceGuildsFromReady,
   type GuildSummary,
-} from './guild-queries'
+} from '@/features/guilds/guild-queries'
 
 describe('guildMembersInfiniteQueryOptions', () => {
   it('continues from an opaque next cursor and stops when it is absent', () => {
@@ -16,12 +16,7 @@ describe('guildMembersInfiniteQueryOptions', () => {
 
     expect(options.initialPageParam).toBeUndefined()
     expect(
-      options.getNextPageParam(
-        { members: [], nextCursor: 'opaque-next' },
-        [],
-        undefined,
-        [],
-      ),
+      options.getNextPageParam({ members: [], nextCursor: 'opaque-next' }, [], undefined, []),
     ).toBe('opaque-next')
     expect(options.getNextPageParam({ members: [] }, [], undefined, [])).toBeUndefined()
   })

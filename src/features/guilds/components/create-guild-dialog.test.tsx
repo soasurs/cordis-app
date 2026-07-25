@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { guildsQueryKey, type GuildSummary } from '@/features/guilds/guild-queries'
 import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
 
-import { CreateGuildDialog } from './create-guild-dialog'
+import { CreateGuildDialog } from '@/features/guilds/components/create-guild-dialog'
 
 const guildApi = vi.hoisted(() => ({ createGuild: vi.fn() }))
 
