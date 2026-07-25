@@ -1,16 +1,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { authSessionQueryKey } from '@/features/auth/auth-session'
 
-import { guildsQueryKey, type GuildSummary } from '../guild-queries'
+import { guildsQueryKey, type GuildSummary } from '@/features/guilds/guild-queries'
 
-import { GuildSettingsPage } from './guild-settings-page'
+import { GuildSettingsPage } from '@/features/guilds/pages/guild-settings-page'
 
 const guildApi = vi.hoisted(() => ({
+  abortGuildIconUpload: vi.fn(),
   addGuildMemberRole: vi.fn(),
+  completeGuildIconUpload: vi.fn(),
+  createGuildIconUpload: vi.fn(),
   createGuildRole: vi.fn(),
   deleteGuildRole: vi.fn(),
   guildPermission: {
@@ -37,6 +40,35 @@ const guildApi = vi.hoisted(() => ({
 
 vi.mock('@/api/guild', () => guildApi)
 
+const assetsApi = vi.hoisted(() => ({
+  putToPresignedUrl: vi.fn(),
+  resolveAvatarUrl: vi.fn(),
+  resolveGuildIconUrl: vi.fn(),
+}))
+
+vi.mock('@/api/assets', () => assetsApi)
+
+vi.mock('@/features/guilds/components/guild-icon-crop-dialog', () => ({
+  GuildIconCropDialog: ({
+    file,
+    onCancel,
+    onConfirm,
+  }: {
+    file: File
+    onCancel: () => void
+    onConfirm: (file: File) => void
+  }) => (
+    <div role="dialog" aria-label="Edit image">
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
+      <button type="button" onClick={() => onConfirm(file)}>
+        Upload
+      </button>
+    </div>
+  ),
+}))
+
 const userApi = vi.hoisted(() => ({
   getUserProfile: vi.fn(),
 }))
@@ -56,6 +88,7 @@ const guild: GuildSummary = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  assetsApi.resolveGuildIconUrl.mockReturnValue(undefined)
   guildApi.listGuildMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildMemberRoles.mockResolvedValue([])
   guildApi.listGuildRoles.mockResolvedValue([])
@@ -100,6 +133,137 @@ describe('GuildSettingsPage', () => {
       name: 'Cordis Community',
     })
     expect(await screen.findByRole('status')).toHaveTextContent('Community settings saved.')
+  })
+
+  it('uploads a community icon and refreshes the guild cache', async () => {
+    const queryClient = createQueryClient()
+    guildApi.createGuildIconUpload.mockResolvedValue({
+      expiresAt: 1_800_000,
+      presignedUrl: 'https://storage.example/upload',
+      requestHeaders: { 'Content-Type': 'image/png' },
+      uploadId: '99',
+    })
+    assetsApi.putToPresignedUrl.mockResolvedValue(undefined)
+    guildApi.completeGuildIconUpload.mockResolvedValue({
+      ...guild,
+      iconAssetId: '99',
+      revision: 2,
+      updatedAt: 2_000,
+    })
+    renderSettings(queryClient)
+    const user = userEvent.setup()
+    const file = new File(['icon-bytes'], 'icon.png', { type: 'image/png' })
+
+    await user.upload(screen.getByLabelText('Upload community icon'), file)
+    expect(await screen.findByRole('dialog', { name: 'Edit image' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Upload' }))
+
+    await waitFor(() => expect(guildApi.createGuildIconUpload).toHaveBeenCalledOnce())
+    expect(guildApi.createGuildIconUpload).toHaveBeenCalledWith('42', {
+      contentType: 'image/png',
+      expectedSize: file.size,
+    })
+    expect(assetsApi.putToPresignedUrl).toHaveBeenCalledWith(file, {
+      expiresAt: 1_800_000,
+      presignedUrl: 'https://storage.example/upload',
+      requestHeaders: { 'Content-Type': 'image/png' },
+      uploadId: '99',
+    })
+    expect(guildApi.completeGuildIconUpload).toHaveBeenCalledWith('42', '99')
+    expect(guildApi.abortGuildIconUpload).not.toHaveBeenCalled()
+    expect(queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.[0]).toMatchObject({
+      iconAssetId: '99',
+      revision: 2,
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent('Community icon updated.')
+  })
+
+  it('rejects unsupported icon files before creating an upload', async () => {
+    renderSettings(createQueryClient())
+    const input = screen.getByLabelText('Upload community icon')
+    const file = new File(['icon-bytes'], 'icon.gif', { type: 'image/gif' })
+
+    fireEvent.change(input, { target: { files: [file] } })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Choose a JPEG, PNG, or WebP image.',
+    )
+    expect(screen.queryByRole('dialog', { name: 'Edit image' })).not.toBeInTheDocument()
+    expect(guildApi.createGuildIconUpload).not.toHaveBeenCalled()
+  })
+
+  it('rejects oversized icon files before opening the crop dialog', async () => {
+    renderSettings(createQueryClient())
+    const input = screen.getByLabelText('Upload community icon')
+    const file = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'icon.png', {
+      type: 'image/png',
+    })
+
+    fireEvent.change(input, { target: { files: [file] } })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose an image up to 10 MB.')
+    expect(screen.queryByRole('dialog', { name: 'Edit image' })).not.toBeInTheDocument()
+    expect(guildApi.createGuildIconUpload).not.toHaveBeenCalled()
+  })
+
+  it('aborts an upload when the direct PUT fails', async () => {
+    guildApi.createGuildIconUpload.mockResolvedValue({
+      expiresAt: 1_800_000,
+      presignedUrl: 'https://storage.example/upload',
+      requestHeaders: { 'Content-Type': 'image/png' },
+      uploadId: '99',
+    })
+    assetsApi.putToPresignedUrl.mockRejectedValue(new Error('upload failed'))
+    guildApi.abortGuildIconUpload.mockResolvedValue(undefined)
+    renderSettings(createQueryClient())
+    const user = userEvent.setup()
+    const file = new File(['icon-bytes'], 'icon.png', { type: 'image/png' })
+
+    await user.upload(screen.getByLabelText('Upload community icon'), file)
+    await user.click(await screen.findByRole('button', { name: 'Upload' }))
+
+    await waitFor(() => expect(guildApi.abortGuildIconUpload).toHaveBeenCalledWith('42', '99'))
+    expect(guildApi.completeGuildIconUpload).not.toHaveBeenCalled()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to update the community icon. Please try again.',
+    )
+  })
+
+  it('aborts an upload when completion fails after a successful PUT', async () => {
+    guildApi.createGuildIconUpload.mockResolvedValue({
+      expiresAt: 1_800_000,
+      presignedUrl: 'https://storage.example/upload',
+      requestHeaders: { 'Content-Type': 'image/png' },
+      uploadId: '99',
+    })
+    assetsApi.putToPresignedUrl.mockResolvedValue(undefined)
+    guildApi.completeGuildIconUpload.mockRejectedValue(new Error('complete failed'))
+    guildApi.abortGuildIconUpload.mockResolvedValue(undefined)
+    renderSettings(createQueryClient())
+    const user = userEvent.setup()
+    const file = new File(['icon-bytes'], 'icon.png', { type: 'image/png' })
+
+    await user.upload(screen.getByLabelText('Upload community icon'), file)
+    await user.click(await screen.findByRole('button', { name: 'Upload' }))
+
+    await waitFor(() => expect(guildApi.abortGuildIconUpload).toHaveBeenCalledWith('42', '99'))
+    expect(assetsApi.putToPresignedUrl).toHaveBeenCalledOnce()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to update the community icon. Please try again.',
+    )
+  })
+
+  it('cancels cropping without starting an upload', async () => {
+    renderSettings(createQueryClient())
+    const user = userEvent.setup()
+    const file = new File(['icon-bytes'], 'icon.png', { type: 'image/png' })
+
+    await user.upload(screen.getByLabelText('Upload community icon'), file)
+    expect(await screen.findByRole('dialog', { name: 'Edit image' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Edit image' })).not.toBeInTheDocument()
+    expect(guildApi.createGuildIconUpload).not.toHaveBeenCalled()
   })
 
   it('blocks direct access for a user who is not the owner', () => {

@@ -1,19 +1,62 @@
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
 
+import { putToPresignedUrl } from '@/api/assets'
 import { getApiErrorMessage } from '@/api/errors'
-import { updateGuild } from '@/api/guild'
+import {
+  abortGuildIconUpload,
+  completeGuildIconUpload,
+  createGuildIconUpload,
+  updateGuild,
+} from '@/api/guild'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { TextInput } from '@/components/ui/text-input'
 
-import { upsertGuildFromApi, type GuildSummary } from '../guild-queries'
-import { getGuildFieldError, updateGuildSchema, type UpdateGuildFormValues } from '../validation'
+import { upsertGuildFromApi, type GuildSummary } from '@/features/guilds/guild-queries'
+import {
+  getGuildFieldError,
+  guildIconValidationMessage,
+  updateGuildSchema,
+  validateGuildIconFile,
+  type UpdateGuildFormValues,
+} from '@/features/guilds/validation'
+import { GuildIcon } from '@/features/guilds/components/guild-icon'
+import { GuildIconCropDialog } from '@/features/guilds/components/guild-icon-crop-dialog'
 
 export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
   const queryClient = useQueryClient()
-  const mutation = useMutation({
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [cropFile, setCropFile] = useState<File>()
+  const [selectionError, setSelectionError] = useState<string>()
+  const updateMutation = useMutation({
     mutationFn: (details: UpdateGuildFormValues) => updateGuild(guild.id, details),
+  })
+  const iconMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const validationError = validateGuildIconFile(file)
+      if (validationError) {
+        throw new Error(validationError)
+      }
+
+      const upload = await createGuildIconUpload(guild.id, {
+        contentType: file.type,
+        expectedSize: file.size,
+      })
+
+      try {
+        await putToPresignedUrl(file, upload)
+        return await completeGuildIconUpload(guild.id, upload.uploadId)
+      } catch (error) {
+        try {
+          await abortGuildIconUpload(guild.id, upload.uploadId)
+        } catch {
+          // Best-effort cleanup; surface the original upload failure below.
+        }
+        throw error
+      }
+    },
   })
   const form = useForm({
     defaultValues: {
@@ -23,7 +66,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
     validators: { onSubmit: updateGuildSchema },
     onSubmit: async ({ value }) => {
       try {
-        const updatedGuild = await mutation.mutateAsync(updateGuildSchema.parse(value))
+        const updatedGuild = await updateMutation.mutateAsync(updateGuildSchema.parse(value))
         form.reset({
           description: updatedGuild.description,
           name: updatedGuild.name,
@@ -34,9 +77,21 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
       }
     },
   })
-  const error = mutation.error
-    ? getApiErrorMessage(mutation.error, 'Unable to update this community. Please try again.')
+  const error = updateMutation.error
+    ? getApiErrorMessage(updateMutation.error, 'Unable to update this community. Please try again.')
     : undefined
+  const iconError = selectionError
+    ? selectionError
+    : iconMutation.error
+      ? iconMutation.error instanceof Error &&
+        (iconMutation.error.message === guildIconValidationMessage.contentType ||
+          iconMutation.error.message === guildIconValidationMessage.size)
+        ? iconMutation.error.message
+        : getApiErrorMessage(
+            iconMutation.error,
+            'Unable to update the community icon. Please try again.',
+          )
+      : undefined
 
   return (
     <>
@@ -48,101 +103,201 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
           Community overview
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Choose the name and description members see throughout Cordis.
+          Choose the icon, name, and description members see throughout Cordis.
         </p>
       </div>
 
-      <form
-        noValidate
-        className="rounded-shell border border-line bg-surface-raised p-5 shadow-panel sm:p-6"
-        onSubmit={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          void form.handleSubmit()
-        }}
-      >
-        <GuildOverviewStatus error={error} saved={mutation.isSuccess} />
+      <div className="rounded-shell border border-line bg-surface-raised p-5 shadow-panel sm:p-6">
+        <GuildOverviewStatus
+          error={error ?? iconError}
+          saved={updateMutation.isSuccess || iconMutation.isSuccess}
+          savedMessage={
+            iconMutation.isSuccess && !updateMutation.isSuccess
+              ? 'Community icon updated.'
+              : 'Community settings saved.'
+          }
+        />
 
-        <div className="grid gap-5">
-          <form.Field name="name">
-            {(field) => (
-              <TextInput
-                required
-                autoComplete="off"
-                disabled={mutation.isPending}
-                error={getGuildFieldError(field.state.meta.errors)}
-                hint="This name appears in the community rail, channel list, and member views."
-                label="Community name"
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => {
-                  if (mutation.isError || mutation.isSuccess) mutation.reset()
-                  field.handleChange(event.target.value)
-                }}
+        <div className="grid gap-5 sm:grid-cols-[8rem_1fr]">
+          <div>
+            <div className="grid aspect-square place-items-center overflow-hidden rounded-panel border border-dashed border-line-strong bg-surface text-brand-text">
+              <GuildIcon
+                guildId={guild.id}
+                iconAssetId={guild.iconAssetId}
+                name={guild.name}
+                size="settings"
               />
-            )}
-          </form.Field>
+            </div>
+            <input
+              ref={fileInputRef}
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Upload community icon"
+              className="sr-only"
+              disabled={iconMutation.isPending}
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (!file) {
+                  return
+                }
+                if (updateMutation.isError || updateMutation.isSuccess) {
+                  updateMutation.reset()
+                }
+                if (iconMutation.isError || iconMutation.isSuccess) {
+                  iconMutation.reset()
+                }
+                const validationError = validateGuildIconFile(file)
+                if (validationError) {
+                  setSelectionError(validationError)
+                  return
+                }
+                setSelectionError(undefined)
+                setCropFile(file)
+              }}
+            />
+            <Button
+              className="mt-2 w-full"
+              disabled={iconMutation.isPending}
+              loading={iconMutation.isPending}
+              size="small"
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setSelectionError(undefined)
+                if (iconMutation.isError || iconMutation.isSuccess) {
+                  iconMutation.reset()
+                }
+                fileInputRef.current?.click()
+              }}
+            >
+              Change icon
+            </Button>
+          </div>
 
-          <form.Field name="description">
-            {(field) => (
-              <Textarea
-                autoComplete="off"
-                disabled={mutation.isPending}
-                error={getGuildFieldError(field.state.meta.errors)}
-                hint="Shown on invites and the community profile. Leave blank for no description."
-                label="Description"
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => {
-                  if (mutation.isError || mutation.isSuccess) mutation.reset()
-                  field.handleChange(event.target.value)
-                }}
-              />
-            )}
-          </form.Field>
-        </div>
-
-        <div className="mt-6 flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              mutation.reset()
-              form.reset({
-                description: guild.description,
-                name: guild.name,
-              })
+          <form
+            noValidate
+            className="grid gap-5"
+            onSubmit={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              if (iconMutation.isError || iconMutation.isSuccess) {
+                iconMutation.reset()
+              }
+              setSelectionError(undefined)
+              void form.handleSubmit()
             }}
           >
-            Reset
-          </Button>
-          <form.Subscribe
-            selector={(state) =>
-              [state.isSubmitting, state.values.description, state.values.name] as const
-            }
-          >
-            {([isSubmitting, description, name]) => (
+            <form.Field name="name">
+              {(field) => (
+                <TextInput
+                  required
+                  autoComplete="off"
+                  disabled={updateMutation.isPending}
+                  error={getGuildFieldError(field.state.meta.errors)}
+                  hint="This name appears in the community rail, channel list, and member views."
+                  label="Community name"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => {
+                    if (updateMutation.isError || updateMutation.isSuccess) {
+                      updateMutation.reset()
+                    }
+                    field.handleChange(event.target.value)
+                  }}
+                />
+              )}
+            </form.Field>
+
+            <form.Field name="description">
+              {(field) => (
+                <Textarea
+                  autoComplete="off"
+                  disabled={updateMutation.isPending}
+                  error={getGuildFieldError(field.state.meta.errors)}
+                  hint="Shown on invites and the community profile. Leave blank for no description."
+                  label="Description"
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => {
+                    if (updateMutation.isError || updateMutation.isSuccess) {
+                      updateMutation.reset()
+                    }
+                    field.handleChange(event.target.value)
+                  }}
+                />
+              )}
+            </form.Field>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
               <Button
-                disabled={
-                  name.trim() === guild.name && description.trim() === guild.description
-                }
-                loading={mutation.isPending || isSubmitting}
-                type="submit"
+                disabled={updateMutation.isPending}
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  updateMutation.reset()
+                  form.reset({
+                    description: guild.description,
+                    name: guild.name,
+                  })
+                }}
               >
-                Save changes
+                Reset
               </Button>
-            )}
-          </form.Subscribe>
+              <form.Subscribe
+                selector={(state) =>
+                  [state.isSubmitting, state.values.description, state.values.name] as const
+                }
+              >
+                {([isSubmitting, description, name]) => (
+                  <Button
+                    disabled={
+                      name.trim() === guild.name && description.trim() === guild.description
+                    }
+                    loading={updateMutation.isPending || isSubmitting}
+                    type="submit"
+                  >
+                    Save changes
+                  </Button>
+                )}
+              </form.Subscribe>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
+
+      {cropFile ? (
+        <GuildIconCropDialog
+          file={cropFile}
+          onCancel={() => setCropFile(undefined)}
+          onConfirm={(croppedFile) => {
+            setCropFile(undefined)
+            void iconMutation
+              .mutateAsync(croppedFile)
+              .then((updatedGuild) => {
+                upsertGuildFromApi(queryClient, updatedGuild)
+              })
+              .catch(() => {
+                // The mutation error is rendered above.
+              })
+          }}
+        />
+      ) : null}
     </>
   )
 }
 
-function GuildOverviewStatus({ error, saved }: { error?: string; saved: boolean }) {
+function GuildOverviewStatus({
+  error,
+  saved,
+  savedMessage,
+}: {
+  error?: string
+  saved: boolean
+  savedMessage: string
+}) {
   if (error) {
     return (
       <div
@@ -159,7 +314,7 @@ function GuildOverviewStatus({ error, saved }: { error?: string; saved: boolean 
       role="status"
       className="mb-5 rounded-control border border-positive/25 bg-positive/10 px-3 py-2.5 text-sm text-positive"
     >
-      Community settings saved.
+      {savedMessage}
     </div>
   ) : null
 }

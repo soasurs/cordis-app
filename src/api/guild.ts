@@ -6,8 +6,8 @@ import {
   type GuildMember as GuildMemberMessage,
 } from '@/gen/api/v1/guild_pb'
 
-import { apiTransport } from './client'
-import { toPublicUserProfile, type PublicUserProfile } from './user'
+import { apiTransport } from '@/api/client'
+import { toPublicUserProfile, type PublicUserProfile } from '@/api/user'
 
 const guildClient = createClient(GuildService, apiTransport)
 
@@ -39,6 +39,18 @@ export interface Guild {
 export interface UpdateGuildDetails {
   description: string
   name: string
+}
+
+export interface CreateGuildIconUploadDetails {
+  contentType: string
+  expectedSize: number
+}
+
+export interface GuildIconUploadContract {
+  expiresAt: number
+  presignedUrl: string
+  requestHeaders: Record<string, string>
+  uploadId: string
 }
 
 export interface GuildChannel {
@@ -139,6 +151,61 @@ export async function updateGuild(
   }
 
   return toGuild(response.guild)
+}
+
+export async function createGuildIconUpload(
+  guildId: string,
+  details: CreateGuildIconUploadDetails,
+): Promise<GuildIconUploadContract> {
+  assertIdentifier(guildId, 'guild')
+  if (!Number.isInteger(details.expectedSize) || details.expectedSize <= 0) {
+    throw new Error('expected upload size is invalid')
+  }
+
+  const response = await guildClient.createGuildIconUpload({
+    contentType: details.contentType,
+    expectedSize: BigInt(details.expectedSize),
+    guildId: BigInt(guildId),
+  })
+
+  return {
+    expiresAt: Number(response.expiresAt),
+    presignedUrl: response.presignedUrl,
+    requestHeaders: { ...response.requestHeaders },
+    uploadId: response.uploadId.toString(),
+  }
+}
+
+export async function completeGuildIconUpload(
+  guildId: string,
+  uploadId: string,
+): Promise<Guild> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(uploadId, 'upload')
+
+  const response = await guildClient.completeGuildIconUpload({
+    guildId: BigInt(guildId),
+    uploadId: BigInt(uploadId),
+  })
+
+  if (!response.guild) {
+    throw new Error('complete guild icon upload response was incomplete')
+  }
+
+  return toGuild(response.guild)
+}
+
+export async function abortGuildIconUpload(
+  guildId: string,
+  uploadId: string,
+): Promise<void> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(uploadId, 'upload')
+
+  await guildClient.abortGuildIconUpload({
+    guildId: BigInt(guildId),
+    uploadId: BigInt(uploadId),
+  })
 }
 
 export async function listGuildChannels(guildId: string): Promise<GuildChannel[]> {

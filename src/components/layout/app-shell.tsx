@@ -4,6 +4,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 
 import type { GatewayStatus } from '@/app/gateway-context'
+import { GuildIcon } from '@/features/guilds/components/guild-icon'
 
 export interface AppUserSummary {
   name: string
@@ -11,6 +12,7 @@ export interface AppUserSummary {
 }
 
 export interface AppGuildSummary {
+  iconAssetId: string
   id: string
   name: string
 }
@@ -67,7 +69,7 @@ function RailButton({
           aria-label={label}
           disabled={disabled}
           onClick={onClick}
-          className={`group relative grid size-10 place-items-center rounded-panel border text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 ${
+          className={`group relative grid size-10 place-items-center overflow-hidden rounded-panel border text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 ${
             active
               ? 'border-brand bg-brand text-white shadow-brand'
               : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-hover hover:text-ink disabled:cursor-not-allowed disabled:hover:border-line disabled:hover:bg-surface disabled:hover:text-muted'
@@ -91,15 +93,6 @@ function RailButton({
       </Tooltip.Portal>
     </Tooltip.Root>
   )
-}
-
-function getGuildMark(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  return words
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
 }
 
 function SpaceRail({
@@ -137,7 +130,17 @@ function SpaceRail({
               label={guild.name}
               onClick={() => onSelectGuild?.(guild.id)}
             >
-              {getGuildMark(guild.name) || 'C'}
+              <span className="size-full overflow-hidden rounded-[inherit]">
+                <GuildIcon
+                  className={
+                    guild.id === activeGuildId ? 'text-white' : 'text-muted group-hover:text-ink'
+                  }
+                  guildId={guild.id}
+                  iconAssetId={guild.iconAssetId}
+                  name={guild.name}
+                  size="rail"
+                />
+              </span>
             </RailButton>
           ))
         )}
