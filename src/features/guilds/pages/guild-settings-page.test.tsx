@@ -251,6 +251,14 @@ describe('GuildSettingsPage', () => {
           guildId: '42',
           joinedAt: 1_000,
           nickname: '',
+          profile: {
+            avatarAssetId: '0',
+            createdAt: 500,
+            name: 'Alex Chen',
+            updatedAt: 1_000,
+            userId: '7',
+            username: 'alex_chen',
+          },
           revision: 1,
           updatedAt: 1_000,
           userId: '7',
@@ -262,7 +270,7 @@ describe('GuildSettingsPage', () => {
     expect(await screen.findByText('Alex Chen')).toBeInTheDocument()
     expect(screen.getByText('@alex_chen')).toBeInTheDocument()
     expect(screen.getByText('Owner')).toBeInTheDocument()
-    expect(userApi.getUserProfile).toHaveBeenCalledWith('7')
+    expect(userApi.getUserProfile).not.toHaveBeenCalled()
   })
 
   it('assigns and removes members from a role in the members tab', async () => {
@@ -274,6 +282,14 @@ describe('GuildSettingsPage', () => {
           guildId: '42',
           joinedAt: 1_000,
           nickname: '',
+          profile: {
+            avatarAssetId: '0',
+            createdAt: 500,
+            name: 'Sam Rivera',
+            updatedAt: 1_000,
+            userId: '8',
+            username: 'sam_rivera',
+          },
           revision: 1,
           updatedAt: 1_000,
           userId: '8',
@@ -294,6 +310,7 @@ describe('GuildSettingsPage', () => {
     expect(assignment).not.toBeChecked()
     expect(await within(editor).findByText('Sam Rivera')).toBeInTheDocument()
     expect(within(editor).getByText('@sam_rivera')).toBeInTheDocument()
+    expect(userApi.getUserProfile).not.toHaveBeenCalled()
 
     await user.click(assignment)
     await waitFor(() => expect(guildApi.addGuildMemberRole).toHaveBeenCalledWith('42', '8', '52'))

@@ -44,12 +44,16 @@ export async function getUserProfile(userId: string): Promise<PublicUserProfile>
     throw new Error('user profile response was incomplete')
   }
 
+  return toPublicUserProfile(response.profile)
+}
+
+export function toPublicUserProfile(profile: UserProfile): PublicUserProfile {
   return {
-    avatarAssetId: response.profile.avatarAssetId.toString(),
-    createdAt: Number(response.profile.createdAt),
-    name: response.profile.name,
-    updatedAt: Number(response.profile.updatedAt),
-    userId: response.profile.userId.toString(),
-    username: response.profile.username,
+    avatarAssetId: profile.avatarAssetId.toString(),
+    createdAt: Number(profile.createdAt),
+    name: profile.name,
+    updatedAt: Number(profile.updatedAt),
+    userId: profile.userId.toString(),
+    username: profile.username,
   }
 }

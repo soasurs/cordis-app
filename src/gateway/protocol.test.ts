@@ -23,13 +23,13 @@ describe('gateway protocol', () => {
     )
   })
 
-  it('validates HELLO data', () => {
+  it('validates hello data', () => {
     expect(parseHelloData({ heartbeat_interval_ms: 45_000, gateway_id: 'gw-1' })).toEqual({
       heartbeat_interval_ms: 45_000,
       gateway_id: 'gw-1',
     })
     expect(() => parseHelloData({ heartbeat_interval_ms: 0, gateway_id: 'gw-1' })).toThrow(
-      'gateway HELLO payload is invalid',
+      'gateway hello payload is invalid',
     )
   })
 

@@ -104,9 +104,21 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-7 sm:px-8 sm:py-10">
             <div className="mb-7 sm:hidden">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
-                Channels
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="min-w-0 flex-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
+                  Channels
+                </p>
+                {canManageGuild && onOpenSettings ? (
+                  <Button
+                    aria-label="Open community settings"
+                    size="small"
+                    variant="ghost"
+                    onClick={onOpenSettings}
+                  >
+                    Settings
+                  </Button>
+                ) : null}
+              </div>
               {channelsQuery.isPending ? <ChannelListSkeleton /> : null}
               {channelsQuery.isError ? (
                 <ChannelLoadError

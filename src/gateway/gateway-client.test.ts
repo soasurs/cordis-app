@@ -67,7 +67,7 @@ async function receiveHello(socket: FakeGatewaySocket, interval = 1_000) {
   socket.open()
   socket.receive({
     op: GatewayOpcode.Hello,
-    t: 'HELLO',
+    t: 'hello',
     d: { heartbeat_interval_ms: interval, gateway_id: 'gw-1' },
   })
   await Promise.resolve()
@@ -107,7 +107,7 @@ describe('GatewayClient', () => {
     ).toThrow('VITE_GATEWAY_URL must not include a path, query, or fragment')
   })
 
-  it('identifies, dispatches READY, and maintains heartbeat acknowledgements', async () => {
+  it('identifies, dispatches ready, and maintains heartbeat acknowledgements', async () => {
     vi.useFakeTimers()
     const { client, sockets } = createHarness()
     const dispatches = vi.fn()
@@ -133,13 +133,13 @@ describe('GatewayClient', () => {
     socket.receive({
       op: GatewayOpcode.Dispatch,
       s: 1,
-      t: 'READY',
+      t: 'ready',
       d: { session_id: 'session-1' },
     })
     expect(client.state).toBe('ready')
     expect(client.session).toEqual({ sessionId: 'session-1', sequence: 1 })
     expect(dispatches).toHaveBeenCalledWith({
-      type: 'READY',
+      type: 'ready',
       sequence: 1,
       data: { session_id: 'session-1' },
     })
@@ -147,7 +147,7 @@ describe('GatewayClient', () => {
     vi.advanceTimersByTime(1_000)
     expect(socket.sent.at(-1)).toEqual({ op: GatewayOpcode.Heartbeat, d: 1 })
 
-    socket.receive({ op: GatewayOpcode.HeartbeatAck, t: 'HEARTBEAT_ACK', d: null })
+    socket.receive({ op: GatewayOpcode.HeartbeatAck, t: 'heartbeat.ack', d: null })
     vi.advanceTimersByTime(1_000)
     expect(socket.sent.at(-1)).toEqual({ op: GatewayOpcode.Heartbeat, d: 1 })
   })
@@ -162,7 +162,7 @@ describe('GatewayClient', () => {
     sockets[0].receive({
       op: GatewayOpcode.Dispatch,
       s: 42,
-      t: 'READY',
+      t: 'ready',
       d: { session_id: 'session-1' },
     })
     sockets[0].fail()
@@ -181,7 +181,7 @@ describe('GatewayClient', () => {
     sockets[1].receive({
       op: GatewayOpcode.Dispatch,
       s: 48,
-      t: 'RESUMED',
+      t: 'resumed',
       d: { session_id: 'session-1' },
     })
     expect(client.state).toBe('ready')
@@ -197,7 +197,7 @@ describe('GatewayClient', () => {
     sockets[0].receive({
       op: GatewayOpcode.Dispatch,
       s: 2,
-      t: 'READY',
+      t: 'ready',
       d: { session_id: 'session-1' },
     })
     sockets[0].fail()
@@ -222,7 +222,7 @@ describe('GatewayClient', () => {
     sockets[0].receive({
       op: GatewayOpcode.Dispatch,
       s: 1,
-      t: 'READY',
+      t: 'ready',
       d: { session_id: 'session-1' },
     })
 

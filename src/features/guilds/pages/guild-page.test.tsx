@@ -235,6 +235,18 @@ describe('GuildPage', () => {
     expect(onOpenSettings).toHaveBeenCalledOnce()
   })
 
+  it('opens community settings from the mobile channel navigation for the owner', async () => {
+    const queryClient = createQueryClient()
+    const onOpenSettings = vi.fn()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenSettings })
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Open community settings' }))
+
+    expect(onOpenSettings).toHaveBeenCalledOnce()
+  })
+
   it('creates a top-level category from the community menu without selecting it', async () => {
     const queryClient = createQueryClient()
     const onSelectChannel = vi.fn()

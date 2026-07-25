@@ -1,8 +1,13 @@
 import { createClient } from '@connectrpc/connect'
 
-import { GuildPermission, GuildService } from '@/gen/api/v1/guild_pb'
+import {
+  GuildPermission,
+  GuildService,
+  type GuildMember as GuildMemberMessage,
+} from '@/gen/api/v1/guild_pb'
 
 import { apiTransport } from './client'
+import { toPublicUserProfile, type PublicUserProfile } from './user'
 
 const guildClient = createClient(GuildService, apiTransport)
 
@@ -45,6 +50,7 @@ export interface GuildMember {
   guildId: string
   joinedAt: number
   nickname: string
+  profile?: PublicUserProfile
   revision: number
   updatedAt: number
   userId: string
@@ -337,18 +343,12 @@ function toGuildChannel(channel: {
   }
 }
 
-function toGuildMember(member: {
-  guildId: bigint
-  joinedAt: bigint
-  nickname: string
-  revision: bigint
-  updatedAt: bigint
-  userId: bigint
-}): GuildMember {
+function toGuildMember(member: GuildMemberMessage): GuildMember {
   return {
     guildId: member.guildId.toString(),
     joinedAt: Number(member.joinedAt),
     nickname: member.nickname,
+    profile: member.profile ? toPublicUserProfile(member.profile) : undefined,
     revision: Number(member.revision),
     updatedAt: Number(member.updatedAt),
     userId: member.userId.toString(),

@@ -11,8 +11,11 @@ interface GuildMemberIdentityProps {
 }
 
 export function GuildMemberIdentity({ guildOwnerId, member }: GuildMemberIdentityProps) {
-  const profileQuery = useQuery(userProfileQueryOptions(member.userId))
-  const profile = profileQuery.data
+  const profileQuery = useQuery({
+    ...userProfileQueryOptions(member.userId),
+    enabled: !member.profile,
+  })
+  const profile = member.profile ?? profileQuery.data
   const displayName =
     member.nickname || profile?.name || profile?.username || `User ${member.userId}`
   const profileLabel = profile

@@ -123,7 +123,7 @@ const readyData = {
 }
 
 describe('GatewayProvider', () => {
-  it('connects for an authenticated session and stores the READY snapshot', () => {
+  it('connects for an authenticated session and stores the ready snapshot', () => {
     const queryClient = new QueryClient()
     const connection = new FakeGatewayConnection()
     const view = render(
@@ -144,7 +144,7 @@ describe('GatewayProvider', () => {
       connection.dispatch({
         data: readyData,
         sequence: 1,
-        type: 'READY',
+        type: 'ready',
       }),
     )
     expect(queryClient.getQueryData(gatewayReadyQueryKey)).toEqual(readyData)
@@ -342,7 +342,7 @@ describe('GatewayProvider', () => {
       connection.dispatch({
         data: { ...readyData, guilds: [] },
         sequence: 10,
-        type: 'READY',
+        type: 'ready',
       }),
     )
     expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toBeUndefined()

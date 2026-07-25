@@ -309,8 +309,8 @@ export interface SessionReconcilePayload {
 }
 
 export interface GatewayDispatchDataMap {
-  READY: GatewayReadyData
-  RESUMED: GatewayResumedData
+  ready: GatewayReadyData
+  resumed: GatewayResumedData
   'guild.created': GuildPayload
   'guild.updated': GuildPayload
   'guild.deleted': GuildDeletedPayload
@@ -383,7 +383,7 @@ export function parseHelloData(value: unknown): GatewayHelloData {
     value.heartbeat_interval_ms <= 0 ||
     typeof value.gateway_id !== 'string'
   ) {
-    throw new Error('gateway HELLO payload is invalid')
+    throw new Error('gateway hello payload is invalid')
   }
   return value as unknown as GatewayHelloData
 }

@@ -17,7 +17,7 @@ import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '
 import { gatewayReadyQueryKey } from './gateway-context'
 
 export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayDispatch) {
-  if (isGatewayDispatch(dispatch, 'READY')) {
+  if (isGatewayDispatch(dispatch, 'ready')) {
     queryClient.setQueryData<GatewayReadyData>(gatewayReadyQueryKey, dispatch.data)
     replaceGuildsFromReady(queryClient, dispatch.data)
     return
