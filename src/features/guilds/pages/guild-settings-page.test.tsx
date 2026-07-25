@@ -45,6 +45,7 @@ vi.mock('@/api/user', () => userApi)
 
 const guild: GuildSummary = {
   createdAt: 1_000,
+  description: 'A community for thoughtful tools.',
   iconAssetId: '0',
   id: '42',
   name: 'Cordis Studio',
@@ -69,10 +70,11 @@ beforeEach(() => {
 })
 
 describe('GuildSettingsPage', () => {
-  it('updates the community name and refreshes the guild cache', async () => {
+  it('updates the community name and description and refreshes the guild cache', async () => {
     const queryClient = createQueryClient()
     guildApi.updateGuild.mockResolvedValue({
       ...guild,
+      description: 'Updated community description.',
       name: 'Cordis Community',
       revision: 2,
       updatedAt: 2_000,
@@ -83,13 +85,20 @@ describe('GuildSettingsPage', () => {
     const nameInput = screen.getByRole('textbox', { name: /Community name/ })
     await user.clear(nameInput)
     await user.type(nameInput, 'Cordis Community')
+    const descriptionInput = screen.getByRole('textbox', { name: /Description/ })
+    await user.clear(descriptionInput)
+    await user.type(descriptionInput, 'Updated community description.')
     await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
     await waitFor(() => expect(guildApi.updateGuild).toHaveBeenCalledOnce())
-    expect(guildApi.updateGuild).toHaveBeenCalledWith('42', 'Cordis Community')
-    expect(queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.[0]?.name).toBe(
-      'Cordis Community',
-    )
+    expect(guildApi.updateGuild).toHaveBeenCalledWith('42', {
+      description: 'Updated community description.',
+      name: 'Cordis Community',
+    })
+    expect(queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.[0]).toMatchObject({
+      description: 'Updated community description.',
+      name: 'Cordis Community',
+    })
     expect(await screen.findByRole('status')).toHaveTextContent('Community settings saved.')
   })
 

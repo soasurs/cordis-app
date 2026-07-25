@@ -7,6 +7,7 @@ export const createGuildSchema = z.object({
 export type CreateGuildFormValues = z.infer<typeof createGuildSchema>
 
 export const updateGuildSchema = z.object({
+  description: z.string().trim(),
   name: z.string().trim().min(1, 'Enter a community name'),
 })
 

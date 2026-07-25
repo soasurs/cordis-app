@@ -83,6 +83,7 @@ describe('guild API', () => {
     guildClient.updateGuild.mockResolvedValue({
       guild: {
         createdAt: 1_000n,
+        description: 'A community for thoughtful tools.',
         iconAssetId: 9n,
         id: 42n,
         name: 'Cordis Community',
@@ -92,8 +93,14 @@ describe('guild API', () => {
       },
     })
 
-    await expect(updateGuild('42', 'Cordis Community')).resolves.toEqual({
+    await expect(
+      updateGuild('42', {
+        description: 'A community for thoughtful tools.',
+        name: 'Cordis Community',
+      }),
+    ).resolves.toEqual({
       createdAt: 1_000,
+      description: 'A community for thoughtful tools.',
       iconAssetId: '9',
       id: '42',
       name: 'Cordis Community',
@@ -102,6 +109,7 @@ describe('guild API', () => {
       updatedAt: 2_000,
     })
     expect(guildClient.updateGuild).toHaveBeenCalledWith({
+      description: 'A community for thoughtful tools.',
       guildId: 42n,
       name: 'Cordis Community',
     })

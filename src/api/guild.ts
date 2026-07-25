@@ -27,12 +27,18 @@ export const guildPermission = {
 
 export interface Guild {
   createdAt: number
+  description: string
   iconAssetId: string
   id: string
   name: string
   ownerId: string
   revision: number
   updatedAt: number
+}
+
+export interface UpdateGuildDetails {
+  description: string
+  name: string
 }
 
 export interface GuildChannel {
@@ -116,10 +122,17 @@ export async function createGuild(name: string): Promise<Guild> {
   return toGuild(response.guild)
 }
 
-export async function updateGuild(guildId: string, name: string): Promise<Guild> {
+export async function updateGuild(
+  guildId: string,
+  details: UpdateGuildDetails,
+): Promise<Guild> {
   assertIdentifier(guildId, 'guild')
 
-  const response = await guildClient.updateGuild({ guildId: BigInt(guildId), name })
+  const response = await guildClient.updateGuild({
+    description: details.description,
+    guildId: BigInt(guildId),
+    name: details.name,
+  })
 
   if (!response.guild) {
     throw new Error('update guild response was incomplete')
@@ -382,6 +395,7 @@ function toGuildRole(role: {
 
 function toGuild(guild: {
   createdAt: bigint
+  description: string
   iconAssetId: bigint
   id: bigint
   name: string
@@ -391,6 +405,7 @@ function toGuild(guild: {
 }): Guild {
   return {
     createdAt: Number(guild.createdAt),
+    description: guild.description,
     iconAssetId: guild.iconAssetId.toString(),
     id: guild.id.toString(),
     name: guild.name,
