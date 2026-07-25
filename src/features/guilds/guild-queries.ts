@@ -78,7 +78,7 @@ export function guildMembersInfiniteQueryOptions(guildId: string) {
     ReturnType<typeof guildMembersQueryKey>,
     string | undefined
   >({
-    getNextPageParam: (lastPage) => lastPage.beforeUserId,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) => listGuildMembers(guildId, pageParam),
     queryKey: guildMembersQueryKey(guildId),

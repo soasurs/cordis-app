@@ -57,8 +57,8 @@ export interface GuildMember {
 }
 
 export interface GuildMemberPage {
-  beforeUserId?: string
   members: GuildMember[]
+  nextCursor?: string
 }
 
 export interface GuildRole {
@@ -138,20 +138,21 @@ export async function listGuildChannels(guildId: string): Promise<GuildChannel[]
 
 export async function listGuildMembers(
   guildId: string,
-  beforeUserId?: string,
+  cursor?: string,
 ): Promise<GuildMemberPage> {
   assertIdentifier(guildId, 'guild')
-  if (beforeUserId) assertIdentifier(beforeUserId, 'member cursor')
 
   const response = await guildClient.listGuildMembers({
-    beforeUserId: beforeUserId ? BigInt(beforeUserId) : 0n,
+    ...(cursor ? { cursor } : {}),
     guildId: BigInt(guildId),
     limit: 50,
   })
 
   return {
-    beforeUserId: response.beforeUserId > 0n ? response.beforeUserId.toString() : undefined,
     members: response.members.map(toGuildMember),
+    // Opaque next_cursor must be passed through unchanged. Field absence
+    // (or an empty string) means there is no next page.
+    nextCursor: response.nextCursor || undefined,
   }
 }
 

@@ -191,9 +191,8 @@ describe('guild API', () => {
     })
   })
 
-  it('lists a page of guild members with its next cursor', async () => {
+  it('lists the first page of guild members without a cursor', async () => {
     guildClient.listGuildMembers.mockResolvedValue({
-      beforeUserId: 6n,
       members: [
         {
           guildId: 42n,
@@ -212,10 +211,10 @@ describe('guild API', () => {
           userId: 7n,
         },
       ],
+      nextCursor: 'opaque-next',
     })
 
-    await expect(listGuildMembers('42', '8')).resolves.toEqual({
-      beforeUserId: '6',
+    await expect(listGuildMembers('42')).resolves.toEqual({
       members: [
         {
           guildId: '42',
@@ -234,11 +233,58 @@ describe('guild API', () => {
           userId: '7',
         },
       ],
+      nextCursor: 'opaque-next',
     })
     expect(guildClient.listGuildMembers).toHaveBeenCalledWith({
-      beforeUserId: 8n,
       guildId: 42n,
       limit: 50,
+    })
+  })
+
+  it('passes an opaque member cursor through unchanged', async () => {
+    guildClient.listGuildMembers.mockResolvedValue({
+      members: [],
+      nextCursor: 'opaque-page-2',
+    })
+
+    await expect(listGuildMembers('42', 'opaque-page-1')).resolves.toEqual({
+      members: [],
+      nextCursor: 'opaque-page-2',
+    })
+    expect(guildClient.listGuildMembers).toHaveBeenCalledWith({
+      cursor: 'opaque-page-1',
+      guildId: 42n,
+      limit: 50,
+    })
+  })
+
+  it('treats a missing next cursor as the end of the member list', async () => {
+    guildClient.listGuildMembers.mockResolvedValue({
+      members: [
+        {
+          guildId: 42n,
+          joinedAt: 1_000n,
+          nickname: '',
+          revision: 1n,
+          updatedAt: 1_000n,
+          userId: 7n,
+        },
+      ],
+    })
+
+    await expect(listGuildMembers('42', 'opaque-last')).resolves.toEqual({
+      members: [
+        {
+          guildId: '42',
+          joinedAt: 1_000,
+          nickname: '',
+          profile: undefined,
+          revision: 1,
+          updatedAt: 1_000,
+          userId: '7',
+        },
+      ],
+      nextCursor: undefined,
     })
   })
 
