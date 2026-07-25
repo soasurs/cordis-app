@@ -7,7 +7,7 @@ import { CreateGuildDialog } from '@/features/guilds/components/create-guild-dia
 import { guildsQueryOptions } from '@/features/guilds/guild-queries'
 import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
 
-import { authSessionQueryOptions } from '../auth-session'
+import { authSessionQueryOptions } from '@/features/auth/auth-session'
 
 export function ProtectedAppOutlet() {
   const { data: session } = useQuery(authSessionQueryOptions)

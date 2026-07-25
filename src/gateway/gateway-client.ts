@@ -10,7 +10,7 @@ import {
   type GatewayIdentifyData,
   type GatewayPresenceData,
   type GatewayResumeData,
-} from './protocol'
+} from '@/gateway/protocol'
 
 const websocketConnecting = 0
 const websocketOpen = 1

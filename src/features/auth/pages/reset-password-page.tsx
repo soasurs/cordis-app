@@ -4,11 +4,11 @@ import { Link, useSearch } from '@tanstack/react-router'
 import { confirmPasswordReset } from '@/api/authenticator'
 import { getApiErrorMessage } from '@/api/errors'
 
-import { AuthCard } from '../components/auth-card'
-import { FormAlert } from '../components/form-alert'
-import { ResetPasswordForm } from '../components/reset-password-form'
-import type { ResetPasswordFormValues } from '../validation'
-import { setAuthSession } from '../auth-session'
+import { AuthCard } from '@/features/auth/components/auth-card'
+import { FormAlert } from '@/features/auth/components/form-alert'
+import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
+import type { ResetPasswordFormValues } from '@/features/auth/validation'
+import { setAuthSession } from '@/features/auth/auth-session'
 
 export function ResetPasswordPage() {
   const { token } = useSearch({ from: '/_auth/reset-password' })

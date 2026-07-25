@@ -3,8 +3,8 @@ import { useForm } from '@tanstack/react-form'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
-import { forgotPasswordSchema, getFieldError } from '../validation'
-import { FormAlert } from './form-alert'
+import { forgotPasswordSchema, getFieldError } from '@/features/auth/validation'
+import { FormAlert } from '@/features/auth/components/form-alert'
 
 interface ForgotPasswordFormProps {
   error?: string

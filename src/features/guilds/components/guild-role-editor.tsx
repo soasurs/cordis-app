@@ -8,12 +8,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
-import { type GuildRoleSummary, upsertGuildRoleFromApi } from '../guild-queries'
-import { getGuildFieldError, guildRoleSchema, type GuildRoleFormValues } from '../validation'
-import { countGuildPermissions } from './guild-permissions'
-import { GuildRoleDeleteAction } from './guild-role-delete-action'
-import { GuildRoleMembers } from './guild-role-members'
-import { GuildRolePermissions } from './guild-role-permissions'
+import { type GuildRoleSummary, upsertGuildRoleFromApi } from '@/features/guilds/guild-queries'
+import {
+  getGuildFieldError,
+  guildRoleSchema,
+  type GuildRoleFormValues,
+} from '@/features/guilds/validation'
+import { countGuildPermissions } from '@/features/guilds/components/guild-permissions'
+import { GuildRoleDeleteAction } from '@/features/guilds/components/guild-role-delete-action'
+import { GuildRoleMembers } from '@/features/guilds/components/guild-role-members'
+import { GuildRolePermissions } from '@/features/guilds/components/guild-role-permissions'
 
 export function GuildRoleEditor({ role }: { role: GuildRoleSummary }) {
   const [tab, setTab] = useState<'members' | 'permissions'>('permissions')

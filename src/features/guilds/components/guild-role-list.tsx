@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
-import type { GuildRoleSummary } from '../guild-queries'
-import type { GuildRoleMoveDirection } from '../use-guild-role-reordering'
-import { countGuildPermissions } from './guild-permissions'
+import type { GuildRoleSummary } from '@/features/guilds/guild-queries'
+import type { GuildRoleMoveDirection } from '@/features/guilds/use-guild-role-reordering'
+import { countGuildPermissions } from '@/features/guilds/components/guild-permissions'
 
 interface GuildRoleListProps {
   createForm?: ReactNode

@@ -28,11 +28,7 @@ export const createGuildChannelSchema = z.object({
 export type CreateGuildChannelFormValues = z.infer<typeof createGuildChannelSchema>
 
 export const GUILD_ICON_MAX_BYTES = 10 * 1024 * 1024
-export const GUILD_ICON_CONTENT_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-] as const
+export const GUILD_ICON_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
 export const guildIconValidationMessage = {
   contentType: 'Choose a JPEG, PNG, or WebP image.',

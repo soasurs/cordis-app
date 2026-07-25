@@ -26,6 +26,8 @@ API generation is pinned to a stable Cordis backend tag in `buf.gen.yaml`. Commi
 
 Use TypeScript in strict mode, two-space indentation, ESLint, and Prettier. Name React components and types with `PascalCase`, functions and variables with `camelCase`, hooks with a `use` prefix, and feature files with descriptive kebab-case names. Avoid `dangerouslySetInnerHTML`; treat messages and other user-provided content as untrusted.
 
+Import application modules with the `@/` path alias (mapped to `src/`). Do not use relative imports such as `./foo` or `../bar` in hand-written `src/` code, including same-directory and parent-directory references. Prefer the public barrel when one exists (for example `@/api/guild`, `@/gateway`). Generated files under `src/gen` and `src/routeTree.gen.ts` are exempt and must not be edited for import style. ESLint enforces this with `no-restricted-imports`.
+
 ## Testing Guidelines
 
 Use Vitest and React Testing Library for unit and component tests, colocated as `*.test.ts` or `*.test.tsx`. Test Gateway protocol, heartbeat, resume, and reconnect behavior without React. Use Playwright for login, routing, deep-link refresh, messaging, and reconnect flows. Add focused regression coverage for every bug fix.

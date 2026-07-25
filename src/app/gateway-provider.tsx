@@ -11,8 +11,8 @@ import {
   type GatewayStateChange,
 } from '@/gateway'
 
-import { GatewayStatusContext, idleGatewayStatus, type GatewayStatus } from './gateway-context'
-import { clearGatewayQueries, syncGatewayDispatch } from './gateway-query-sync'
+import { GatewayStatusContext, idleGatewayStatus, type GatewayStatus } from '@/app/gateway-context'
+import { clearGatewayQueries, syncGatewayDispatch } from '@/app/gateway-query-sync'
 
 interface GatewayConnection {
   readonly state: GatewayConnectionState

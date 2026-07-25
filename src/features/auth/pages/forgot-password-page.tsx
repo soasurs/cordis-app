@@ -3,9 +3,9 @@ import { Link } from '@tanstack/react-router'
 
 import { requestPasswordReset } from '@/api/authenticator'
 import { getApiErrorMessage } from '@/api/errors'
-import { AuthCard } from '../components/auth-card'
-import { ForgotPasswordForm } from '../components/forgot-password-form'
-import { PasswordResetSent } from '../components/password-reset-sent'
+import { AuthCard } from '@/features/auth/components/auth-card'
+import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form'
+import { PasswordResetSent } from '@/features/auth/components/password-reset-sent'
 
 export function ForgotPasswordPage() {
   const resetMutation = useMutation({ mutationFn: requestPasswordReset })

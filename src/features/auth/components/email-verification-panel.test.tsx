@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { EmailVerificationPanel } from './email-verification-panel'
+import { EmailVerificationPanel } from '@/features/auth/components/email-verification-panel'
 
 describe('EmailVerificationPanel', () => {
   it('offers to resend a pending verification email', async () => {

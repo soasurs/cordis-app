@@ -8,7 +8,7 @@ import {
   restoreAccessToken,
   storeAuthenticationTokens,
   subscribeToAuthenticationCleared,
-} from './session'
+} from '@/api/session'
 
 const localStorageValues = new Map<string, string>()
 const sessionStorageValues = new Map<string, string>()

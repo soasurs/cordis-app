@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { GuildChannelSummary } from './guild-queries'
+import type { GuildChannelSummary } from '@/features/guilds/guild-queries'
 
-import { getChangedChannelPositions, moveGuildChannelInList } from './channel-ordering'
+import {
+  getChangedChannelPositions,
+  moveGuildChannelInList,
+} from '@/features/guilds/channel-ordering'
 
 const channels: GuildChannelSummary[] = [
   channel('1', 1, 0),

@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ForgotPasswordForm } from './forgot-password-form'
-import { LoginForm } from './login-form'
-import { PasswordResetSent } from './password-reset-sent'
-import { RegisterForm } from './register-form'
-import { ResetPasswordForm } from './reset-password-form'
+import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form'
+import { LoginForm } from '@/features/auth/components/login-form'
+import { PasswordResetSent } from '@/features/auth/components/password-reset-sent'
+import { RegisterForm } from '@/features/auth/components/register-form'
+import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
 
 describe('LoginForm', () => {
   it('collects credentials and toggles password visibility', async () => {

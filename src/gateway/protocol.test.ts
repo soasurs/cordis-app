@@ -7,7 +7,7 @@ import {
   parseGatewayEnvelope,
   parseHelloData,
   type GatewayReadyData,
-} from './protocol'
+} from '@/gateway/protocol'
 
 describe('gateway protocol', () => {
   it('parses a dispatch envelope', () => {

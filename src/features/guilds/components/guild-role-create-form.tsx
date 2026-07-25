@@ -6,8 +6,12 @@ import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
-import { upsertGuildRoleFromApi } from '../guild-queries'
-import { getGuildFieldError, guildRoleSchema, type GuildRoleFormValues } from '../validation'
+import { upsertGuildRoleFromApi } from '@/features/guilds/guild-queries'
+import {
+  getGuildFieldError,
+  guildRoleSchema,
+  type GuildRoleFormValues,
+} from '@/features/guilds/validation'
 
 interface GuildRoleCreateFormProps {
   guildId: string

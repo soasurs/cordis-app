@@ -2,12 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { reorderGuildChannels, type GuildChannel } from '@/api/guild'
 
-import { getChangedChannelPositions } from './channel-ordering'
+import { getChangedChannelPositions } from '@/features/guilds/channel-ordering'
 import {
   guildChannelsQueryKey,
   type GuildChannelSummary,
   upsertGuildChannelsFromApi,
-} from './guild-queries'
+} from '@/features/guilds/guild-queries'
 
 interface ReorderGuildChannelVariables {
   nextChannels: GuildChannelSummary[]

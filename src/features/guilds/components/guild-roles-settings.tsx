@@ -2,13 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 
 import { getApiErrorMessage } from '@/api/errors'
 
-import { guildRolesQueryOptions } from '../guild-queries'
-import { GuildRolesWorkspace } from './guild-roles-workspace'
+import { guildRolesQueryOptions } from '@/features/guilds/guild-queries'
+import { GuildRolesWorkspace } from '@/features/guilds/components/guild-roles-workspace'
 import {
   SettingsListError,
   SettingsListSkeleton,
   SettingsPageHeading,
-} from './guild-settings-list-states'
+} from '@/features/guilds/components/guild-settings-list-states'
 
 export function GuildRolesSettings({ guildId }: { guildId: string }) {
   const rolesQuery = useQuery(guildRolesQueryOptions(guildId))

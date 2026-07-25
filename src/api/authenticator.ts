@@ -2,8 +2,8 @@ import { createClient } from '@connectrpc/connect'
 
 import { AuthenticatorService } from '@/gen/api/v1/authenticator_pb'
 
-import { clearAuthenticationTokens, storeAuthenticationTokens } from './session'
-import { publicApiTransport } from './transport'
+import { clearAuthenticationTokens, storeAuthenticationTokens } from '@/api/session'
+import { publicApiTransport } from '@/api/transport'
 
 const authenticatorClient = createClient(AuthenticatorService, publicApiTransport)
 

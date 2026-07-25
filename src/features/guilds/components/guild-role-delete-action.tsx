@@ -5,7 +5,7 @@ import { getApiErrorMessage } from '@/api/errors'
 import { deleteGuildRole } from '@/api/guild'
 import { Button } from '@/components/ui/button'
 
-import { removeGuildRoleFromApi, type GuildRoleSummary } from '../guild-queries'
+import { removeGuildRoleFromApi, type GuildRoleSummary } from '@/features/guilds/guild-queries'
 
 export function GuildRoleDeleteAction({ role }: { role: GuildRoleSummary }) {
   const queryClient = useQueryClient()

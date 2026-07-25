@@ -185,9 +185,7 @@ describe('GuildSettingsPage', () => {
 
     fireEvent.change(input, { target: { files: [file] } })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Choose a JPEG, PNG, or WebP image.',
-    )
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPEG, PNG, or WebP image.')
     expect(screen.queryByRole('dialog', { name: 'Edit image' })).not.toBeInTheDocument()
     expect(guildApi.createGuildIconUpload).not.toHaveBeenCalled()
   })

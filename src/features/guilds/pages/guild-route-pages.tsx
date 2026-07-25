@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 
-import { GuildPage } from './guild-page'
+import { GuildPage } from '@/features/guilds/pages/guild-page'
 
 export function EmptyGuildRoutePage() {
   const { guildId } = useParams({ from: '/_app/guilds/$guildId/' })

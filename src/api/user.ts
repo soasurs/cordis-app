@@ -2,7 +2,7 @@ import { createClient } from '@connectrpc/connect'
 
 import { UserService, type User, type UserProfile } from '@/gen/api/v1/user_pb'
 
-import { apiTransport } from './client'
+import { apiTransport } from '@/api/client'
 
 const userClient = createClient(UserService, apiTransport)
 

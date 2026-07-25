@@ -5,8 +5,8 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { subscribeToAuthenticationCleared } from '@/api/session'
 import { authSessionQueryOptions, setAuthSession } from '@/features/auth/auth-session'
 
-import { queryClient } from './query-client'
-import { GatewayProvider } from './gateway-provider'
+import { queryClient } from '@/app/query-client'
+import { GatewayProvider } from '@/app/gateway-provider'
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (

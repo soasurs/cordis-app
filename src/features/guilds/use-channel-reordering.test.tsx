@@ -3,8 +3,8 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import type { PropsWithChildren } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { guildChannelsQueryKey, type GuildChannelSummary } from './guild-queries'
-import { useChannelReordering } from './use-channel-reordering'
+import { guildChannelsQueryKey, type GuildChannelSummary } from '@/features/guilds/guild-queries'
+import { useChannelReordering } from '@/features/guilds/use-channel-reordering'
 
 const guildApi = vi.hoisted(() => ({
   reorderGuildChannels: vi.fn(),

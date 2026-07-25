@@ -2,12 +2,12 @@ import { useState } from 'react'
 
 import { getApiErrorMessage } from '@/api/errors'
 
-import type { GuildRoleSummary } from '../guild-queries'
-import { useGuildRoleReordering } from '../use-guild-role-reordering'
-import { GuildRoleCreateForm } from './guild-role-create-form'
-import { GuildRoleEditor } from './guild-role-editor'
-import { GuildRoleList } from './guild-role-list'
-import { SettingsEmptyState } from './guild-settings-list-states'
+import type { GuildRoleSummary } from '@/features/guilds/guild-queries'
+import { useGuildRoleReordering } from '@/features/guilds/use-guild-role-reordering'
+import { GuildRoleCreateForm } from '@/features/guilds/components/guild-role-create-form'
+import { GuildRoleEditor } from '@/features/guilds/components/guild-role-editor'
+import { GuildRoleList } from '@/features/guilds/components/guild-role-list'
+import { SettingsEmptyState } from '@/features/guilds/components/guild-settings-list-states'
 
 export function GuildRolesWorkspace({
   guildId,

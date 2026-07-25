@@ -1,10 +1,6 @@
 const PUBLIC_BUCKET = 'cordis-public'
 
-const BROWSER_MANAGED_HEADERS = new Set([
-  'content-length',
-  'host',
-  'transfer-encoding',
-])
+const BROWSER_MANAGED_HEADERS = new Set(['content-length', 'host', 'transfer-encoding'])
 
 export interface PresignedUploadContract {
   expiresAt: number
@@ -13,17 +9,11 @@ export interface PresignedUploadContract {
   uploadId: string
 }
 
-export function resolveGuildIconUrl(
-  guildId: string,
-  iconAssetId: string,
-): string | undefined {
+export function resolveGuildIconUrl(guildId: string, iconAssetId: string): string | undefined {
   return resolvePublicAssetUrl('icons', guildId, iconAssetId)
 }
 
-export function resolveAvatarUrl(
-  userId: string,
-  avatarAssetId: string,
-): string | undefined {
+export function resolveAvatarUrl(userId: string, avatarAssetId: string): string | undefined {
   return resolvePublicAssetUrl('avatars', userId, avatarAssetId)
 }
 

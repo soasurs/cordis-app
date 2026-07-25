@@ -1,6 +1,6 @@
 import type { GuildChannelPosition } from '@/api/guild'
 
-import type { GuildChannelSummary } from './guild-queries'
+import type { GuildChannelSummary } from '@/features/guilds/guild-queries'
 
 const categoryChannelType = 2
 

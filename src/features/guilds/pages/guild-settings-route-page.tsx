@@ -1,8 +1,11 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 
-import { isGuildSettingsSection, type GuildSettingsSection } from '../guild-settings-types'
+import {
+  isGuildSettingsSection,
+  type GuildSettingsSection,
+} from '@/features/guilds/guild-settings-types'
 
-import { GuildSettingsPage } from './guild-settings-page'
+import { GuildSettingsPage } from '@/features/guilds/pages/guild-settings-page'
 
 export function GuildSettingsRoutePage() {
   const { guildId, section: sectionParam } = useParams({

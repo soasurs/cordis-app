@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { TextInput } from '@/components/ui/text-input'
 
-import { upsertGuildChannelFromApi } from '../guild-queries'
+import { upsertGuildChannelFromApi } from '@/features/guilds/guild-queries'
 import {
   createGuildChannelSchema,
   getGuildFieldError,
   type CreateGuildChannelFormValues,
-} from '../validation'
+} from '@/features/guilds/validation'
 
 interface ParentCategory {
   id: string
