@@ -1,51 +1,81 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
-import { addGuildMemberRole, removeGuildMemberRole } from '@/api/guild'
+import { removeGuildRoleMembers } from '@/api/guild'
 import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
-
-import {
-  guildMemberRolesQueryOptions,
-  guildMembersInfiniteQueryOptions,
-  setGuildMemberRoleAssignment,
-  type GuildMemberSummary,
-  type GuildRoleSummary,
-} from '@/features/guilds/guild-queries'
 import { GuildMemberIdentity } from '@/features/guilds/components/guild-member-identity'
+import { GuildRoleMemberPickerDialog } from '@/features/guilds/components/guild-role-member-picker-dialog'
 import {
   SettingsEmptyState,
   SettingsListError,
   SettingsListSkeleton,
 } from '@/features/guilds/components/guild-settings-list-states'
+import {
+  guildRoleMembersInfiniteQueryOptions,
+  removeGuildRoleMembersFromApi,
+  setGuildMemberRoleAssignment,
+  type GuildMemberSummary,
+  type GuildRoleSummary,
+} from '@/features/guilds/guild-queries'
 
 export function GuildRoleMembers({ role }: { role: GuildRoleSummary }) {
-  const membersQuery = useInfiniteQuery(guildMembersInfiniteQueryOptions(role.guildId))
-  const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? []
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const roleMembersQuery = useInfiniteQuery(
+    guildRoleMembersInfiniteQueryOptions(role.guildId, role.id),
+  )
+  const members = roleMembersQuery.data?.pages.flatMap((page) => page.members) ?? []
+  const assignedUserIds = new Set(members.map((member) => member.userId))
+
+  if (role.isDefault) {
+    return (
+      <div className="grid gap-4 p-5">
+        <div>
+          <h4 className="text-sm font-semibold text-ink">Role members</h4>
+          <p className="mt-1 text-xs leading-5 text-subtle">
+            The default role is assigned to every community member automatically.
+          </p>
+        </div>
+        <SettingsEmptyState
+          description="You do not need to manage members for the default role."
+          title="Everyone is included"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-4 p-5">
-      <div>
-        <h4 className="text-sm font-semibold text-ink">Role members</h4>
-        <p className="mt-1 text-xs leading-5 text-subtle">
-          {role.isDefault
-            ? 'The default role is assigned to every community member automatically.'
-            : 'Choose which community members receive this role.'}
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-sm font-semibold text-ink">Role members</h4>
+          <p className="mt-1 text-xs leading-5 text-subtle">
+            Members who currently have this role. New roles start empty.
+          </p>
+        </div>
+        <Button
+          aria-label="Add role members"
+          size="small"
+          variant="secondary"
+          onClick={() => setPickerOpen(true)}
+        >
+          +
+        </Button>
       </div>
 
-      {membersQuery.isPending ? <SettingsListSkeleton /> : null}
-      {membersQuery.isError && members.length === 0 ? (
+      {roleMembersQuery.isPending ? <SettingsListSkeleton /> : null}
+      {roleMembersQuery.isError && members.length === 0 ? (
         <SettingsListError
           message={getApiErrorMessage(
-            membersQuery.error,
-            'Unable to load community members. Please try again.',
+            roleMembersQuery.error,
+            'Unable to load role members. Please try again.',
           )}
-          onRetry={() => void membersQuery.refetch()}
+          onRetry={() => void roleMembersQuery.refetch()}
         />
       ) : null}
-      {membersQuery.isSuccess && members.length === 0 ? (
+      {roleMembersQuery.isSuccess && members.length === 0 ? (
         <SettingsEmptyState
-          description="Members will appear here after they join the community."
+          description="Use + to choose community members who should receive this role."
           title="No members yet"
         />
       ) : null}
@@ -56,26 +86,34 @@ export function GuildRoleMembers({ role }: { role: GuildRoleSummary }) {
           ))}
         </ul>
       ) : null}
-      {membersQuery.isError && members.length > 0 ? (
+      {roleMembersQuery.isError && members.length > 0 ? (
         <SettingsListError
           message={getApiErrorMessage(
-            membersQuery.error,
-            'Unable to load more community members. Please try again.',
+            roleMembersQuery.error,
+            'Unable to load more role members. Please try again.',
           )}
-          onRetry={() => void membersQuery.refetch()}
+          onRetry={() => void roleMembersQuery.refetch()}
         />
       ) : null}
-      {membersQuery.hasNextPage ? (
+      {roleMembersQuery.hasNextPage ? (
         <div className="flex justify-center">
           <Button
-            loading={membersQuery.isFetchingNextPage}
+            loading={roleMembersQuery.isFetchingNextPage}
             size="small"
             variant="secondary"
-            onClick={() => void membersQuery.fetchNextPage()}
+            onClick={() => void roleMembersQuery.fetchNextPage()}
           >
             Load more members
           </Button>
         </div>
+      ) : null}
+
+      {pickerOpen ? (
+        <GuildRoleMemberPickerDialog
+          assignedUserIds={assignedUserIds}
+          role={role}
+          onClose={() => setPickerOpen(false)}
+        />
       ) : null}
     </div>
   )
@@ -89,54 +127,34 @@ function GuildRoleMemberRow({
   role: GuildRoleSummary
 }) {
   const queryClient = useQueryClient()
-  const rolesQuery = useQuery({
-    ...guildMemberRolesQueryOptions(role.guildId, member.userId),
-    enabled: !role.isDefault,
-  })
-  const assignmentMutation = useMutation({
-    mutationFn: (assigned: boolean) =>
-      assigned
-        ? addGuildMemberRole(role.guildId, member.userId, role.id)
-        : removeGuildMemberRole(role.guildId, member.userId, role.id),
-    onSuccess: (_, assigned) => {
-      setGuildMemberRoleAssignment(queryClient, role.guildId, member.userId, role, assigned)
+  const removeMutation = useMutation({
+    mutationFn: () => removeGuildRoleMembers(role.guildId, role.id, [member.userId]),
+    onSuccess: () => {
+      setGuildMemberRoleAssignment(queryClient, role.guildId, member.userId, role, false)
+      removeGuildRoleMembersFromApi(queryClient, role.guildId, role.id, [member.userId])
     },
   })
-  const assigned =
-    role.isDefault || rolesQuery.data?.some((memberRole) => memberRole.id === role.id) === true
-  const disabled =
-    role.isDefault || rolesQuery.isPending || rolesQuery.isError || assignmentMutation.isPending
 
   return (
     <li className="border-b border-line px-4 py-4 last:border-b-0">
       <div className="flex items-center gap-4">
         <GuildMemberIdentity member={member} />
-        <input
-          type="checkbox"
-          aria-label={`${role.name} role for user ${member.userId}`}
-          checked={assigned}
-          className="size-4 shrink-0 accent-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-45"
-          disabled={disabled}
-          onChange={(event) => assignmentMutation.mutate(event.target.checked)}
-        />
+        <Button
+          aria-label={`Remove ${role.name} from user ${member.userId}`}
+          disabled={removeMutation.isPending}
+          loading={removeMutation.isPending}
+          size="small"
+          variant="ghost"
+          onClick={() => removeMutation.mutate()}
+        >
+          Remove
+        </Button>
       </div>
-      {rolesQuery.isError ? (
-        <div className="mt-2 flex items-center justify-end gap-2 text-xs text-negative">
-          <span>Unable to load role status.</span>
-          <button
-            type="button"
-            className="font-semibold underline"
-            onClick={() => void rolesQuery.refetch()}
-          >
-            Try again
-          </button>
-        </div>
-      ) : null}
-      {assignmentMutation.error ? (
+      {removeMutation.error ? (
         <p role="alert" className="mt-2 text-right text-xs text-negative">
           {getApiErrorMessage(
-            assignmentMutation.error,
-            'Unable to update this role member. Please try again.',
+            removeMutation.error,
+            'Unable to remove this role member. Please try again.',
           )}
         </p>
       ) : null}

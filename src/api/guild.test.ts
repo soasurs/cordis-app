@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const guildClient = vi.hoisted(() => ({
   abortGuildIconUpload: vi.fn(),
   addGuildMemberRole: vi.fn(),
+  addGuildRoleMembers: vi.fn(),
   completeGuildIconUpload: vi.fn(),
   createGuild: vi.fn(),
   createGuildChannel: vi.fn(),
@@ -17,10 +18,12 @@ const guildClient = vi.hoisted(() => ({
   listGuildInvites: vi.fn(),
   listGuildMemberRoles: vi.fn(),
   listGuildMembers: vi.fn(),
+  listGuildRoleMembers: vi.fn(),
   listGuildRoles: vi.fn(),
   reorderGuildChannels: vi.fn(),
   reorderGuildRoles: vi.fn(),
   removeGuildMemberRole: vi.fn(),
+  removeGuildRoleMembers: vi.fn(),
   updateGuild: vi.fn(),
   updateGuildRole: vi.fn(),
 }))
@@ -33,6 +36,7 @@ vi.mock('@/api/client', () => ({ apiTransport: {} }))
 import {
   abortGuildIconUpload,
   addGuildMemberRole,
+  addGuildRoleMembers,
   completeGuildIconUpload,
   createGuildChannel,
   createGuildIconUpload,
@@ -46,10 +50,12 @@ import {
   listGuildInvites,
   listGuildMemberRoles,
   listGuildMembers,
+  listGuildRoleMembers,
   listGuildRoles,
   reorderGuildChannels,
   reorderGuildRoles,
   removeGuildMemberRole,
+  removeGuildRoleMembers,
   updateGuild,
   updateGuildRole,
 } from '@/api/guild'
@@ -390,6 +396,61 @@ describe('guild API', () => {
       guildId: 42n,
       roleId: 50n,
       userId: 7n,
+    })
+  })
+
+  it('lists members assigned to a guild role', async () => {
+    guildClient.listGuildRoleMembers.mockResolvedValue({
+      members: [
+        {
+          guildId: 42n,
+          joinedAt: 1_000n,
+          nickname: '',
+          revision: 1n,
+          updatedAt: 1_000n,
+          userId: 8n,
+        },
+      ],
+      nextCursor: 'opaque-next',
+    })
+
+    await expect(listGuildRoleMembers('42', '50')).resolves.toEqual({
+      members: [
+        {
+          guildId: '42',
+          joinedAt: 1_000,
+          nickname: '',
+          profile: undefined,
+          revision: 1,
+          updatedAt: 1_000,
+          userId: '8',
+        },
+      ],
+      nextCursor: 'opaque-next',
+    })
+    expect(guildClient.listGuildRoleMembers).toHaveBeenCalledWith({
+      guildId: 42n,
+      limit: 50,
+      roleId: 50n,
+    })
+  })
+
+  it('adds and removes many members on a guild role in one request', async () => {
+    guildClient.addGuildRoleMembers.mockResolvedValue({ ok: true })
+    guildClient.removeGuildRoleMembers.mockResolvedValue({ ok: true })
+
+    await expect(addGuildRoleMembers('42', '50', ['7', '8'])).resolves.toBeUndefined()
+    expect(guildClient.addGuildRoleMembers).toHaveBeenCalledWith({
+      guildId: 42n,
+      roleId: 50n,
+      userIds: [7n, 8n],
+    })
+
+    await expect(removeGuildRoleMembers('42', '50', ['8'])).resolves.toBeUndefined()
+    expect(guildClient.removeGuildRoleMembers).toHaveBeenCalledWith({
+      guildId: 42n,
+      roleId: 50n,
+      userIds: [8n],
     })
   })
 
