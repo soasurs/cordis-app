@@ -2,7 +2,7 @@ version: v2
 clean: true
 inputs:
   - git_repo: https://github.com/soasurs/cordis.git
-    commit: 113797ddd812018481b22c039325d8ac5d0e1f88
+    commit: 437cbac6d75bbe79416f7033c5f9507f076f5ae5
     subdir: proto
     depth: 1
 plugins:

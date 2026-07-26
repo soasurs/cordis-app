@@ -14,8 +14,8 @@ Copy `.env.example` to `.env.local` and set the build-time Gateway WebSocket URL
 environment. The URL must use `ws` or `wss` and contain only the Gateway host, without a path.
 
 Run `pnpm check` before opening a pull request. The public API generation pipeline is pinned
-to Cordis `v0.2.0`. Regenerate the checked-in TypeScript descriptors after changing
-the pinned backend tag:
+to Cordis commit `3acafdd` in `buf.gen.yaml`. Regenerate the checked-in TypeScript descriptors
+after changing the pinned backend ref:
 
 ```bash
 pnpm generate
