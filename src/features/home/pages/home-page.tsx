@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { GatewayStatus } from '@/app/gateway-context'
 import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
+import { useJoinGuildInviteDialog } from '@/stores/join-guild-invite-dialog'
 
 interface HomePageProps {
   displayName: string
@@ -9,7 +10,7 @@ interface HomePageProps {
 }
 
 const startingPoints: Array<{
-  action?: 'create-community'
+  action?: 'create-community' | 'join-invite'
   copy: string
   mark: string
   title: string
@@ -21,6 +22,7 @@ const startingPoints: Array<{
     copy: 'Start a focused space for your team, group, or community.',
   },
   {
+    action: 'join-invite',
     mark: '↗',
     title: 'Join with an invite',
     copy: 'Use an invite code to enter a community you already know.',
@@ -42,6 +44,7 @@ export function HomePage({
 }: HomePageProps) {
   const realtimeStatus = getRealtimeStatus(gatewayStatus)
   const openCreateGuildDialog = useCreateGuildDialog((state) => state.open)
+  const openJoinGuildInviteDialog = useJoinGuildInviteDialog((state) => state.open)
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-canvas">
@@ -106,14 +109,22 @@ export function HomePage({
                     <p className="mt-2 text-xs leading-5 text-muted">{item.copy}</p>
                     <Button
                       className="mt-5 w-full"
-                      disabled={item.action !== 'create-community'}
+                      disabled={!item.action}
                       size="small"
                       variant="secondary"
                       onClick={
-                        item.action === 'create-community' ? openCreateGuildDialog : undefined
+                        item.action === 'create-community'
+                          ? openCreateGuildDialog
+                          : item.action === 'join-invite'
+                            ? () => openJoinGuildInviteDialog()
+                            : undefined
                       }
                     >
-                      {item.action === 'create-community' ? 'Create community' : 'Coming next'}
+                      {item.action === 'create-community'
+                        ? 'Create community'
+                        : item.action === 'join-invite'
+                          ? 'Enter invite code'
+                          : 'Coming next'}
                     </Button>
                   </article>
                 ))}

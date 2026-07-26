@@ -58,6 +58,48 @@ export interface GuildMemberPage {
   nextCursor?: string
 }
 
+export interface GuildInvite {
+  code: string
+  createdAt: number
+  creator?: PublicUserProfile
+  creatorUserId: string
+  /** Unix ms; 0 means the invite never expires. */
+  expiresAt: number
+  guildId: string
+  id: string
+  /** 0 means unlimited uses. */
+  maxUses: number
+  uses: number
+}
+
+export interface GuildInvitePage {
+  invites: GuildInvite[]
+  nextCursor?: string
+}
+
+export interface CreateGuildInviteDetails {
+  /** Relative lifetime in milliseconds; 0 means never expires. */
+  expiresInMs: number
+  /** 0 means unlimited uses. */
+  maxUses: number
+}
+
+export interface GuildInvitePreview {
+  code: string
+  /** Unix ms; 0 means the invite never expires. */
+  expiresAt: number
+  guildDescription: string
+  guildIconAssetId: string
+  guildId: string
+  guildName: string
+  memberCount: number
+}
+
+export interface JoinGuildByInviteResult {
+  guild: Guild
+  member: GuildMember
+}
+
 export interface GuildRole {
   createdAt: number
   guildId: string

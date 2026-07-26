@@ -14,7 +14,9 @@ const guildApi = vi.hoisted(() => ({
   addGuildMemberRole: vi.fn(),
   completeGuildIconUpload: vi.fn(),
   createGuildIconUpload: vi.fn(),
+  createGuildInvite: vi.fn(),
   createGuildRole: vi.fn(),
+  deleteGuildInvite: vi.fn(),
   deleteGuildRole: vi.fn(),
   guildPermission: {
     administrator: '1',
@@ -29,6 +31,7 @@ const guildApi = vi.hoisted(() => ({
     sendMessages: '64',
     viewChannel: '32',
   },
+  listGuildInvites: vi.fn(),
   listGuildMembers: vi.fn(),
   listGuildMemberRoles: vi.fn(),
   listGuildRoles: vi.fn(),
@@ -89,6 +92,7 @@ const guild: GuildSummary = {
 beforeEach(() => {
   vi.clearAllMocks()
   assetsApi.resolveGuildIconUrl.mockReturnValue(undefined)
+  guildApi.listGuildInvites.mockResolvedValue({ invites: [] })
   guildApi.listGuildMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildMemberRoles.mockResolvedValue([])
   guildApi.listGuildRoles.mockResolvedValue([])
@@ -578,6 +582,91 @@ describe('GuildSettingsPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Roles' })[0]!)
 
     expect(onSelectSection).toHaveBeenCalledWith('roles')
+  })
+
+  it('lists invites and creates a new invite code', async () => {
+    guildApi.listGuildInvites.mockResolvedValue({
+      invites: [
+        {
+          code: 'cordis-hello',
+          createdAt: 1_000,
+          creator: {
+            avatarAssetId: '0',
+            createdAt: 500,
+            name: 'Alex Chen',
+            updatedAt: 1_000,
+            userId: '7',
+            username: 'alex_chen',
+          },
+          creatorUserId: '7',
+          expiresAt: 0,
+          guildId: '42',
+          id: '90',
+          maxUses: 0,
+          uses: 2,
+        },
+      ],
+    })
+    guildApi.createGuildInvite.mockResolvedValue({
+      code: 'cordis-new',
+      createdAt: 2_000,
+      creatorUserId: '7',
+      expiresAt: 0,
+      guildId: '42',
+      id: '91',
+      maxUses: 5,
+      uses: 0,
+    })
+    renderSettings(createQueryClient(), { section: 'invites' })
+    const user = userEvent.setup()
+
+    expect(await screen.findByText('cordis-hello')).toBeInTheDocument()
+    expect(screen.getByText(/Created by Alex Chen/)).toBeInTheDocument()
+    expect(screen.getByText('2 · unlimited uses')).toBeInTheDocument()
+    expect(screen.getByText('Never expires')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Create invite' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Create an invite' })
+    expect(dialog).toBeInTheDocument()
+    await user.selectOptions(within(dialog).getByLabelText(/Max uses/), '5')
+    await user.click(within(dialog).getByRole('button', { name: 'Create invite' }))
+
+    await waitFor(() =>
+      expect(guildApi.createGuildInvite).toHaveBeenCalledWith('42', {
+        expiresInMs: 0,
+        maxUses: 5,
+      }),
+    )
+    const readyDialog = await screen.findByRole('dialog', { name: 'Invite ready' })
+    expect(within(readyDialog).getByText(/\/invite\/cordis-new/)).toBeInTheDocument()
+    expect(within(readyDialog).getByRole('button', { name: 'Copy link' })).toBeInTheDocument()
+  })
+
+  it('revokes an invite from the invites list', async () => {
+    guildApi.listGuildInvites.mockResolvedValue({
+      invites: [
+        {
+          code: 'cordis-hello',
+          createdAt: 1_000,
+          creatorUserId: '7',
+          expiresAt: 0,
+          guildId: '42',
+          id: '90',
+          maxUses: 1,
+          uses: 0,
+        },
+      ],
+    })
+    guildApi.deleteGuildInvite.mockResolvedValue(undefined)
+    renderSettings(createQueryClient(), { section: 'invites' })
+    const user = userEvent.setup()
+
+    expect(await screen.findByText('cordis-hello')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Revoke' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm revoke' }))
+
+    await waitFor(() => expect(guildApi.deleteGuildInvite).toHaveBeenCalledWith('cordis-hello'))
+    await waitFor(() => expect(screen.queryByText('cordis-hello')).not.toBeInTheDocument())
   })
 })
 

@@ -77,6 +77,20 @@ describe('authentication pages', () => {
     })
   })
 
+  it('keeps a safe post-login redirect on the sign-in page', async () => {
+    const router = await renderRoute('/login?redirect=%2Finvite%2Fcordis-hello')
+
+    expect(router.state.location.pathname).toBe('/login')
+    expect(router.state.location.search).toEqual({ redirect: '/invite/cordis-hello' })
+  })
+
+  it('drops an unsafe post-login redirect on the sign-in page', async () => {
+    const router = await renderRoute('/login?redirect=https%3A%2F%2Fevil.example')
+
+    expect(router.state.location.pathname).toBe('/login')
+    expect(router.state.location.search).toEqual({})
+  })
+
   it('shows a safe error when sign-in fails', async () => {
     authenticationApi.login.mockRejectedValue(new Error('private server error'))
     await renderRoute('/login')

@@ -1,12 +1,16 @@
+import type { ReactNode } from 'react'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 export function SettingsPageHeading({
+  action,
   count,
   description,
   eyebrow,
   title,
 }: {
+  action?: ReactNode
   count?: number | string
   description: string
   eyebrow: string
@@ -15,9 +19,10 @@ export function SettingsPageHeading({
   return (
     <div className="mb-7">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">{eyebrow}</p>
-      <div className="mt-2 flex items-center gap-3">
+      <div className="mt-2 flex flex-wrap items-center gap-3">
         <h2 className="text-2xl font-semibold tracking-[-0.03em] text-ink">{title}</h2>
         {count !== undefined ? <Badge>{count}</Badge> : null}
+        {action ? <div className="ml-auto">{action}</div> : null}
       </div>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{description}</p>
     </div>

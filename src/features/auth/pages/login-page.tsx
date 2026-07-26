@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { getApiErrorMessage } from '@/api/errors'
@@ -13,6 +13,7 @@ import { setAuthSession } from '@/features/auth/auth-session'
 export function LoginPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { redirect: redirectTo } = useSearch({ from: '/_auth/login' })
   const [flowError, setFlowError] = useState<string>()
   const loginMutation = useMutation({
     mutationFn: async (values: LoginFormValues) => {
@@ -45,7 +46,7 @@ export function LoginPage() {
     }
 
     setAuthSession(queryClient, outcome.session)
-    await navigate({ to: '/' })
+    await navigate({ href: redirectTo ?? '/' })
   }
 
   const error = loginMutation.isError

@@ -19,6 +19,7 @@ import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth.reset-password'
 import { Route as AuthVerifyEmailRouteImport } from './routes/_auth.verify-email'
 import { Route as AppGuildsGuildIdRouteImport } from './routes/_app.guilds.$guildId'
+import { Route as AppInviteCodeRouteImport } from './routes/_app.invite.$code'
 import { Route as AppGuildsGuildIdIndexRouteImport } from './routes/_app.guilds.$guildId.index'
 import { Route as AppGuildsGuildIdChannelsChannelIdRouteImport } from './routes/_app.guilds.$guildId.channels.$channelId'
 import { Route as AppGuildsGuildIdSettingsSectionRouteImport } from './routes/_app.guilds.$guildId.settings.$section'
@@ -71,6 +72,11 @@ const AppGuildsGuildIdRoute = AppGuildsGuildIdRouteImport.update({
   path: '/guilds/$guildId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInviteCodeRoute = AppInviteCodeRouteImport.update({
+  id: '/invite/$code',
+  path: '/invite/$code',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGuildsGuildIdIndexRoute = AppGuildsGuildIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
+  '/invite/$code': typeof AppInviteCodeRoute
   '/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
   '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRoute
   '/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
+  '/invite/$code': typeof AppInviteCodeRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdIndexRoute
   '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRoute
   '/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
   '/_app/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
+  '/_app/invite/$code': typeof AppInviteCodeRoute
   '/_app/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
   '/_app/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRoute
   '/_app/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/guilds/$guildId'
+    | '/invite/$code'
     | '/guilds/$guildId/'
     | '/guilds/$guildId/channels/$channelId'
     | '/guilds/$guildId/settings/$section'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/invite/$code'
     | '/guilds/$guildId'
     | '/guilds/$guildId/channels/$channelId'
     | '/guilds/$guildId/settings/$section'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/_auth/verify-email'
     | '/_app/'
     | '/_app/guilds/$guildId'
+    | '/_app/invite/$code'
     | '/_app/guilds/$guildId/'
     | '/_app/guilds/$guildId/channels/$channelId'
     | '/_app/guilds/$guildId/settings/$section'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGuildsGuildIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/invite/$code': {
+      id: '/_app/invite/$code'
+      path: '/invite/$code'
+      fullPath: '/invite/$code'
+      preLoaderRoute: typeof AppInviteCodeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/guilds/$guildId/': {
       id: '/_app/guilds/$guildId/'
       path: '/'
@@ -294,11 +313,13 @@ const AppGuildsGuildIdRouteWithChildren =
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppGuildsGuildIdRoute: typeof AppGuildsGuildIdRouteWithChildren
+  AppInviteCodeRoute: typeof AppInviteCodeRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppGuildsGuildIdRoute: AppGuildsGuildIdRouteWithChildren,
+  AppInviteCodeRoute: AppInviteCodeRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

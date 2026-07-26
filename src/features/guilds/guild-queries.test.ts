@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { GatewayReadyData } from '@/gateway'
 
 import {
+  guildInvitesInfiniteQueryOptions,
   guildMemberRolesQueryKey,
   guildMembersInfiniteQueryOptions,
   guildRolesQueryKey,
@@ -22,6 +23,18 @@ describe('guildMembersInfiniteQueryOptions', () => {
       options.getNextPageParam({ members: [], nextCursor: 'opaque-next' }, [], undefined, []),
     ).toBe('opaque-next')
     expect(options.getNextPageParam({ members: [] }, [], undefined, [])).toBeUndefined()
+  })
+})
+
+describe('guildInvitesInfiniteQueryOptions', () => {
+  it('continues from an opaque next cursor and stops when it is absent', () => {
+    const options = guildInvitesInfiniteQueryOptions('42')
+
+    expect(options.initialPageParam).toBeUndefined()
+    expect(
+      options.getNextPageParam({ invites: [], nextCursor: 'opaque-next' }, [], undefined, []),
+    ).toBe('opaque-next')
+    expect(options.getNextPageParam({ invites: [] }, [], undefined, [])).toBeUndefined()
   })
 })
 
