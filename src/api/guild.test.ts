@@ -7,9 +7,14 @@ const guildClient = vi.hoisted(() => ({
   createGuild: vi.fn(),
   createGuildChannel: vi.fn(),
   createGuildIconUpload: vi.fn(),
+  createGuildInvite: vi.fn(),
   createGuildRole: vi.fn(),
+  deleteGuildInvite: vi.fn(),
   deleteGuildRole: vi.fn(),
+  getGuildInvite: vi.fn(),
+  joinGuildByInvite: vi.fn(),
   listGuildChannels: vi.fn(),
+  listGuildInvites: vi.fn(),
   listGuildMemberRoles: vi.fn(),
   listGuildMembers: vi.fn(),
   listGuildRoles: vi.fn(),
@@ -31,9 +36,14 @@ import {
   completeGuildIconUpload,
   createGuildChannel,
   createGuildIconUpload,
+  createGuildInvite,
   createGuildRole,
+  deleteGuildInvite,
   deleteGuildRole,
+  getGuildInvite,
+  joinGuildByInvite,
   listGuildChannels,
+  listGuildInvites,
   listGuildMemberRoles,
   listGuildMembers,
   listGuildRoles,
@@ -572,6 +582,196 @@ describe('guild API', () => {
       }),
     ).rejects.toThrow('expected upload size is invalid')
     expect(guildClient.createGuildIconUpload).not.toHaveBeenCalled()
+  })
+
+  it('maps invite identifiers into the application boundary', async () => {
+    guildClient.listGuildInvites.mockResolvedValue({
+      invites: [
+        {
+          code: 'cordis-hello',
+          createdAt: 1_000n,
+          creator: {
+            avatarAssetId: 0n,
+            createdAt: 500n,
+            name: 'Alex Chen',
+            updatedAt: 1_000n,
+            userId: 7n,
+            username: 'alex_chen',
+          },
+          creatorUserId: 7n,
+          expiresAt: 0n,
+          guildId: 42n,
+          id: 90n,
+          maxUses: 0,
+          uses: 2,
+        },
+      ],
+      nextCursor: 'opaque-next',
+    })
+    guildClient.createGuildInvite.mockResolvedValue({
+      invite: {
+        code: 'cordis-new',
+        createdAt: 2_000n,
+        creatorUserId: 7n,
+        expiresAt: 3_000n,
+        guildId: 42n,
+        id: 91n,
+        maxUses: 5,
+        uses: 0,
+      },
+    })
+    guildClient.deleteGuildInvite.mockResolvedValue({ ok: true })
+
+    await expect(listGuildInvites('42')).resolves.toEqual({
+      invites: [
+        {
+          code: 'cordis-hello',
+          createdAt: 1_000,
+          creator: {
+            avatarAssetId: '0',
+            createdAt: 500,
+            name: 'Alex Chen',
+            updatedAt: 1_000,
+            userId: '7',
+            username: 'alex_chen',
+          },
+          creatorUserId: '7',
+          expiresAt: 0,
+          guildId: '42',
+          id: '90',
+          maxUses: 0,
+          uses: 2,
+        },
+      ],
+      nextCursor: 'opaque-next',
+    })
+    expect(guildClient.listGuildInvites).toHaveBeenCalledWith({
+      guildId: 42n,
+      limit: 50,
+    })
+
+    await expect(
+      createGuildInvite('42', { expiresInMs: 86_400_000, maxUses: 5 }),
+    ).resolves.toEqual({
+      code: 'cordis-new',
+      createdAt: 2_000,
+      creator: undefined,
+      creatorUserId: '7',
+      expiresAt: 3_000,
+      guildId: '42',
+      id: '91',
+      maxUses: 5,
+      uses: 0,
+    })
+    expect(guildClient.createGuildInvite).toHaveBeenCalledWith({
+      expiresInMs: 86_400_000n,
+      guildId: 42n,
+      maxUses: 5,
+    })
+
+    await expect(deleteGuildInvite('cordis-hello')).resolves.toBeUndefined()
+    expect(guildClient.deleteGuildInvite).toHaveBeenCalledWith({ code: 'cordis-hello' })
+  })
+
+  it('maps invite preview and join responses into the application boundary', async () => {
+    guildClient.getGuildInvite.mockResolvedValue({
+      preview: {
+        code: 'cordis-hello',
+        expiresAt: 0n,
+        guildDescription: 'A community for thoughtful tools.',
+        guildIconAssetId: 9n,
+        guildId: 42n,
+        guildName: 'Cordis Studio',
+        memberCount: 12n,
+      },
+    })
+    guildClient.joinGuildByInvite.mockResolvedValue({
+      guild: {
+        createdAt: 1_000n,
+        description: 'A community for thoughtful tools.',
+        iconAssetId: 9n,
+        id: 42n,
+        name: 'Cordis Studio',
+        ownerId: 7n,
+        revision: 1n,
+        updatedAt: 1_000n,
+      },
+      member: {
+        guildId: 42n,
+        joinedAt: 2_000n,
+        nickname: '',
+        profile: {
+          avatarAssetId: 0n,
+          createdAt: 500n,
+          name: 'Sam Rivera',
+          updatedAt: 1_000n,
+          userId: 8n,
+          username: 'sam_rivera',
+        },
+        revision: 1n,
+        updatedAt: 2_000n,
+        userId: 8n,
+      },
+    })
+
+    await expect(getGuildInvite('  cordis-hello  ')).resolves.toEqual({
+      code: 'cordis-hello',
+      expiresAt: 0,
+      guildDescription: 'A community for thoughtful tools.',
+      guildIconAssetId: '9',
+      guildId: '42',
+      guildName: 'Cordis Studio',
+      memberCount: 12,
+    })
+    expect(guildClient.getGuildInvite).toHaveBeenCalledWith({ code: 'cordis-hello' })
+
+    await expect(joinGuildByInvite('cordis-hello')).resolves.toEqual({
+      guild: {
+        createdAt: 1_000,
+        description: 'A community for thoughtful tools.',
+        iconAssetId: '9',
+        id: '42',
+        name: 'Cordis Studio',
+        ownerId: '7',
+        revision: 1,
+        updatedAt: 1_000,
+      },
+      member: {
+        guildId: '42',
+        joinedAt: 2_000,
+        nickname: '',
+        profile: {
+          avatarAssetId: '0',
+          createdAt: 500,
+          name: 'Sam Rivera',
+          updatedAt: 1_000,
+          userId: '8',
+          username: 'sam_rivera',
+        },
+        revision: 1,
+        updatedAt: 2_000,
+        userId: '8',
+      },
+    })
+    expect(guildClient.joinGuildByInvite).toHaveBeenCalledWith({ code: 'cordis-hello' })
+  })
+
+  it('rejects invalid invite inputs before calling the API', async () => {
+    await expect(listGuildInvites('not-an-id')).rejects.toThrow('guild id is invalid')
+    await expect(createGuildInvite('42', { expiresInMs: -1, maxUses: 0 })).rejects.toThrow(
+      'expires in ms is invalid',
+    )
+    await expect(createGuildInvite('42', { expiresInMs: 0, maxUses: -1 })).rejects.toThrow(
+      'max uses is invalid',
+    )
+    await expect(deleteGuildInvite('  ')).rejects.toThrow('invite code is invalid')
+    await expect(getGuildInvite('  ')).rejects.toThrow('invite code is invalid')
+    await expect(joinGuildByInvite('')).rejects.toThrow('invite code is invalid')
+    expect(guildClient.listGuildInvites).not.toHaveBeenCalled()
+    expect(guildClient.createGuildInvite).not.toHaveBeenCalled()
+    expect(guildClient.deleteGuildInvite).not.toHaveBeenCalled()
+    expect(guildClient.getGuildInvite).not.toHaveBeenCalled()
+    expect(guildClient.joinGuildByInvite).not.toHaveBeenCalled()
   })
 })
 

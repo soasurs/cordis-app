@@ -41,6 +41,7 @@ const guildApi = vi.hoisted(() => ({
     viewChannel: '32',
   },
   listGuildChannels: vi.fn(),
+  listGuildInvites: vi.fn(),
   listGuildMembers: vi.fn(),
   listGuildRoles: vi.fn(),
   reorderGuildRoles: vi.fn(),
@@ -64,6 +65,7 @@ const channels: GuildChannelSummary[] = [
 
 beforeEach(() => {
   vi.clearAllMocks()
+  guildApi.listGuildInvites.mockResolvedValue({ invites: [] })
   guildApi.listGuildMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildRoles.mockResolvedValue([])
 })

@@ -8,11 +8,14 @@ import {
 
 import {
   listGuildChannels,
+  listGuildInvites,
   listGuildMemberRoles,
   listGuildMembers,
   listGuildRoles,
   type Guild,
   type GuildChannel,
+  type GuildInvite,
+  type GuildInvitePage,
   type GuildMember,
   type GuildMemberPage,
   type GuildRole,
@@ -41,6 +44,7 @@ export interface GuildSummary {
 export type GuildChannelSummary = GuildChannel
 export type GuildMemberSummary = GuildMember
 export type GuildRoleSummary = GuildRole
+export type GuildInviteSummary = GuildInvite
 
 export const guildsQueryKey = ['guilds'] as const
 
@@ -85,6 +89,68 @@ export function guildMembersInfiniteQueryOptions(guildId: string) {
     queryKey: guildMembersQueryKey(guildId),
     staleTime: 30_000,
   })
+}
+
+export function guildInvitesQueryKey(guildId: string) {
+  return [...guildsQueryKey, guildId, 'invites'] as const
+}
+
+export function guildInvitesInfiniteQueryOptions(guildId: string) {
+  return infiniteQueryOptions<
+    GuildInvitePage,
+    Error,
+    InfiniteData<GuildInvitePage>,
+    ReturnType<typeof guildInvitesQueryKey>,
+    string | undefined
+  >({
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => listGuildInvites(guildId, pageParam),
+    queryKey: guildInvitesQueryKey(guildId),
+    staleTime: 30_000,
+  })
+}
+
+export function prependGuildInviteFromApi(queryClient: QueryClient, invite: GuildInviteSummary) {
+  queryClient.setQueryData<InfiniteData<GuildInvitePage>>(
+    guildInvitesQueryKey(invite.guildId),
+    (current) => {
+      if (!current) {
+        return {
+          pageParams: [undefined],
+          pages: [{ invites: [invite] }],
+        }
+      }
+
+      const [firstPage, ...restPages] = current.pages
+      const invites = [
+        invite,
+        ...(firstPage?.invites ?? []).filter((item) => item.id !== invite.id),
+      ]
+
+      return {
+        ...current,
+        pages: [{ invites, nextCursor: firstPage?.nextCursor }, ...restPages],
+      }
+    },
+  )
+}
+
+export function removeGuildInviteFromApi(queryClient: QueryClient, guildId: string, code: string) {
+  queryClient.setQueryData<InfiniteData<GuildInvitePage>>(
+    guildInvitesQueryKey(guildId),
+    (current) => {
+      if (!current) return current
+
+      return {
+        ...current,
+        pages: current.pages.map((page) => ({
+          ...page,
+          invites: page.invites.filter((invite) => invite.code !== code),
+        })),
+      }
+    },
+  )
 }
 
 export function guildMemberRolesQueryKey(guildId: string, userId: string) {

@@ -27,6 +27,12 @@ export const createGuildChannelSchema = z.object({
 
 export type CreateGuildChannelFormValues = z.infer<typeof createGuildChannelSchema>
 
+export const joinGuildInviteSchema = z.object({
+  code: z.string().trim().min(1, 'Enter an invite code'),
+})
+
+export type JoinGuildInviteFormValues = z.infer<typeof joinGuildInviteSchema>
+
 export const GUILD_ICON_MAX_BYTES = 10 * 1024 * 1024
 export const GUILD_ICON_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 

@@ -4,6 +4,7 @@ import { Navigate, Outlet, useNavigate, useRouterState } from '@tanstack/react-r
 import { AppShell } from '@/components/layout/app-shell'
 import { useGatewayStatus } from '@/app/gateway-context'
 import { CreateGuildDialog } from '@/features/guilds/components/create-guild-dialog'
+import { JoinGuildInviteDialog } from '@/features/guilds/components/join-guild-invite-dialog'
 import { guildsQueryOptions } from '@/features/guilds/guild-queries'
 import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
 
@@ -40,6 +41,7 @@ export function ProtectedAppOutlet() {
         <Outlet />
       </AppShell>
       <CreateGuildDialog />
+      <JoinGuildInviteDialog />
     </>
   )
 }

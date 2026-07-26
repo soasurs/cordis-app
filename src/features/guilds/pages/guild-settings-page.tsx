@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
+import { GuildInvitesSettings } from '@/features/guilds/components/guild-invites-settings'
 import { GuildMembersSettings } from '@/features/guilds/components/guild-members-settings'
 import { GuildOverviewSettings } from '@/features/guilds/components/guild-overview-settings'
 import { GuildRolesSettings } from '@/features/guilds/components/guild-roles-settings'
@@ -92,6 +93,7 @@ export function GuildSettingsPage({
       {canAccessSection && section === 'overview' ? <GuildOverviewSettings guild={guild} /> : null}
       {canAccessSection && section === 'roles' ? <GuildRolesSettings guildId={guild.id} /> : null}
       {canAccessSection && section === 'members' ? <GuildMembersSettings guild={guild} /> : null}
+      {canAccessSection && section === 'invites' ? <GuildInvitesSettings guild={guild} /> : null}
     </GuildSettingsLayout>
   )
 }
