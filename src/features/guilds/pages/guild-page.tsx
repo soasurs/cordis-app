@@ -24,6 +24,7 @@ import { useGuildCapabilities } from '@/features/guilds/use-guild-permissions'
 interface GuildPageProps {
   channelId?: string
   guildId: string
+  onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onOpenSettings?: () => void
   onSelectChannel?: (channelId: string) => void
 }
@@ -34,6 +35,7 @@ type CreateChannelTarget =
 export function GuildPage({
   channelId,
   guildId,
+  onOpenChannelSettings,
   onOpenSettings,
   onSelectChannel,
 }: GuildPageProps) {
@@ -109,6 +111,7 @@ export function GuildPage({
                   : undefined
               }
               onMoveChannel={moveChannel}
+              onOpenChannelSettings={canManageChannels ? onOpenChannelSettings : undefined}
               onSelectChannel={onSelectChannel}
               onToggleCategory={toggleCategory}
             />
@@ -159,6 +162,7 @@ export function GuildPage({
                       : undefined
                   }
                   onMoveChannel={moveChannel}
+                  onOpenChannelSettings={canManageChannels ? onOpenChannelSettings : undefined}
                   onSelectChannel={onSelectChannel}
                   onToggleCategory={toggleCategory}
                 />

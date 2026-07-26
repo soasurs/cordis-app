@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 
 import {
+  listGuildChannelPermissionOverwrites,
   listGuildChannels,
   listGuildInvites,
   listGuildMemberRoles,
@@ -15,6 +16,7 @@ import {
   listGuildRoles,
   type Guild,
   type GuildChannel,
+  type GuildChannelPermissionOverwrite,
   type GuildInvite,
   type GuildInvitePage,
   type GuildMember,
@@ -43,9 +45,10 @@ export interface GuildSummary {
 }
 
 export type GuildChannelSummary = GuildChannel
+export type GuildChannelOverwriteSummary = GuildChannelPermissionOverwrite
+export type GuildInviteSummary = GuildInvite
 export type GuildMemberSummary = GuildMember
 export type GuildRoleSummary = GuildRole
-export type GuildInviteSummary = GuildInvite
 
 export const guildsQueryKey = ['guilds'] as const
 
@@ -70,6 +73,53 @@ export function guildChannelsQueryOptions(guildId: string) {
     queryKey: guildChannelsQueryKey(guildId),
     staleTime: Number.POSITIVE_INFINITY,
   })
+}
+
+export function guildChannelOverwritesQueryKey(guildId: string, channelId: string) {
+  return [...guildChannelsQueryKey(guildId), channelId, 'overwrites'] as const
+}
+
+export function guildChannelOverwritesQueryOptions(guildId: string, channelId: string) {
+  return queryOptions({
+    queryFn: () => listGuildChannelPermissionOverwrites(channelId),
+    queryKey: guildChannelOverwritesQueryKey(guildId, channelId),
+    staleTime: 30_000,
+  })
+}
+
+export function upsertGuildChannelOverwriteFromApi(
+  queryClient: QueryClient,
+  overwrite: GuildChannelOverwriteSummary,
+) {
+  queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+    guildChannelOverwritesQueryKey(overwrite.guildId, overwrite.channelId),
+    (current = []) => {
+      const next = current.filter(
+        (item) =>
+          !(item.appliesTo === overwrite.appliesTo && item.appliesToId === overwrite.appliesToId),
+      )
+      return [...next, overwrite]
+    },
+  )
+  // View Channel overwrites change the server-visible channel set; always re-pull.
+  invalidateGuildChannelsFromGateway(queryClient, overwrite.guildId)
+}
+
+export function removeGuildChannelOverwriteFromApi(
+  queryClient: QueryClient,
+  guildId: string,
+  channelId: string,
+  appliesTo: GuildChannelOverwriteSummary['appliesTo'],
+  appliesToId: string,
+) {
+  queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+    guildChannelOverwritesQueryKey(guildId, channelId),
+    (current = []) =>
+      current.filter(
+        (item) => !(item.appliesTo === appliesTo && item.appliesToId === appliesToId),
+      ),
+  )
+  invalidateGuildChannelsFromGateway(queryClient, guildId)
 }
 
 export function guildMembersQueryKey(guildId: string) {
@@ -268,6 +318,7 @@ export function upsertGuildRoleFromApi(queryClient: QueryClient, role: GuildRole
     upsertByRevision(current, role),
   )
   patchGuildMemberRoleCaches(queryClient, role.guildId, role)
+  invalidateGuildChannelsFromGateway(queryClient, role.guildId)
 }
 
 export function upsertGuildRolesFromApi(
@@ -281,6 +332,7 @@ export function upsertGuildRolesFromApi(
   for (const role of roles) {
     patchGuildMemberRoleCaches(queryClient, guildId, role)
   }
+  invalidateGuildChannelsFromGateway(queryClient, guildId)
 }
 
 export function removeGuildRoleFromApi(queryClient: QueryClient, guildId: string, roleId: string) {
@@ -288,6 +340,7 @@ export function removeGuildRoleFromApi(queryClient: QueryClient, guildId: string
     current.filter((role) => role.id !== roleId),
   )
   stripGuildMemberRoleCaches(queryClient, guildId, roleId)
+  invalidateGuildChannelsFromGateway(queryClient, guildId)
 }
 
 export function upsertGuildRoleFromGateway(queryClient: QueryClient, role: GuildRolePayload) {
@@ -308,6 +361,27 @@ export function removeGuildRoleFromGateway(
 
 export function invalidateGuildMembersFromGateway(queryClient: QueryClient, guildId: string) {
   void queryClient.invalidateQueries({ queryKey: guildMembersQueryKey(guildId) })
+}
+
+/** Re-pull visible channels after role / overwrite changes affect View Channel. */
+export function invalidateGuildChannelsFromGateway(queryClient: QueryClient, guildId: string) {
+  void queryClient.invalidateQueries({
+    // Overwrites keys are nested under this prefix; exact keeps them untouched.
+    exact: true,
+    queryKey: guildChannelsQueryKey(guildId),
+    // Permission changes must refresh even if the guild page query is inactive.
+    refetchType: 'all',
+  })
+}
+
+export function invalidateGuildChannelOverwritesFromGateway(
+  queryClient: QueryClient,
+  guildId: string,
+  channelId: string,
+) {
+  void queryClient.invalidateQueries({
+    queryKey: guildChannelOverwritesQueryKey(guildId, channelId),
+  })
 }
 
 export function invalidateGuildMemberRolesFromGateway(

@@ -44,7 +44,10 @@ export function useChannelReordering(guildId: string) {
       if (context) {
         queryClient.setQueryData(guildChannelsQueryKey(guildId), context.previousChannels)
       }
-      void queryClient.invalidateQueries({ queryKey: guildChannelsQueryKey(guildId) })
+      void queryClient.invalidateQueries({
+        exact: true,
+        queryKey: guildChannelsQueryKey(guildId),
+      })
     },
     onSuccess: (channels) => {
       upsertGuildChannelsFromApi(queryClient, guildId, channels)

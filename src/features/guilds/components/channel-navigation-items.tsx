@@ -10,6 +10,7 @@ import type { GuildChannelMoveTarget } from '@/features/guilds/channel-ordering'
 import {
   ChevronIcon,
   DragHandleIcon,
+  SettingsGearIcon,
   TextChannelIcon,
   VoiceChannelIcon,
 } from '@/features/guilds/components/channel-icons'
@@ -28,6 +29,7 @@ export function CategoryChannelGroup({
   dropActive,
   dropVisual,
   onCreateChannel,
+  onOpenChannelSettings,
   onSelectChannel,
   onToggleCategory,
   selectedChannelId,
@@ -39,6 +41,7 @@ export function CategoryChannelGroup({
   dropActive: boolean
   dropVisual: DropVisual
   onCreateChannel?: (category: GuildChannelSummary) => void
+  onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onSelectChannel?: (channelId: string) => void
   onToggleCategory: (categoryId: string) => void
   selectedChannelId?: string
@@ -86,6 +89,16 @@ export function CategoryChannelGroup({
             +
           </button>
         ) : null}
+        {onOpenChannelSettings ? (
+          <button
+            type="button"
+            aria-label="Open category settings"
+            className="grid size-7 shrink-0 place-items-center rounded-control text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
+            onClick={() => onOpenChannelSettings(category)}
+          >
+            <SettingsGearIcon />
+          </button>
+        ) : null}
       </div>
       {!collapsed ? (
         <SortableContext
@@ -105,6 +118,7 @@ export function CategoryChannelGroup({
                   channel={channel}
                   dragDisabled={dragDisabled}
                   dropVisual={dropVisual}
+                  onOpenChannelSettings={onOpenChannelSettings}
                   onSelectChannel={onSelectChannel}
                   selected={channel.id === selectedChannelId}
                 />
@@ -135,12 +149,14 @@ export function SortableChannelButton({
   channel,
   dragDisabled,
   dropVisual,
+  onOpenChannelSettings,
   onSelectChannel,
   selected,
 }: {
   channel: GuildChannelSummary
   dragDisabled: boolean
   dropVisual: DropVisual
+  onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onSelectChannel?: (channelId: string) => void
   selected: boolean
 }) {
@@ -165,6 +181,16 @@ export function SortableChannelButton({
         selected={selected}
         type={channel.type === GuildChannelType.VOICE ? 'voice' : 'text'}
       />
+      {onOpenChannelSettings ? (
+        <button
+          type="button"
+          aria-label="Open channel settings"
+          className="grid size-7 shrink-0 place-items-center rounded-control text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
+          onClick={() => onOpenChannelSettings(channel)}
+        >
+          <SettingsGearIcon />
+        </button>
+      ) : null}
       {indicatorEdge === 'after' ? <InsertionIndicator edge="after" /> : null}
     </div>
   )

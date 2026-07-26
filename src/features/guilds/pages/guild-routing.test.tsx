@@ -41,11 +41,14 @@ const guildApi = vi.hoisted(() => ({
     viewChannel: '32',
   },
   listGuildChannels: vi.fn(),
+  listGuildChannelPermissionOverwrites: vi.fn(),
   listGuildInvites: vi.fn(),
+  listGuildMemberRoles: vi.fn(),
   listGuildMembers: vi.fn(),
   listGuildRoles: vi.fn(),
   reorderGuildRoles: vi.fn(),
   updateGuild: vi.fn(),
+  updateGuildChannel: vi.fn(),
   updateGuildRole: vi.fn(),
 }))
 
@@ -66,8 +69,10 @@ const channels: GuildChannelSummary[] = [
 beforeEach(() => {
   vi.clearAllMocks()
   guildApi.listGuildInvites.mockResolvedValue({ invites: [] })
+  guildApi.listGuildMemberRoles.mockResolvedValue([])
   guildApi.listGuildMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildRoles.mockResolvedValue([])
+  guildApi.listGuildChannelPermissionOverwrites.mockResolvedValue([])
 })
 
 describe('guild routing', () => {
@@ -86,6 +91,16 @@ describe('guild routing', () => {
 
     expect(router.state.location.pathname).toBe('/guilds/42/channels/43')
     expect(guildApi.listGuildChannels).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the guild page when a channel is no longer visible', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), [])
+    const router = await renderRoute('/guilds/42/channels/43', queryClient)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/guilds/42'))
+    expect(screen.queryByText('404')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'No channels yet' })).not.toBeInTheDocument()
   })
 
   it('closes community settings from a nested section without stepping through route history', async () => {
@@ -131,6 +146,72 @@ describe('guild routing', () => {
     const router = await renderRoute('/guilds/42/settings/unknown')
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/guilds/42/settings/overview'))
+  })
+
+  it('opens and closes channel settings from a channel row gear', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    const router = await renderRoute('/guilds/42/channels/43', queryClient)
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Open channel settings' }))[0]!)
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(
+        '/guilds/42/channels/43/settings/overview',
+      ),
+    )
+    expect(await screen.findByRole('heading', { name: 'Channel overview' })).toBeInTheDocument()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Close channel settings' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/guilds/42/channels/43'))
+  })
+
+  it('opens category settings and returns to the guild when closed', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), [
+      ...channels,
+      {
+        guildId: '42',
+        id: '45',
+        name: 'Projects',
+        position: 2,
+        revision: 1,
+        topic: '',
+        type: 2,
+      },
+    ])
+    const router = await renderRoute('/guilds/42/channels/43', queryClient)
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Open category settings' }))[0]!)
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(
+        '/guilds/42/channels/45/settings/overview',
+      ),
+    )
+    expect(await screen.findByRole('heading', { name: 'Category overview' })).toBeInTheDocument()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Close channel settings' }))
+    // Category index routes back to the guild, which then selects the first channel.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/guilds/42/channels/43'))
+  })
+
+  it('redirects an unknown channel settings tab to overview', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    const router = await renderRoute('/guilds/42/channels/43/settings/unknown', queryClient)
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(
+        '/guilds/42/channels/43/settings/overview',
+      ),
+    )
+  })
+
+  it('redirects missing-channel settings links back to the guild', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), [])
+    const router = await renderRoute('/guilds/42/channels/43/settings/overview', queryClient)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/guilds/42'))
   })
 })
 

@@ -23,6 +23,8 @@ import { Route as AppInviteCodeRouteImport } from './routes/_app.invite.$code'
 import { Route as AppGuildsGuildIdIndexRouteImport } from './routes/_app.guilds.$guildId.index'
 import { Route as AppGuildsGuildIdChannelsChannelIdRouteImport } from './routes/_app.guilds.$guildId.channels.$channelId'
 import { Route as AppGuildsGuildIdSettingsSectionRouteImport } from './routes/_app.guilds.$guildId.settings.$section'
+import { Route as AppGuildsGuildIdChannelsChannelIdIndexRouteImport } from './routes/_app.guilds.$guildId.channels.$channelId.index'
+import { Route as AppGuildsGuildIdChannelsChannelIdSettingsTabRouteImport } from './routes/_app.guilds.$guildId.channels.$channelId.settings.$tab'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -94,6 +96,18 @@ const AppGuildsGuildIdSettingsSectionRoute =
     path: '/settings/$section',
     getParentRoute: () => AppGuildsGuildIdRoute,
   } as any)
+const AppGuildsGuildIdChannelsChannelIdIndexRoute =
+  AppGuildsGuildIdChannelsChannelIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppGuildsGuildIdChannelsChannelIdRoute,
+  } as any)
+const AppGuildsGuildIdChannelsChannelIdSettingsTabRoute =
+  AppGuildsGuildIdChannelsChannelIdSettingsTabRouteImport.update({
+    id: '/settings/$tab',
+    path: '/settings/$tab',
+    getParentRoute: () => AppGuildsGuildIdChannelsChannelIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -106,8 +120,10 @@ export interface FileRoutesByFullPath {
   '/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
   '/invite/$code': typeof AppInviteCodeRoute
   '/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
-  '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRoute
+  '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRouteWithChildren
   '/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
+  '/guilds/$guildId/channels/$channelId/': typeof AppGuildsGuildIdChannelsChannelIdIndexRoute
+  '/guilds/$guildId/channels/$channelId/settings/$tab': typeof AppGuildsGuildIdChannelsChannelIdSettingsTabRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -119,8 +135,9 @@ export interface FileRoutesByTo {
   '/verify-email': typeof AuthVerifyEmailRoute
   '/invite/$code': typeof AppInviteCodeRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdIndexRoute
-  '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRoute
   '/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
+  '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdIndexRoute
+  '/guilds/$guildId/channels/$channelId/settings/$tab': typeof AppGuildsGuildIdChannelsChannelIdSettingsTabRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -136,8 +153,10 @@ export interface FileRoutesById {
   '/_app/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
   '/_app/invite/$code': typeof AppInviteCodeRoute
   '/_app/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
-  '/_app/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRoute
+  '/_app/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRouteWithChildren
   '/_app/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
+  '/_app/guilds/$guildId/channels/$channelId/': typeof AppGuildsGuildIdChannelsChannelIdIndexRoute
+  '/_app/guilds/$guildId/channels/$channelId/settings/$tab': typeof AppGuildsGuildIdChannelsChannelIdSettingsTabRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -154,6 +173,8 @@ export interface FileRouteTypes {
     | '/guilds/$guildId/'
     | '/guilds/$guildId/channels/$channelId'
     | '/guilds/$guildId/settings/$section'
+    | '/guilds/$guildId/channels/$channelId/'
+    | '/guilds/$guildId/channels/$channelId/settings/$tab'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -165,8 +186,9 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/invite/$code'
     | '/guilds/$guildId'
-    | '/guilds/$guildId/channels/$channelId'
     | '/guilds/$guildId/settings/$section'
+    | '/guilds/$guildId/channels/$channelId'
+    | '/guilds/$guildId/channels/$channelId/settings/$tab'
   id:
     | '__root__'
     | '/_app'
@@ -183,6 +205,8 @@ export interface FileRouteTypes {
     | '/_app/guilds/$guildId/'
     | '/_app/guilds/$guildId/channels/$channelId'
     | '/_app/guilds/$guildId/settings/$section'
+    | '/_app/guilds/$guildId/channels/$channelId/'
+    | '/_app/guilds/$guildId/channels/$channelId/settings/$tab'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -291,19 +315,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGuildsGuildIdSettingsSectionRouteImport
       parentRoute: typeof AppGuildsGuildIdRoute
     }
+    '/_app/guilds/$guildId/channels/$channelId/': {
+      id: '/_app/guilds/$guildId/channels/$channelId/'
+      path: '/'
+      fullPath: '/guilds/$guildId/channels/$channelId/'
+      preLoaderRoute: typeof AppGuildsGuildIdChannelsChannelIdIndexRouteImport
+      parentRoute: typeof AppGuildsGuildIdChannelsChannelIdRoute
+    }
+    '/_app/guilds/$guildId/channels/$channelId/settings/$tab': {
+      id: '/_app/guilds/$guildId/channels/$channelId/settings/$tab'
+      path: '/settings/$tab'
+      fullPath: '/guilds/$guildId/channels/$channelId/settings/$tab'
+      preLoaderRoute: typeof AppGuildsGuildIdChannelsChannelIdSettingsTabRouteImport
+      parentRoute: typeof AppGuildsGuildIdChannelsChannelIdRoute
+    }
   }
 }
 
+interface AppGuildsGuildIdChannelsChannelIdRouteChildren {
+  AppGuildsGuildIdChannelsChannelIdIndexRoute: typeof AppGuildsGuildIdChannelsChannelIdIndexRoute
+  AppGuildsGuildIdChannelsChannelIdSettingsTabRoute: typeof AppGuildsGuildIdChannelsChannelIdSettingsTabRoute
+}
+
+const AppGuildsGuildIdChannelsChannelIdRouteChildren: AppGuildsGuildIdChannelsChannelIdRouteChildren =
+  {
+    AppGuildsGuildIdChannelsChannelIdIndexRoute:
+      AppGuildsGuildIdChannelsChannelIdIndexRoute,
+    AppGuildsGuildIdChannelsChannelIdSettingsTabRoute:
+      AppGuildsGuildIdChannelsChannelIdSettingsTabRoute,
+  }
+
+const AppGuildsGuildIdChannelsChannelIdRouteWithChildren =
+  AppGuildsGuildIdChannelsChannelIdRoute._addFileChildren(
+    AppGuildsGuildIdChannelsChannelIdRouteChildren,
+  )
+
 interface AppGuildsGuildIdRouteChildren {
   AppGuildsGuildIdIndexRoute: typeof AppGuildsGuildIdIndexRoute
-  AppGuildsGuildIdChannelsChannelIdRoute: typeof AppGuildsGuildIdChannelsChannelIdRoute
+  AppGuildsGuildIdChannelsChannelIdRoute: typeof AppGuildsGuildIdChannelsChannelIdRouteWithChildren
   AppGuildsGuildIdSettingsSectionRoute: typeof AppGuildsGuildIdSettingsSectionRoute
 }
 
 const AppGuildsGuildIdRouteChildren: AppGuildsGuildIdRouteChildren = {
   AppGuildsGuildIdIndexRoute: AppGuildsGuildIdIndexRoute,
   AppGuildsGuildIdChannelsChannelIdRoute:
-    AppGuildsGuildIdChannelsChannelIdRoute,
+    AppGuildsGuildIdChannelsChannelIdRouteWithChildren,
   AppGuildsGuildIdSettingsSectionRoute: AppGuildsGuildIdSettingsSectionRoute,
 }
 

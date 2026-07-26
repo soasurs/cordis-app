@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { guildPermission, type GuildRole } from '@/api/guild'
 import {
   combineGuildRolePermissions,
+  getChannelOverwritePermissionState,
   memberHasGuildPermission,
   resolveHeldGuildRoles,
+  setChannelOverwritePermissionState,
 } from '@/features/guilds/components/guild-permissions'
 
 const everyone: GuildRole = {
@@ -61,5 +63,38 @@ describe('memberHasGuildPermission', () => {
     expect(memberHasGuildPermission('0', guildPermission.manageGuild, { isOwner: true })).toBe(
       true,
     )
+  })
+})
+
+describe('channel overwrite permission state', () => {
+  it('reads allow, deny, and noop for a permission bit', () => {
+    expect(getChannelOverwritePermissionState('32', '64', guildPermission.viewChannel)).toBe(
+      'allow',
+    )
+    expect(getChannelOverwritePermissionState('0', '64', guildPermission.sendMessages)).toBe(
+      'deny',
+    )
+    expect(getChannelOverwritePermissionState('0', '0', guildPermission.viewChannel)).toBe('noop')
+  })
+
+  it('moves a permission bit between allow, deny, and noop without overlap', () => {
+    expect(
+      setChannelOverwritePermissionState('0', '0', guildPermission.viewChannel, 'allow'),
+    ).toEqual({
+      allow: '32',
+      deny: '0',
+    })
+    expect(
+      setChannelOverwritePermissionState('32', '0', guildPermission.viewChannel, 'deny'),
+    ).toEqual({
+      allow: '0',
+      deny: '32',
+    })
+    expect(
+      setChannelOverwritePermissionState('0', '32', guildPermission.viewChannel, 'noop'),
+    ).toEqual({
+      allow: '0',
+      deny: '0',
+    })
   })
 })

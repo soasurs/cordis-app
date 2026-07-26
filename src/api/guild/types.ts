@@ -149,3 +149,36 @@ export interface GuildChannelPosition {
   parentId?: string | null
   position: number
 }
+
+export interface UpdateGuildChannelDetails {
+  /** Omit when unchanged. */
+  name?: string
+  /**
+   * Omit when unchanged. `null` clears parent (moves to root); omit to leave
+   * parent unchanged.
+   */
+  parentId?: string | null
+  /** Omit when unchanged. Empty string clears the topic. */
+  topic?: string
+}
+
+export type GuildChannelPermissionOverwriteAppliesTo = 'member' | 'role'
+
+export interface GuildChannelPermissionOverwrite {
+  allow: string
+  appliesTo: GuildChannelPermissionOverwriteAppliesTo
+  appliesToId: string
+  channelId: string
+  createdAt: number
+  deny: string
+  guildId: string
+  revision: number
+  updatedAt: number
+}
+
+export interface UpsertGuildChannelPermissionOverwriteDetails {
+  allow: string
+  appliesTo: GuildChannelPermissionOverwriteAppliesTo
+  appliesToId: string
+  deny: string
+}

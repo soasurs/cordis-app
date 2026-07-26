@@ -27,6 +27,13 @@ export const createGuildChannelSchema = z.object({
 
 export type CreateGuildChannelFormValues = z.infer<typeof createGuildChannelSchema>
 
+export const updateGuildChannelSchema = z.object({
+  name: z.string().trim().min(1, 'Enter a channel name'),
+  topic: z.string().trim(),
+})
+
+export type UpdateGuildChannelFormValues = z.infer<typeof updateGuildChannelSchema>
+
 export const joinGuildInviteSchema = z.object({
   code: z.string().trim().min(1, 'Enter an invite code'),
 })

@@ -42,6 +42,7 @@ interface ChannelNavigationProps {
   movePending: boolean
   onCreateChannel?: (category: GuildChannelSummary) => void
   onMoveChannel: (nextChannels: GuildChannelSummary[], parentId?: string) => void
+  onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onSelectChannel?: (channelId: string) => void
   onToggleCategory: (categoryId: string) => void
   reorderEnabled?: boolean
@@ -63,6 +64,7 @@ export function ChannelNavigation({
   movePending,
   onCreateChannel,
   onMoveChannel,
+  onOpenChannelSettings,
   onSelectChannel,
   onToggleCategory,
   reorderEnabled = false,
@@ -169,6 +171,7 @@ export function ChannelNavigation({
                 dragDisabled={dragDisabled}
                 dropVisual={visibleDropVisual}
                 onCreateChannel={onCreateChannel}
+                onOpenChannelSettings={onOpenChannelSettings}
                 onSelectChannel={onSelectChannel}
                 onToggleCategory={onToggleCategory}
                 selectedChannelId={selectedChannelId}
@@ -179,6 +182,7 @@ export function ChannelNavigation({
                 channel={channel}
                 dragDisabled={dragDisabled}
                 dropVisual={visibleDropVisual}
+                onOpenChannelSettings={onOpenChannelSettings}
                 onSelectChannel={onSelectChannel}
                 selected={channel.id === selectedChannelId}
               />
