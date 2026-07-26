@@ -55,3 +55,22 @@ export function DragHandleIcon() {
     </svg>
   )
 }
+
+export function SettingsGearIcon({ className = 'size-3.5' }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 16 16"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    >
+      <path
+        d="M6.4 1.8h3.2l.4 1.5a4.8 4.8 0 0 1 1.2.7l1.5-.5 1.6 2.8-1.2 1a4.8 4.8 0 0 1 0 1.4l1.2 1-1.6 2.8-1.5-.5a4.8 4.8 0 0 1-1.2.7l-.4 1.5H6.4l-.4-1.5a4.8 4.8 0 0 1-1.2-.7l-1.5.5L1.7 9.7l1.2-1a4.8 4.8 0 0 1 0-1.4l-1.2-1 1.6-2.8 1.5.5a4.8 4.8 0 0 1 1.2-.7l.4-1.5Z"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="8" r="1.7" />
+    </svg>
+  )
+}

@@ -2,6 +2,8 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import {
   guildsQueryKey,
+  invalidateGuildChannelOverwritesFromGateway,
+  invalidateGuildChannelsFromGateway,
   invalidateGuildMembersFromGateway,
   removeGuildChannelFromGateway,
   removeGuildFromGateway,
@@ -54,6 +56,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
       dispatch.data.user_id,
       dispatch.data.role_ids,
     )
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
@@ -62,11 +65,31 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
     isGatewayDispatch(dispatch, 'guild.role.updated')
   ) {
     upsertGuildRoleFromGateway(queryClient, dispatch.data)
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
   if (isGatewayDispatch(dispatch, 'guild.role.deleted')) {
     removeGuildRoleFromGateway(queryClient, dispatch.data.guild_id, dispatch.data.id)
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
+    return
+  }
+
+  if (
+    isGatewayDispatch(dispatch, 'guild.channel.overwrite.updated') ||
+    isGatewayDispatch(dispatch, 'guild.channel.overwrite.deleted')
+  ) {
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
+    invalidateGuildChannelOverwritesFromGateway(
+      queryClient,
+      dispatch.data.guild_id,
+      dispatch.data.channel_id,
+    )
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'session.reconcile')) {
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 

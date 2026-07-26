@@ -142,3 +142,32 @@ export function toggleGuildPermission(
   const flag = BigInt(permission)
   return (granted ? current | flag : current & ~flag).toString()
 }
+
+export type ChannelOverwritePermissionState = 'allow' | 'deny' | 'noop'
+
+export function getChannelOverwritePermissionState(
+  allow: string,
+  deny: string,
+  permission: string,
+): ChannelOverwritePermissionState {
+  if (hasGuildPermission(allow, permission)) return 'allow'
+  if (hasGuildPermission(deny, permission)) return 'deny'
+  return 'noop'
+}
+
+export function setChannelOverwritePermissionState(
+  allow: string,
+  deny: string,
+  permission: string,
+  state: ChannelOverwritePermissionState,
+): { allow: string; deny: string } {
+  const flag = BigInt(permission)
+  let nextAllow = BigInt(allow) & ~flag
+  let nextDeny = BigInt(deny) & ~flag
+  if (state === 'allow') nextAllow |= flag
+  if (state === 'deny') nextDeny |= flag
+  return {
+    allow: nextAllow.toString(),
+    deny: nextDeny.toString(),
+  }
+}

@@ -6,6 +6,8 @@ export type {
   CreateGuildInviteDetails,
   Guild,
   GuildChannel,
+  GuildChannelPermissionOverwrite,
+  GuildChannelPermissionOverwriteAppliesTo,
   GuildChannelPosition,
   GuildIconUploadContract,
   GuildInvite,
@@ -17,7 +19,9 @@ export type {
   GuildRoleDetails,
   GuildRolePosition,
   JoinGuildByInviteResult,
+  UpdateGuildChannelDetails,
   UpdateGuildDetails,
+  UpsertGuildChannelPermissionOverwriteDetails,
 } from '@/api/guild/types'
 export {
   abortGuildIconUpload,
@@ -26,7 +30,15 @@ export {
   createGuildIconUpload,
   updateGuild,
 } from '@/api/guild/guild-ops'
-export { createGuildChannel, listGuildChannels, reorderGuildChannels } from '@/api/guild/channels'
+export {
+  createGuildChannel,
+  deleteGuildChannelPermissionOverwrite,
+  listGuildChannelPermissionOverwrites,
+  listGuildChannels,
+  reorderGuildChannels,
+  updateGuildChannel,
+  upsertGuildChannelPermissionOverwrite,
+} from '@/api/guild/channels'
 export {
   createGuildInvite,
   deleteGuildInvite,

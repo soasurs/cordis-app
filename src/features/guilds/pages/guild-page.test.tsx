@@ -372,6 +372,50 @@ describe('GuildPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Create a channel in Projects' }),
     ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open channel settings' })).not.toBeInTheDocument()
+  })
+
+  it('shows a settings gear on channel and category rows when Manage Channels is available', async () => {
+    const queryClient = createQueryClient()
+    const onOpenChannelSettings = vi.fn()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenChannelSettings })
+    const user = userEvent.setup()
+
+    const channelGear = await screen.findAllByRole('button', { name: 'Open channel settings' })
+    expect(channelGear.length).toBeGreaterThan(0)
+    await user.click(channelGear[0]!)
+    expect(onOpenChannelSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ id: expect.any(String), type: expect.any(Number) }),
+    )
+
+    onOpenChannelSettings.mockClear()
+    const categoryGear = screen.getAllByRole('button', { name: 'Open category settings' })
+    expect(categoryGear.length).toBeGreaterThan(0)
+    await user.click(categoryGear[0]!)
+    expect(onOpenChannelSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '45', name: 'Projects', type: 2 }),
+    )
+  })
+
+  it('hides the settings gear when a non-owner lacks Manage Channels', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      {
+        ...everyoneRole,
+        permissions: '32',
+      },
+    ])
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildsQueryKey, [{ ...guild, ownerId: '99' }])
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, {
+      channelId: '43',
+      onOpenChannelSettings: vi.fn(),
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to #general' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open channel settings' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open category settings' })).not.toBeInTheDocument()
   })
 })
 
@@ -393,6 +437,7 @@ function renderGuildPage(
   queryClient: QueryClient,
   props: {
     channelId?: string
+    onOpenChannelSettings?: (channel: GuildChannelSummary) => void
     onOpenSettings?: () => void
     onSelectChannel?: (channelId: string) => void
   } = {},

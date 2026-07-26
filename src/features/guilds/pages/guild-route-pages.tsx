@@ -9,6 +9,12 @@ export function EmptyGuildRoutePage() {
   return (
     <GuildPage
       guildId={guildId}
+      onOpenChannelSettings={(channel) => {
+        void navigate({
+          params: { channelId: channel.id, guildId, tab: 'overview' },
+          to: '/guilds/$guildId/channels/$channelId/settings/$tab',
+        })
+      }}
       onOpenSettings={() => {
         void navigate({
           params: { guildId, section: 'overview' },
@@ -27,7 +33,7 @@ export function EmptyGuildRoutePage() {
 
 export function GuildChannelRoutePage() {
   const { channelId, guildId } = useParams({
-    from: '/_app/guilds/$guildId/channels/$channelId',
+    from: '/_app/guilds/$guildId/channels/$channelId/',
   })
   const navigate = useNavigate()
 
@@ -35,6 +41,12 @@ export function GuildChannelRoutePage() {
     <GuildPage
       channelId={channelId}
       guildId={guildId}
+      onOpenChannelSettings={(channel) => {
+        void navigate({
+          params: { channelId: channel.id, guildId, tab: 'overview' },
+          to: '/guilds/$guildId/channels/$channelId/settings/$tab',
+        })
+      }}
       onOpenSettings={() => {
         void navigate({
           params: { guildId, section: 'overview' },

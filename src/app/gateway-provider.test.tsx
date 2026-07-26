@@ -237,6 +237,7 @@ describe('GatewayProvider', () => {
         .getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))
         ?.find((role) => role.id === '51'),
     ).toMatchObject({ name: 'Moderators', permissions: '6', revision: 2 })
+    expect(queryClient.getQueryState(guildChannelsQueryKey('42'))?.isInvalidated).toBe(true)
 
     act(() =>
       connection.dispatch({

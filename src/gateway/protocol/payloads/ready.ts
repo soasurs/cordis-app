@@ -29,8 +29,8 @@ export interface ReadyChannel {
 export interface ReadyPermissionOverwrite {
   channel_id: string
   guild_id: string
-  target_type: number
-  target_id: string
+  applies_to: number
+  applies_to_id: string
   allow: string
   deny: string
   revision: number

@@ -12,8 +12,10 @@ const guildClient = vi.hoisted(() => ({
   createGuildRole: vi.fn(),
   deleteGuildInvite: vi.fn(),
   deleteGuildRole: vi.fn(),
+  deleteGuildChannelPermissionOverwrite: vi.fn(),
   getGuildInvite: vi.fn(),
   joinGuildByInvite: vi.fn(),
+  listGuildChannelPermissionOverwrites: vi.fn(),
   listGuildChannels: vi.fn(),
   listGuildInvites: vi.fn(),
   listGuildMemberRoles: vi.fn(),
@@ -25,7 +27,9 @@ const guildClient = vi.hoisted(() => ({
   removeGuildMemberRole: vi.fn(),
   removeGuildRoleMembers: vi.fn(),
   updateGuild: vi.fn(),
+  updateGuildChannel: vi.fn(),
   updateGuildRole: vi.fn(),
+  upsertGuildChannelPermissionOverwrite: vi.fn(),
 }))
 
 vi.mock('@connectrpc/connect', () => ({
@@ -44,8 +48,10 @@ import {
   createGuildRole,
   deleteGuildInvite,
   deleteGuildRole,
+  deleteGuildChannelPermissionOverwrite,
   getGuildInvite,
   joinGuildByInvite,
+  listGuildChannelPermissionOverwrites,
   listGuildChannels,
   listGuildInvites,
   listGuildMemberRoles,
@@ -57,7 +63,9 @@ import {
   removeGuildMemberRole,
   removeGuildRoleMembers,
   updateGuild,
+  updateGuildChannel,
   updateGuildRole,
+  upsertGuildChannelPermissionOverwrite,
 } from '@/api/guild'
 
 beforeEach(() => {
@@ -540,6 +548,175 @@ describe('guild API', () => {
         { channelId: 43n, parentId: 0n, position: 1 },
         { channelId: 42n, position: 2 },
       ],
+    })
+  })
+
+  it('updates a guild channel with only changed fields', async () => {
+    guildClient.updateGuildChannel.mockResolvedValue({
+      channel: {
+        guildId: 42n,
+        id: 43n,
+        name: 'lobby',
+        parentId: 0n,
+        position: 0,
+        revision: 2n,
+        topic: 'Hang out here',
+        type: 1,
+      },
+    })
+
+    await expect(
+      updateGuildChannel('43', { name: 'lobby', topic: 'Hang out here' }),
+    ).resolves.toEqual({
+      guildId: '42',
+      id: '43',
+      name: 'lobby',
+      position: 0,
+      revision: 2,
+      topic: 'Hang out here',
+      type: 1,
+    })
+    expect(guildClient.updateGuildChannel).toHaveBeenCalledWith({
+      channelId: 43n,
+      name: 'lobby',
+      topic: 'Hang out here',
+    })
+  })
+
+  it('omits unchanged guild channel fields from the update request', async () => {
+    guildClient.updateGuildChannel.mockResolvedValue({
+      channel: {
+        guildId: 42n,
+        id: 43n,
+        name: 'general',
+        parentId: 0n,
+        position: 0,
+        revision: 2n,
+        topic: 'Updated topic',
+        type: 1,
+      },
+    })
+
+    await updateGuildChannel('43', { topic: 'Updated topic' })
+
+    expect(guildClient.updateGuildChannel).toHaveBeenCalledWith({
+      channelId: 43n,
+      topic: 'Updated topic',
+    })
+  })
+
+  it('lists channel permission overwrites as domain models', async () => {
+    guildClient.listGuildChannelPermissionOverwrites.mockResolvedValue({
+      overwrites: [
+        {
+          allow: 32n,
+          appliesTo: 1,
+          appliesToId: 42n,
+          channelId: 43n,
+          createdAt: 1_000n,
+          deny: 64n,
+          guildId: 42n,
+          revision: 1n,
+          updatedAt: 2_000n,
+        },
+        {
+          allow: 0n,
+          appliesTo: 2,
+          appliesToId: 7n,
+          channelId: 43n,
+          createdAt: 1_500n,
+          deny: 128n,
+          guildId: 42n,
+          revision: 1n,
+          updatedAt: 2_500n,
+        },
+      ],
+    })
+
+    await expect(listGuildChannelPermissionOverwrites('43')).resolves.toEqual([
+      {
+        allow: '32',
+        appliesTo: 'role',
+        appliesToId: '42',
+        channelId: '43',
+        createdAt: 1_000,
+        deny: '64',
+        guildId: '42',
+        revision: 1,
+        updatedAt: 2_000,
+      },
+      {
+        allow: '0',
+        appliesTo: 'member',
+        appliesToId: '7',
+        channelId: '43',
+        createdAt: 1_500,
+        deny: '128',
+        guildId: '42',
+        revision: 1,
+        updatedAt: 2_500,
+      },
+    ])
+    expect(guildClient.listGuildChannelPermissionOverwrites).toHaveBeenCalledWith({
+      channelId: 43n,
+    })
+  })
+
+  it('upserts a channel permission overwrite', async () => {
+    guildClient.upsertGuildChannelPermissionOverwrite.mockResolvedValue({
+      overwrite: {
+        allow: 32n,
+        appliesTo: 1,
+        appliesToId: 50n,
+        channelId: 43n,
+        createdAt: 1_000n,
+        deny: 0n,
+        guildId: 42n,
+        revision: 1n,
+        updatedAt: 1_000n,
+      },
+    })
+
+    await expect(
+      upsertGuildChannelPermissionOverwrite('43', {
+        allow: '32',
+        appliesTo: 'role',
+        appliesToId: '50',
+        deny: '0',
+      }),
+    ).resolves.toEqual({
+      allow: '32',
+      appliesTo: 'role',
+      appliesToId: '50',
+      channelId: '43',
+      createdAt: 1_000,
+      deny: '0',
+      guildId: '42',
+      revision: 1,
+      updatedAt: 1_000,
+    })
+    expect(guildClient.upsertGuildChannelPermissionOverwrite).toHaveBeenCalledWith({
+      allow: 32n,
+      appliesTo: 1,
+      appliesToId: 50n,
+      channelId: 43n,
+      deny: 0n,
+    })
+  })
+
+  it('deletes a channel permission overwrite', async () => {
+    guildClient.deleteGuildChannelPermissionOverwrite.mockResolvedValue({ ok: true })
+
+    await expect(
+      deleteGuildChannelPermissionOverwrite('43', {
+        appliesTo: 'role',
+        appliesToId: '50',
+      }),
+    ).resolves.toBeUndefined()
+    expect(guildClient.deleteGuildChannelPermissionOverwrite).toHaveBeenCalledWith({
+      appliesTo: 1,
+      appliesToId: 50n,
+      channelId: 43n,
     })
   })
 
