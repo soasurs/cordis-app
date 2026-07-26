@@ -40,10 +40,11 @@ interface ChannelNavigationProps {
   compact?: boolean
   moveError: Error | null
   movePending: boolean
-  onCreateChannel: (category: GuildChannelSummary) => void
+  onCreateChannel?: (category: GuildChannelSummary) => void
   onMoveChannel: (nextChannels: GuildChannelSummary[], parentId?: string) => void
   onSelectChannel?: (channelId: string) => void
   onToggleCategory: (categoryId: string) => void
+  reorderEnabled?: boolean
   selectedChannelId?: string
 }
 
@@ -64,11 +65,13 @@ export function ChannelNavigation({
   onMoveChannel,
   onSelectChannel,
   onToggleCategory,
+  reorderEnabled = false,
   selectedChannelId,
 }: ChannelNavigationProps) {
   const [activeChannel, setActiveChannel] = useState<GuildChannelSummary>()
   const [dropVisual, setDropVisual] = useState<DropVisual>({})
   const visibleDropVisual = activeChannel ? dropVisual : hiddenDropVisual
+  const dragDisabled = movePending || !reorderEnabled
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 6 } }),
@@ -83,13 +86,7 @@ export function ChannelNavigation({
   )
 
   if (topLevelChannels.length === 0) {
-    return (
-      <div
-        className={`${compact ? 'mt-3' : ''} rounded-control border border-dashed border-line px-3 py-4`}
-      >
-        <p className="text-xs font-medium text-muted">No channels available</p>
-      </div>
-    )
+    return null
   }
 
   const updateDropVisual = ({ active, over }: DragMoveEvent | DragOverEvent) => {
@@ -108,7 +105,7 @@ export function ChannelNavigation({
     const target =
       draggedChannel && over ? resolveDropTarget(channels, draggedChannel, active, over) : undefined
     clearDragState()
-    if (!draggedChannel || !target || movePending) return
+    if (!reorderEnabled || !draggedChannel || !target || movePending) return
 
     const nextChannels = moveGuildChannelInList(channels, draggedChannel.id, target)
     if (nextChannels !== channels) {
@@ -146,7 +143,7 @@ export function ChannelNavigation({
             {getApiErrorMessage(moveError, 'Unable to move this channel. Please try again.')}
           </p>
         ) : null}
-        {activeChannel && activeChannel.type !== GuildChannelType.CATEGORY ? (
+        {reorderEnabled && activeChannel && activeChannel.type !== GuildChannelType.CATEGORY ? (
           <RootChannelDropTarget />
         ) : null}
         <SortableContext
@@ -165,9 +162,11 @@ export function ChannelNavigation({
                 )}
                 collapsed={collapsedCategoryIds.has(channel.id)}
                 dropActive={Boolean(
-                  activeChannel && activeChannel.type !== GuildChannelType.CATEGORY,
+                  reorderEnabled &&
+                  activeChannel &&
+                  activeChannel.type !== GuildChannelType.CATEGORY,
                 )}
-                dragDisabled={movePending}
+                dragDisabled={dragDisabled}
                 dropVisual={visibleDropVisual}
                 onCreateChannel={onCreateChannel}
                 onSelectChannel={onSelectChannel}
@@ -178,7 +177,7 @@ export function ChannelNavigation({
               <SortableChannelButton
                 key={channel.id}
                 channel={channel}
-                dragDisabled={movePending}
+                dragDisabled={dragDisabled}
                 dropVisual={visibleDropVisual}
                 onSelectChannel={onSelectChannel}
                 selected={channel.id === selectedChannelId}

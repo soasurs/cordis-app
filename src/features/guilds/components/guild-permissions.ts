@@ -1,4 +1,4 @@
-import { guildPermission } from '@/api/guild'
+import { guildPermission, type GuildRole } from '@/api/guild'
 
 export const guildPermissionGroups = [
   {
@@ -88,6 +88,49 @@ export function countGuildPermissions(value: string) {
 
 export function hasGuildPermission(rolePermissions: string, permission: string) {
   return (BigInt(rolePermissions) & BigInt(permission)) !== 0n
+}
+
+/**
+ * True when the member is the guild owner, holds Administrator, or holds the
+ * specific flag. Ownership grants every guild permission.
+ */
+export function memberHasGuildPermission(
+  permissions: string,
+  permission: string,
+  options?: { isOwner?: boolean },
+) {
+  if (options?.isOwner) return true
+  return (
+    hasGuildPermission(permissions, guildPermission.administrator) ||
+    hasGuildPermission(permissions, permission)
+  )
+}
+
+/**
+ * Roles a member effectively holds: every default (@everyone) role plus any
+ * explicitly assigned roles. Assigned entries are resolved against the guild
+ * role list when present so permission bits stay current.
+ */
+export function resolveHeldGuildRoles(guildRoles: GuildRole[], assignedRoles: GuildRole[]) {
+  const byId = new Map(guildRoles.map((role) => [role.id, role]))
+  const held = new Map<string, GuildRole>()
+
+  for (const role of guildRoles) {
+    if (role.isDefault) {
+      held.set(role.id, role)
+    }
+  }
+
+  for (const role of assignedRoles) {
+    held.set(role.id, byId.get(role.id) ?? role)
+  }
+
+  return [...held.values()]
+}
+
+/** Bitwise OR of every held role's permission mask. */
+export function combineGuildRolePermissions(roles: GuildRole[]) {
+  return roles.reduce((permissions, role) => permissions | BigInt(role.permissions), 0n).toString()
 }
 
 export function toggleGuildPermission(

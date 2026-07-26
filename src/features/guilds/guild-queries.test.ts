@@ -4,9 +4,12 @@ import { describe, expect, it } from 'vitest'
 import type { GatewayReadyData } from '@/gateway'
 
 import {
+  guildMemberRolesQueryKey,
   guildMembersInfiniteQueryOptions,
+  guildRolesQueryKey,
   guildsQueryKey,
   replaceGuildsFromReady,
+  type GuildRoleSummary,
   type GuildSummary,
 } from '@/features/guilds/guild-queries'
 
@@ -23,7 +26,7 @@ describe('guildMembersInfiniteQueryOptions', () => {
 })
 
 describe('replaceGuildsFromReady', () => {
-  it('stores guild descriptions from the ready snapshot', () => {
+  it('stores guild descriptions and member roles from the ready snapshot', () => {
     const queryClient = new QueryClient()
     const ready = {
       access_token_expires_at: 10_000,
@@ -37,12 +40,35 @@ describe('replaceGuildsFromReady', () => {
           description: 'Community description',
           icon_asset_id: '0',
           id: '42',
-          member_role_ids: [],
+          member_role_ids: ['51'],
           name: 'Cordis Studio',
           owner_id: '7',
           permission_overwrites: [],
           revision: 1,
-          roles: [],
+          roles: [
+            {
+              created_at: 1_000,
+              guild_id: '42',
+              id: '50',
+              is_default: true,
+              name: 'Everyone',
+              permissions: '32',
+              position: 0,
+              revision: 1,
+              updated_at: 1_000,
+            },
+            {
+              created_at: 1_000,
+              guild_id: '42',
+              id: '51',
+              is_default: false,
+              name: 'Helpers',
+              permissions: '128',
+              position: 1,
+              revision: 1,
+              updated_at: 1_000,
+            },
+          ],
           updated_at: 1_000,
         },
       ],
@@ -64,5 +90,9 @@ describe('replaceGuildsFromReady', () => {
       revision: 1,
       updatedAt: 1_000,
     })
+    expect(queryClient.getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))).toHaveLength(2)
+    expect(
+      queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7')),
+    ).toEqual([expect.objectContaining({ id: '51', name: 'Helpers', permissions: '128' })])
   })
 })

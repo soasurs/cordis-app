@@ -8,6 +8,7 @@ import {
 } from '@/features/guilds/guild-settings-types'
 
 interface GuildSettingsLayoutProps {
+  allowedSections?: readonly GuildSettingsSection[]
   children: ReactNode
   guildName: string
   onClose: () => void
@@ -16,6 +17,7 @@ interface GuildSettingsLayoutProps {
 }
 
 export function GuildSettingsLayout({
+  allowedSections,
   children,
   guildName,
   onClose,
@@ -24,6 +26,9 @@ export function GuildSettingsLayout({
 }: GuildSettingsLayoutProps) {
   const sectionLabel =
     guildSettingsSections.find((item) => item.id === section)?.label ?? 'Overview'
+  const navigationSections = allowedSections
+    ? guildSettingsSections.filter((item) => allowedSections.includes(item.id))
+    : guildSettingsSections
 
   return (
     <main className="flex min-h-0 flex-1 bg-surface">
@@ -34,7 +39,11 @@ export function GuildSettingsLayout({
           </p>
           <p className="mt-1.5 truncate text-sm font-semibold text-ink">{guildName}</p>
         </div>
-        <GuildSettingsNavigation section={section} onSelectSection={onSelectSection} />
+        <GuildSettingsNavigation
+          sections={navigationSections}
+          section={section}
+          onSelectSection={onSelectSection}
+        />
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
@@ -57,7 +66,12 @@ export function GuildSettingsLayout({
           </Button>
         </header>
 
-        <GuildSettingsNavigation compact section={section} onSelectSection={onSelectSection} />
+        <GuildSettingsNavigation
+          compact
+          sections={navigationSections}
+          section={section}
+          onSelectSection={onSelectSection}
+        />
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-7 sm:px-8 sm:py-10">
           <div className="mx-auto w-full max-w-3xl">{children}</div>
@@ -71,10 +85,12 @@ function GuildSettingsNavigation({
   compact = false,
   onSelectSection,
   section,
+  sections,
 }: {
   compact?: boolean
   onSelectSection?: (section: GuildSettingsSection) => void
   section: GuildSettingsSection
+  sections: readonly { id: GuildSettingsSection; label: string }[]
 }) {
   return (
     <nav
@@ -85,7 +101,7 @@ function GuildSettingsNavigation({
           : 'grid gap-1 p-3'
       }
     >
-      {guildSettingsSections.map((item) => {
+      {sections.map((item) => {
         const active = item.id === section
         return (
           <button

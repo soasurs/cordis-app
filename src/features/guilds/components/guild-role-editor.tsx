@@ -2,7 +2,7 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
-import { updateGuildRole } from '@/api/guild'
+import { updateGuildRole, type GuildRoleDetails } from '@/api/guild'
 import { getApiErrorMessage } from '@/api/errors'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,18 +19,30 @@ import { GuildRoleDeleteAction } from '@/features/guilds/components/guild-role-d
 import { GuildRoleMembers } from '@/features/guilds/components/guild-role-members'
 import { GuildRolePermissions } from '@/features/guilds/components/guild-role-permissions'
 
+function buildGuildRoleUpdate(role: GuildRoleSummary, values: GuildRoleFormValues): GuildRoleDetails {
+  const patch: GuildRoleDetails = {}
+  if (!role.isDefault && values.name !== role.name) {
+    patch.name = values.name
+  }
+  if (values.permissions !== role.permissions) {
+    patch.permissions = values.permissions
+  }
+  return patch
+}
+
 export function GuildRoleEditor({ role }: { role: GuildRoleSummary }) {
   const [tab, setTab] = useState<'members' | 'permissions'>('permissions')
   const queryClient = useQueryClient()
   const updateMutation = useMutation({
-    mutationFn: (values: GuildRoleFormValues) => updateGuildRole(role.guildId, role.id, values),
+    mutationFn: (details: GuildRoleDetails) => updateGuildRole(role.guildId, role.id, details),
   })
   const form = useForm({
     defaultValues: { name: role.name, permissions: role.permissions } satisfies GuildRoleFormValues,
     validators: { onSubmit: guildRoleSchema },
     onSubmit: async ({ value }) => {
       try {
-        const updatedRole = await updateMutation.mutateAsync(guildRoleSchema.parse(value))
+        const parsed = guildRoleSchema.parse(value)
+        const updatedRole = await updateMutation.mutateAsync(buildGuildRoleUpdate(role, parsed))
         form.reset({ name: updatedRole.name, permissions: updatedRole.permissions })
         upsertGuildRoleFromApi(queryClient, updatedRole)
       } catch {
@@ -96,13 +108,20 @@ export function GuildRoleEditor({ role }: { role: GuildRoleSummary }) {
                 <TextInput
                   required
                   autoComplete="off"
-                  disabled={updateMutation.isPending}
+                  disabled={role.isDefault || updateMutation.isPending}
                   error={getGuildFieldError(field.state.meta.errors)}
+                  hint={
+                    role.isDefault
+                      ? 'The default role name is fixed for every community.'
+                      : undefined
+                  }
                   label="Role name"
                   name={field.name}
+                  readOnly={role.isDefault}
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => {
+                    if (role.isDefault) return
                     if (updateMutation.isError || updateMutation.isSuccess) updateMutation.reset()
                     field.handleChange(event.target.value)
                   }}
@@ -126,7 +145,9 @@ export function GuildRoleEditor({ role }: { role: GuildRoleSummary }) {
             {([isSubmitting, values]) => (
               <RoleEditorActions
                 changed={
-                  values.name.trim() !== role.name || values.permissions !== role.permissions
+                  role.isDefault
+                    ? values.permissions !== role.permissions
+                    : values.name.trim() !== role.name || values.permissions !== role.permissions
                 }
                 loading={updateMutation.isPending || isSubmitting}
                 onReset={() => form.reset({ name: role.name, permissions: role.permissions })}

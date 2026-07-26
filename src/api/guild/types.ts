@@ -13,8 +13,10 @@ export interface Guild {
 }
 
 export interface UpdateGuildDetails {
-  description: string
-  name: string
+  /** Omit when unchanged. Empty string clears the description. */
+  description?: string
+  /** Omit when unchanged. */
+  name?: string
 }
 
 export interface CreateGuildIconUploadDetails {
@@ -70,9 +72,10 @@ export interface GuildRole {
 }
 
 export interface GuildRoleDetails {
-  name: string
-  /** Decimal string of the uint64 permission bitmask. */
-  permissions: string
+  /** Required when creating; omit from updates when unchanged. */
+  name?: string
+  /** Decimal string of the uint64 permission bitmask. Omit from updates when unchanged. */
+  permissions?: string
 }
 
 export interface GuildRolePosition {

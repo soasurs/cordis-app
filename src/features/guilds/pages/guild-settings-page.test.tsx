@@ -264,12 +264,55 @@ describe('GuildSettingsPage', () => {
     expect(guildApi.createGuildIconUpload).not.toHaveBeenCalled()
   })
 
-  it('blocks direct access for a user who is not the owner', () => {
+  it('blocks direct access for a member without settings permissions', async () => {
     const queryClient = createQueryClient('8')
     renderSettings(queryClient)
 
-    expect(screen.getByRole('heading', { name: 'You don’t have permission' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'You don’t have permission' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument()
+  })
+
+  it('allows Manage community members into settings with section-gated navigation', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      roleSummary({
+        id: '51',
+        isDefault: true,
+        name: 'Everyone',
+        permissions: '2',
+        position: 0,
+      }),
+    ])
+    const onSelectSection = vi.fn()
+    renderSettings(createQueryClient('8'), { onSelectSection })
+
+    expect(await screen.findByLabelText(/Community name/)).toBeInTheDocument()
+    const navigation = screen.getAllByRole('navigation', { name: 'Community settings' })[0]
+    expect(within(navigation).getByRole('button', { name: 'Overview' })).toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Roles' })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Members' })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Invites' })).not.toBeInTheDocument()
+  })
+
+  it('hides inaccessible sections instead of rendering them', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      roleSummary({
+        id: '51',
+        isDefault: true,
+        name: 'Everyone',
+        permissions: '2',
+        position: 0,
+      }),
+    ])
+    const onSelectSection = vi.fn()
+    renderSettings(createQueryClient('8'), { onSelectSection, section: 'roles' })
+
+    await waitFor(() => expect(onSelectSection).toHaveBeenCalledWith('overview'))
+    expect(screen.queryByRole('button', { name: 'Create role' })).not.toBeInTheDocument()
+    const navigation = screen.getAllByRole('navigation', { name: 'Community settings' })[0]
+    expect(within(navigation).getByRole('button', { name: 'Overview' })).toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Roles' })).not.toBeInTheDocument()
   })
 
   it('renders a two-pane role list and switches the selected permissions', async () => {
@@ -376,6 +419,39 @@ describe('GuildSettingsPage', () => {
       }),
     )
     expect(await screen.findByRole('status')).toHaveTextContent('Role settings saved.')
+  })
+
+  it('keeps the default role name fixed and hides delete', async () => {
+    const everyone = roleSummary({
+      id: '51',
+      isDefault: true,
+      name: 'Everyone',
+      permissions: '0',
+      position: 0,
+    })
+    guildApi.listGuildRoles.mockResolvedValue([everyone])
+    guildApi.updateGuildRole.mockResolvedValue({
+      ...everyone,
+      permissions: '2',
+      revision: 2,
+    })
+    renderSettings(createQueryClient(), { section: 'roles' })
+    const user = userEvent.setup()
+
+    const editor = await screen.findByRole('region', { name: 'Everyone' })
+    const nameInput = within(editor).getByRole('textbox', { name: /Role name/ })
+    expect(nameInput).toBeDisabled()
+    expect(nameInput).toHaveValue('Everyone')
+    expect(within(editor).queryByRole('button', { name: 'Delete role' })).not.toBeInTheDocument()
+
+    await user.click(within(editor).getByRole('switch', { name: 'Manage community' }))
+    await user.click(within(editor).getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() =>
+      expect(guildApi.updateGuildRole).toHaveBeenCalledWith('42', '51', {
+        permissions: '2',
+      }),
+    )
   })
 
   it('deletes a non-default role after confirmation', async () => {
@@ -523,8 +599,8 @@ function createQueryClient(userId = '7') {
 function renderSettings(
   queryClient: QueryClient,
   props: {
-    onSelectSection?: (section: 'members' | 'overview' | 'roles') => void
-    section?: 'members' | 'overview' | 'roles'
+    onSelectSection?: (section: 'invites' | 'members' | 'overview' | 'roles') => void
+    section?: 'invites' | 'members' | 'overview' | 'roles'
   } = {},
 ) {
   render(
