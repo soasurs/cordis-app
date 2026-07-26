@@ -6,8 +6,8 @@ interface GuildPageHeaderProps {
   guildId: string
   iconAssetId: string
   name: string
-  onCreateCategory: () => void
-  onCreateChannel: () => void
+  onCreateCategory?: () => void
+  onCreateChannel?: () => void
   onOpenSettings?: () => void
 }
 
@@ -20,6 +20,7 @@ export function GuildPageHeader({
   onOpenSettings,
 }: GuildPageHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const hasMenuActions = Boolean(onOpenSettings || onCreateChannel || onCreateCategory)
 
   return (
     <header className="relative flex h-16 shrink-0 items-center gap-3 border-b border-line px-4">
@@ -32,75 +33,85 @@ export function GuildPageHeader({
         </p>
         <h1 className="mt-1 truncate text-sm font-semibold text-ink">{name}</h1>
       </div>
-      <div
-        className="ml-auto"
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            setMenuOpen(false)
-            event.currentTarget.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')?.focus()
-          }
-        }}
-      >
-        <button
-          type="button"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          aria-label="Community menu"
-          className="grid size-8 place-items-center rounded-control text-base tracking-[0.12em] text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
-          onClick={() => setMenuOpen((open) => !open)}
+      {hasMenuActions ? (
+        <div
+          className="ml-auto"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setMenuOpen(false)
+              event.currentTarget
+                .querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')
+                ?.focus()
+            }
+          }}
         >
-          ···
-        </button>
-        {menuOpen ? (
-          <div
-            role="menu"
-            aria-label="Community actions"
-            className="absolute top-14 right-3 z-30 grid w-52 gap-1 rounded-panel border border-line bg-surface-raised p-1.5 shadow-panel"
+          <button
+            type="button"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-label="Community menu"
+            className="grid size-8 place-items-center rounded-control text-base tracking-[0.12em] text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
+            onClick={() => setMenuOpen((open) => !open)}
           >
-            {onOpenSettings ? (
-              <>
+            ···
+          </button>
+          {menuOpen ? (
+            <div
+              role="menu"
+              aria-label="Community actions"
+              className="absolute top-14 right-3 z-30 grid w-52 gap-1 rounded-panel border border-line bg-surface-raised p-1.5 shadow-panel"
+            >
+              {onOpenSettings ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onOpenSettings()
+                    }}
+                  >
+                    Community settings
+                  </button>
+                  {onCreateChannel || onCreateCategory ? (
+                    <div role="separator" className="my-0.5 h-px bg-line" />
+                  ) : null}
+                </>
+              ) : null}
+              {onCreateChannel ? (
                 <button
                   type="button"
                   role="menuitem"
                   className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
                   onClick={() => {
                     setMenuOpen(false)
-                    onOpenSettings()
+                    onCreateChannel()
                   }}
                 >
-                  Community settings
+                  Create channel
                 </button>
-                <div role="separator" className="my-0.5 h-px bg-line" />
-              </>
-            ) : null}
-            <button
-              type="button"
-              role="menuitem"
-              className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
-              onClick={() => {
-                setMenuOpen(false)
-                onCreateChannel()
-              }}
-            >
-              Create channel
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
-              onClick={() => {
-                setMenuOpen(false)
-                onCreateCategory()
-              }}
-            >
-              Create category
-            </button>
-          </div>
-        ) : null}
-      </div>
+              ) : null}
+              {onCreateCategory ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="whitespace-nowrap rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onCreateCategory()
+                  }}
+                >
+                  Create category
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </header>
   )
 }

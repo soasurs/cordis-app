@@ -121,6 +121,27 @@ describe('guild API', () => {
     })
   })
 
+  it('omits unchanged guild fields from the update request', async () => {
+    guildClient.updateGuild.mockResolvedValue({
+      guild: {
+        createdAt: 1_000n,
+        description: 'Kept description',
+        iconAssetId: 0n,
+        id: 42n,
+        name: 'Renamed',
+        ownerId: 7n,
+        revision: 2n,
+        updatedAt: 2_000n,
+      },
+    })
+
+    await expect(updateGuild('42', { name: 'Renamed' })).resolves.toMatchObject({ name: 'Renamed' })
+    expect(guildClient.updateGuild).toHaveBeenCalledWith({
+      guildId: 42n,
+      name: 'Renamed',
+    })
+  })
+
   it('lists guild roles in the application representation', async () => {
     guildClient.listGuildRoles.mockResolvedValue({
       roles: [
@@ -176,6 +197,38 @@ describe('guild API', () => {
       guildId: 42n,
       name: 'Moderators',
       permissions: 7n,
+      roleId: 50n,
+    })
+  })
+
+  it('updates default role permissions without sending a name field', async () => {
+    guildClient.updateGuildRole.mockResolvedValue({
+      role: roleMessage({ isDefault: true, name: '@everyone', permissions: 128n, revision: 2n }),
+    })
+
+    await expect(updateGuildRole('42', '42', { permissions: '128' })).resolves.toMatchObject({
+      permissions: '128',
+      revision: 2,
+    })
+    expect(guildClient.updateGuildRole).toHaveBeenCalledWith({
+      guildId: 42n,
+      permissions: 128n,
+      roleId: 42n,
+    })
+  })
+
+  it('updates a role name without sending unchanged permissions', async () => {
+    guildClient.updateGuildRole.mockResolvedValue({
+      role: roleMessage({ name: 'Moderators', permissions: 3n, revision: 2n }),
+    })
+
+    await expect(updateGuildRole('42', '50', { name: 'Moderators' })).resolves.toMatchObject({
+      name: 'Moderators',
+      revision: 2,
+    })
+    expect(guildClient.updateGuildRole).toHaveBeenCalledWith({
+      guildId: 42n,
+      name: 'Moderators',
       roleId: 50n,
     })
   })
@@ -524,6 +577,7 @@ describe('guild API', () => {
 
 function roleMessage(
   overrides: Partial<{
+    isDefault: boolean
     name: string
     permissions: bigint
     revision: bigint
