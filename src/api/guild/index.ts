@@ -34,7 +34,14 @@ export {
   joinGuildByInvite,
   listGuildInvites,
 } from '@/api/guild/invites'
-export { addGuildMemberRole, listGuildMembers, removeGuildMemberRole } from '@/api/guild/members'
+export {
+  addGuildMemberRole,
+  addGuildRoleMembers,
+  listGuildMembers,
+  listGuildRoleMembers,
+  removeGuildMemberRole,
+  removeGuildRoleMembers,
+} from '@/api/guild/members'
 export {
   createGuildRole,
   deleteGuildRole,

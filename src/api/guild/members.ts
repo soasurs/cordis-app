@@ -22,6 +22,27 @@ export async function listGuildMembers(guildId: string, cursor?: string): Promis
   }
 }
 
+export async function listGuildRoleMembers(
+  guildId: string,
+  roleId: string,
+  cursor?: string,
+): Promise<GuildMemberPage> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(roleId, 'role')
+
+  const response = await guildClient.listGuildRoleMembers({
+    ...(cursor ? { cursor } : {}),
+    guildId: BigInt(guildId),
+    limit: 50,
+    roleId: BigInt(roleId),
+  })
+
+  return {
+    members: response.members.map(toGuildMember),
+    nextCursor: response.nextCursor || undefined,
+  }
+}
+
 export async function addGuildMemberRole(
   guildId: string,
   userId: string,
@@ -36,6 +57,22 @@ export async function removeGuildMemberRole(
   roleId: string,
 ): Promise<void> {
   await updateGuildMemberRole('remove', guildId, userId, roleId)
+}
+
+export async function addGuildRoleMembers(
+  guildId: string,
+  roleId: string,
+  userIds: string[],
+): Promise<void> {
+  await updateGuildRoleMembers('add', guildId, roleId, userIds)
+}
+
+export async function removeGuildRoleMembers(
+  guildId: string,
+  roleId: string,
+  userIds: string[],
+): Promise<void> {
+  await updateGuildRoleMembers('remove', guildId, roleId, userIds)
 }
 
 function toGuildMember(member: GuildMemberMessage): GuildMember {
@@ -72,5 +109,38 @@ async function updateGuildMemberRole(
 
   if (!response.ok) {
     throw new Error(`${operation} guild member role was not accepted`)
+  }
+}
+
+async function updateGuildRoleMembers(
+  operation: 'add' | 'remove',
+  guildId: string,
+  roleId: string,
+  userIds: string[],
+) {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(roleId, 'role')
+  if (userIds.length === 0) {
+    throw new Error('at least one user id is required')
+  }
+  if (userIds.length > 100) {
+    throw new Error('at most 100 user ids are allowed')
+  }
+  for (const userId of userIds) {
+    assertIdentifier(userId, 'user')
+  }
+
+  const request = {
+    guildId: BigInt(guildId),
+    roleId: BigInt(roleId),
+    userIds: userIds.map((userId) => BigInt(userId)),
+  }
+  const response =
+    operation === 'add'
+      ? await guildClient.addGuildRoleMembers(request)
+      : await guildClient.removeGuildRoleMembers(request)
+
+  if (!response.ok) {
+    throw new Error(`${operation} guild role members was not accepted`)
   }
 }

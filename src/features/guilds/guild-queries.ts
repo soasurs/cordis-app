@@ -11,6 +11,7 @@ import {
   listGuildInvites,
   listGuildMemberRoles,
   listGuildMembers,
+  listGuildRoleMembers,
   listGuildRoles,
   type Guild,
   type GuildChannel,
@@ -163,6 +164,91 @@ export function guildMemberRolesQueryOptions(guildId: string, userId: string) {
     queryKey: guildMemberRolesQueryKey(guildId, userId),
     staleTime: 30_000,
   })
+}
+
+export function guildRoleMembersQueryKey(guildId: string, roleId: string) {
+  return [...guildRolesQueryKey(guildId), roleId, 'members'] as const
+}
+
+export function guildRoleMembersInfiniteQueryOptions(guildId: string, roleId: string) {
+  return infiniteQueryOptions<
+    GuildMemberPage,
+    Error,
+    InfiniteData<GuildMemberPage>,
+    ReturnType<typeof guildRoleMembersQueryKey>,
+    string | undefined
+  >({
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => listGuildRoleMembers(guildId, roleId, pageParam),
+    queryKey: guildRoleMembersQueryKey(guildId, roleId),
+    staleTime: 30_000,
+  })
+}
+
+/** Prepend newly assigned members into the role-members infinite cache. */
+export function addGuildRoleMembersFromApi(
+  queryClient: QueryClient,
+  guildId: string,
+  roleId: string,
+  members: GuildMemberSummary[],
+) {
+  if (members.length === 0) return
+
+  queryClient.setQueryData<InfiniteData<GuildMemberPage>>(
+    guildRoleMembersQueryKey(guildId, roleId),
+    (current) => {
+      if (!current) {
+        return {
+          pageParams: [undefined],
+          pages: [{ members, nextCursor: undefined }],
+        }
+      }
+
+      const existingIds = new Set(
+        current.pages.flatMap((page) => page.members.map((member) => member.userId)),
+      )
+      const toAdd = members.filter((member) => !existingIds.has(member.userId))
+      if (toAdd.length === 0) return current
+
+      const [firstPage, ...restPages] = current.pages
+      return {
+        ...current,
+        pages: [
+          {
+            members: [...toAdd, ...(firstPage?.members ?? [])],
+            nextCursor: firstPage?.nextCursor,
+          },
+          ...restPages,
+        ],
+      }
+    },
+  )
+}
+
+/** Drop members from the role-members infinite cache after a successful remove. */
+export function removeGuildRoleMembersFromApi(
+  queryClient: QueryClient,
+  guildId: string,
+  roleId: string,
+  userIds: readonly string[],
+) {
+  if (userIds.length === 0) return
+  const removeIds = new Set(userIds)
+
+  queryClient.setQueryData<InfiniteData<GuildMemberPage>>(
+    guildRoleMembersQueryKey(guildId, roleId),
+    (current) => {
+      if (!current) return current
+      return {
+        ...current,
+        pages: current.pages.map((page) => ({
+          ...page,
+          members: page.members.filter((member) => !removeIds.has(member.userId)),
+        })),
+      }
+    },
+  )
 }
 
 export function guildRolesQueryKey(guildId: string) {

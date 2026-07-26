@@ -12,6 +12,7 @@ import { GuildSettingsPage } from '@/features/guilds/pages/guild-settings-page'
 const guildApi = vi.hoisted(() => ({
   abortGuildIconUpload: vi.fn(),
   addGuildMemberRole: vi.fn(),
+  addGuildRoleMembers: vi.fn(),
   completeGuildIconUpload: vi.fn(),
   createGuildIconUpload: vi.fn(),
   createGuildInvite: vi.fn(),
@@ -34,8 +35,10 @@ const guildApi = vi.hoisted(() => ({
   listGuildInvites: vi.fn(),
   listGuildMembers: vi.fn(),
   listGuildMemberRoles: vi.fn(),
+  listGuildRoleMembers: vi.fn(),
   listGuildRoles: vi.fn(),
   removeGuildMemberRole: vi.fn(),
+  removeGuildRoleMembers: vi.fn(),
   reorderGuildRoles: vi.fn(),
   updateGuild: vi.fn(),
   updateGuildRole: vi.fn(),
@@ -95,6 +98,7 @@ beforeEach(() => {
   guildApi.listGuildInvites.mockResolvedValue({ invites: [] })
   guildApi.listGuildMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildMemberRoles.mockResolvedValue([])
+  guildApi.listGuildRoleMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildRoles.mockResolvedValue([])
   userApi.getUserProfile.mockImplementation(async (userId: string) => ({
     avatarAssetId: '0',
@@ -526,52 +530,111 @@ describe('GuildSettingsPage', () => {
 
   it('assigns and removes members from a role in the members tab', async () => {
     const role = roleSummary({ id: '52', name: 'Moderators', position: 1 })
+    const sam = {
+      guildId: '42',
+      joinedAt: 1_000,
+      nickname: '',
+      profile: {
+        avatarAssetId: '0',
+        createdAt: 500,
+        name: 'Sam Rivera',
+        updatedAt: 1_000,
+        userId: '8',
+        username: 'sam_rivera',
+      },
+      revision: 1,
+      updatedAt: 1_000,
+      userId: '8',
+    }
+    const alex = {
+      guildId: '42',
+      joinedAt: 1_000,
+      nickname: '',
+      profile: {
+        avatarAssetId: '0',
+        createdAt: 500,
+        name: 'Alex Chen',
+        updatedAt: 1_000,
+        userId: '7',
+        username: 'alex_chen',
+      },
+      revision: 1,
+      updatedAt: 1_000,
+      userId: '7',
+    }
     guildApi.listGuildRoles.mockResolvedValue([role])
-    guildApi.listGuildMembers.mockResolvedValue({
-      members: [
-        {
-          guildId: '42',
-          joinedAt: 1_000,
-          nickname: '',
-          profile: {
-            avatarAssetId: '0',
-            createdAt: 500,
-            name: 'Sam Rivera',
-            updatedAt: 1_000,
-            userId: '8',
-            username: 'sam_rivera',
-          },
-          revision: 1,
-          updatedAt: 1_000,
-          userId: '8',
-        },
-      ],
-    })
-    guildApi.addGuildMemberRole.mockResolvedValue(undefined)
-    guildApi.removeGuildMemberRole.mockResolvedValue(undefined)
+    guildApi.listGuildRoleMembers.mockResolvedValue({ members: [] })
+    guildApi.listGuildMembers.mockResolvedValue({ members: [alex, sam] })
+    guildApi.addGuildRoleMembers.mockResolvedValue(undefined)
+    guildApi.removeGuildRoleMembers.mockResolvedValue(undefined)
     renderSettings(createQueryClient(), { section: 'roles' })
     const user = userEvent.setup()
 
     const editor = await screen.findByRole('region', { name: 'Moderators' })
     await user.click(within(editor).getByRole('tab', { name: 'Members' }))
 
-    const assignment = await within(editor).findByRole('checkbox', {
-      name: 'Moderators role for user 8',
-    })
-    expect(assignment).not.toBeChecked()
-    expect(await within(editor).findByText('Sam Rivera')).toBeInTheDocument()
-    expect(within(editor).getByText('@sam_rivera')).toBeInTheDocument()
-    expect(userApi.getUserProfile).not.toHaveBeenCalled()
+    expect(await within(editor).findByText('No members yet')).toBeInTheDocument()
+    await user.click(within(editor).getByRole('button', { name: 'Add role members' }))
 
-    await user.click(assignment)
-    await waitFor(() => expect(guildApi.addGuildMemberRole).toHaveBeenCalledWith('42', '8', '52'))
-    expect(assignment).toBeChecked()
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('Alex Chen')).toBeInTheDocument()
+    expect(within(dialog).getByText('Sam Rivera')).toBeInTheDocument()
 
-    await user.click(assignment)
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Add Moderators to user 8' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Add 1 member' }))
+
     await waitFor(() =>
-      expect(guildApi.removeGuildMemberRole).toHaveBeenCalledWith('42', '8', '52'),
+      expect(guildApi.addGuildRoleMembers).toHaveBeenCalledWith('42', '52', ['8']),
     )
-    expect(assignment).not.toBeChecked()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(await within(editor).findByText('Sam Rivera')).toBeInTheDocument()
+    expect(guildApi.listGuildRoleMembers).toHaveBeenCalledTimes(1)
+
+    await user.click(
+      within(editor).getByRole('button', { name: 'Remove Moderators from user 8' }),
+    )
+    await waitFor(() =>
+      expect(guildApi.removeGuildRoleMembers).toHaveBeenCalledWith('42', '52', ['8']),
+    )
+    await waitFor(() => expect(within(editor).getByText('No members yet')).toBeInTheDocument())
+    expect(guildApi.listGuildRoleMembers).toHaveBeenCalledTimes(1)
+  })
+
+  it('marks already assigned members as selected and disabled in the picker', async () => {
+    const role = roleSummary({ id: '52', name: 'Moderators', position: 1 })
+    const sam = {
+      guildId: '42',
+      joinedAt: 1_000,
+      nickname: '',
+      profile: {
+        avatarAssetId: '0',
+        createdAt: 500,
+        name: 'Sam Rivera',
+        updatedAt: 1_000,
+        userId: '8',
+        username: 'sam_rivera',
+      },
+      revision: 1,
+      updatedAt: 1_000,
+      userId: '8',
+    }
+    guildApi.listGuildRoles.mockResolvedValue([role])
+    guildApi.listGuildRoleMembers.mockResolvedValue({ members: [sam] })
+    guildApi.listGuildMembers.mockResolvedValue({ members: [sam] })
+    renderSettings(createQueryClient(), { section: 'roles' })
+    const user = userEvent.setup()
+
+    const editor = await screen.findByRole('region', { name: 'Moderators' })
+    await user.click(within(editor).getByRole('tab', { name: 'Members' }))
+    expect(await within(editor).findByText('Sam Rivera')).toBeInTheDocument()
+
+    await user.click(within(editor).getByRole('button', { name: 'Add role members' }))
+    const dialog = await screen.findByRole('dialog')
+    const assigned = within(dialog).getByRole('checkbox', {
+      name: '8 already has Moderators',
+    })
+    expect(assigned).toBeChecked()
+    expect(assigned).toBeDisabled()
   })
 
   it('requests a section change from the settings navigation', async () => {
