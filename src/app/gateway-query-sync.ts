@@ -2,11 +2,11 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import {
   guildsQueryKey,
-  invalidateGuildMemberRolesFromGateway,
   invalidateGuildMembersFromGateway,
   removeGuildChannelFromGateway,
   removeGuildFromGateway,
   removeGuildRoleFromGateway,
+  replaceGuildMemberRolesFromGateway,
   replaceGuildsFromReady,
   upsertGuildChannelFromGateway,
   upsertGuildFromGateway,
@@ -48,10 +48,11 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
   }
 
   if (isGatewayDispatch(dispatch, 'guild.member.roles.updated')) {
-    invalidateGuildMemberRolesFromGateway(
+    replaceGuildMemberRolesFromGateway(
       queryClient,
       dispatch.data.guild_id,
       dispatch.data.user_id,
+      dispatch.data.role_ids,
     )
     return
   }

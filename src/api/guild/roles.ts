@@ -15,6 +15,12 @@ export async function createGuildRole(
   details: GuildRoleDetails,
 ): Promise<GuildRole> {
   assertIdentifier(guildId, 'guild')
+  if (!details.name) {
+    throw new Error('role name is required')
+  }
+  if (details.permissions === undefined) {
+    throw new Error('role permissions are required')
+  }
   const permissions = parsePermissions(details.permissions)
 
   const response = await guildClient.createGuildRole({
@@ -37,13 +43,19 @@ export async function updateGuildRole(
 ): Promise<GuildRole> {
   assertIdentifier(guildId, 'guild')
   assertIdentifier(roleId, 'role')
-  const permissions = parsePermissions(details.permissions)
+
+  const name = details.name
+  const permissions =
+    details.permissions === undefined ? undefined : parsePermissions(details.permissions)
+  if (name === undefined && permissions === undefined) {
+    throw new Error('at least one role field is required')
+  }
 
   const response = await guildClient.updateGuildRole({
     guildId: BigInt(guildId),
-    name: details.name,
-    permissions,
     roleId: BigInt(roleId),
+    ...(name !== undefined ? { name } : {}),
+    ...(permissions !== undefined ? { permissions } : {}),
   })
 
   if (!response.role) {

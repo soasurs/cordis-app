@@ -19,11 +19,14 @@ export async function createGuild(name: string): Promise<Guild> {
 
 export async function updateGuild(guildId: string, details: UpdateGuildDetails): Promise<Guild> {
   assertIdentifier(guildId, 'guild')
+  if (details.name === undefined && details.description === undefined) {
+    throw new Error('at least one guild field is required')
+  }
 
   const response = await guildClient.updateGuild({
-    description: details.description,
     guildId: BigInt(guildId),
-    name: details.name,
+    ...(details.name !== undefined ? { name: details.name } : {}),
+    ...(details.description !== undefined ? { description: details.description } : {}),
   })
 
   if (!response.guild) {

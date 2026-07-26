@@ -21,7 +21,22 @@ const guildApi = vi.hoisted(() => ({
     TEXT: 1,
     VOICE: 3,
   },
+  guildPermission: {
+    administrator: '1',
+    banMembers: '512',
+    createInvite: '1024',
+    kickMembers: '16',
+    manageChannels: '128',
+    manageGuild: '2',
+    manageMembers: '8',
+    manageMessages: '256',
+    manageRoles: '4',
+    sendMessages: '64',
+    viewChannel: '32',
+  },
   listGuildChannels: vi.fn(),
+  listGuildMemberRoles: vi.fn(),
+  listGuildRoles: vi.fn(),
 }))
 
 vi.mock('@/api/guild', () => guildApi)
@@ -33,6 +48,18 @@ const guild: GuildSummary = {
   id: '42',
   name: 'Cordis Studio',
   ownerId: '7',
+  revision: 1,
+  updatedAt: 1_000,
+}
+
+const everyoneRole = {
+  createdAt: 1_000,
+  guildId: '42',
+  id: '42',
+  isDefault: true,
+  name: '@everyone',
+  permissions: '128',
+  position: 0,
   revision: 1,
   updatedAt: 1_000,
 }
@@ -79,6 +106,8 @@ const channels: GuildChannelSummary[] = [
 
 beforeEach(() => {
   vi.clearAllMocks()
+  guildApi.listGuildRoles.mockResolvedValue([everyoneRole])
+  guildApi.listGuildMemberRoles.mockResolvedValue([])
 })
 
 describe('GuildPage', () => {
@@ -126,12 +155,15 @@ describe('GuildPage', () => {
     expect(onSelectChannel).toHaveBeenCalledWith('44')
   })
 
-  it('shows the known empty state without repeatedly loading channels', async () => {
+  it('leaves the channel list empty when there are no visible channels', async () => {
     const queryClient = createQueryClient()
     queryClient.setQueryData(guildChannelsQueryKey('42'), [])
     renderGuildPage(queryClient)
 
-    expect(await screen.findByRole('heading', { name: 'No channels yet' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Community menu' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'No channels yet' })).not.toBeInTheDocument()
+    expect(screen.queryByText('No channels available')).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Community channels' })).not.toBeInTheDocument()
     expect(guildApi.listGuildChannels).not.toHaveBeenCalled()
   })
 
@@ -210,7 +242,7 @@ describe('GuildPage', () => {
     renderGuildPage(queryClient, { channelId: '43', onSelectChannel })
     const user = userEvent.setup()
 
-    await user.click(screen.getByRole('button', { name: 'Community menu' }))
+    await user.click(await screen.findByRole('button', { name: 'Community menu' }))
     await user.click(screen.getByRole('menuitem', { name: 'Create channel' }))
 
     expect(screen.getByText('This channel will not belong to a category.')).toBeInTheDocument()
@@ -235,7 +267,7 @@ describe('GuildPage', () => {
     renderGuildPage(queryClient, { channelId: '43', onOpenSettings })
     const user = userEvent.setup()
 
-    await user.click(screen.getByRole('button', { name: 'Community menu' }))
+    await user.click(await screen.findByRole('button', { name: 'Community menu' }))
     await user.click(screen.getByRole('menuitem', { name: 'Community settings' }))
 
     expect(onOpenSettings).toHaveBeenCalledOnce()
@@ -248,7 +280,7 @@ describe('GuildPage', () => {
     renderGuildPage(queryClient, { channelId: '43', onOpenSettings })
     const user = userEvent.setup()
 
-    await user.click(screen.getByRole('button', { name: 'Open community settings' }))
+    await user.click(await screen.findByRole('button', { name: 'Open community settings' }))
 
     expect(onOpenSettings).toHaveBeenCalledOnce()
   })
@@ -270,7 +302,7 @@ describe('GuildPage', () => {
     renderGuildPage(queryClient, { channelId: '43', onSelectChannel })
     const user = userEvent.setup()
 
-    await user.click(screen.getByRole('button', { name: 'Community menu' }))
+    await user.click(await screen.findByRole('button', { name: 'Community menu' }))
     await user.click(screen.getByRole('menuitem', { name: 'Create category' }))
 
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
@@ -285,6 +317,61 @@ describe('GuildPage', () => {
     })
     expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toContainEqual(createdCategory)
     expect(onSelectChannel).not.toHaveBeenCalled()
+  })
+
+  it('keeps channel create actions for the owner even without Manage Channels on roles', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      {
+        ...everyoneRole,
+        permissions: '32',
+      },
+    ])
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenSettings: vi.fn() })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Community menu' }))
+    expect(screen.getByRole('menuitem', { name: 'Create channel' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Create category' })).toBeInTheDocument()
+  })
+
+  it('shows community settings for a non-owner with Manage community', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      {
+        ...everyoneRole,
+        permissions: '2',
+      },
+    ])
+    const onOpenSettings = vi.fn()
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildsQueryKey, [{ ...guild, ownerId: '99' }])
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenSettings })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Community menu' }))
+    expect(screen.getByRole('menuitem', { name: 'Community settings' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Create channel' })).not.toBeInTheDocument()
+  })
+
+  it('hides channel create actions when a non-owner lacks Manage Channels', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      {
+        ...everyoneRole,
+        permissions: '32',
+      },
+    ])
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildsQueryKey, [{ ...guild, ownerId: '99' }])
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenSettings: vi.fn() })
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to #general' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Community menu' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Create a channel in Projects' }),
+    ).not.toBeInTheDocument()
   })
 })
 

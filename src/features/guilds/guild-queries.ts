@@ -115,6 +115,7 @@ export function upsertGuildRoleFromApi(queryClient: QueryClient, role: GuildRole
   queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey(role.guildId), (current = []) =>
     upsertByRevision(current, role),
   )
+  patchGuildMemberRoleCaches(queryClient, role.guildId, role)
 }
 
 export function upsertGuildRolesFromApi(
@@ -125,18 +126,24 @@ export function upsertGuildRolesFromApi(
   queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey(guildId), (current = []) =>
     roles.reduce((nextRoles, role) => upsertByRevision(nextRoles, role), current),
   )
+  for (const role of roles) {
+    patchGuildMemberRoleCaches(queryClient, guildId, role)
+  }
 }
 
 export function removeGuildRoleFromApi(queryClient: QueryClient, guildId: string, roleId: string) {
   queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey(guildId), (current = []) =>
     current.filter((role) => role.id !== roleId),
   )
+  stripGuildMemberRoleCaches(queryClient, guildId, roleId)
 }
 
 export function upsertGuildRoleFromGateway(queryClient: QueryClient, role: GuildRolePayload) {
+  const summary = toRoleSummary(role)
   queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey(role.guild_id), (current = []) =>
-    upsertByRevision(current, toRoleSummary(role)),
+    upsertByRevision(current, summary),
   )
+  patchGuildMemberRoleCaches(queryClient, role.guild_id, summary)
 }
 
 export function removeGuildRoleFromGateway(
@@ -157,6 +164,37 @@ export function invalidateGuildMemberRolesFromGateway(
   userId: string,
 ) {
   void queryClient.invalidateQueries({ queryKey: guildMemberRolesQueryKey(guildId, userId) })
+}
+
+/**
+ * Replace a member's assigned roles from a role-id list, resolving summaries
+ * against the guild role cache. Falls back to invalidation when a role id is
+ * missing so a race cannot silently drop assignments.
+ */
+export function replaceGuildMemberRolesFromGateway(
+  queryClient: QueryClient,
+  guildId: string,
+  userId: string,
+  roleIds: string[],
+) {
+  const guildRoles = queryClient.getQueryData<GuildRoleSummary[]>(guildRolesQueryKey(guildId))
+  if (!guildRoles) {
+    invalidateGuildMemberRolesFromGateway(queryClient, guildId, userId)
+    return
+  }
+
+  const byId = new Map(guildRoles.map((role) => [role.id, role]))
+  const next: GuildRoleSummary[] = []
+  for (const roleId of roleIds) {
+    const role = byId.get(roleId)
+    if (!role) {
+      invalidateGuildMemberRolesFromGateway(queryClient, guildId, userId)
+      return
+    }
+    next.push(role)
+  }
+
+  queryClient.setQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey(guildId, userId), next)
 }
 
 export function setGuildMemberRoleAssignment(
@@ -190,13 +228,15 @@ export function replaceGuildsFromReady(queryClient: QueryClient, ready: GatewayR
   }
 
   for (const guild of ready.guilds) {
+    const roles = guild.roles.map(toRoleSummary)
     queryClient.setQueryData<GuildChannelSummary[]>(
       guildChannelsQueryKey(guild.id),
       guild.channels.map(toChannelSummary),
     )
+    queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey(guild.id), roles)
     queryClient.setQueryData<GuildRoleSummary[]>(
-      guildRolesQueryKey(guild.id),
-      guild.roles.map(toRoleSummary),
+      guildMemberRolesQueryKey(guild.id, ready.user_id),
+      resolveMemberRolesFromIds(roles, guild.member_role_ids),
     )
   }
 }
@@ -280,6 +320,49 @@ function upsertByRevision<T extends { id: string; revision: number }>(current: T
   }
 
   return [...current, next]
+}
+
+function resolveMemberRolesFromIds(roles: GuildRoleSummary[], roleIds: string[]) {
+  const byId = new Map(roles.map((role) => [role.id, role]))
+  return roleIds.flatMap((roleId) => {
+    const role = byId.get(roleId)
+    return role ? [role] : []
+  })
+}
+
+function isGuildMemberRolesQueryKey(queryKey: readonly unknown[], guildId: string) {
+  return (
+    queryKey[0] === 'guilds' &&
+    queryKey[1] === guildId &&
+    queryKey[2] === 'members' &&
+    typeof queryKey[3] === 'string' &&
+    queryKey[4] === 'roles'
+  )
+}
+
+function patchGuildMemberRoleCaches(
+  queryClient: QueryClient,
+  guildId: string,
+  role: GuildRoleSummary,
+) {
+  queryClient.setQueriesData<GuildRoleSummary[]>(
+    {
+      predicate: (query) => isGuildMemberRolesQueryKey(query.queryKey, guildId),
+    },
+    (current) => {
+      if (!current?.some((item) => item.id === role.id)) return current
+      return upsertByRevision(current, role)
+    },
+  )
+}
+
+function stripGuildMemberRoleCaches(queryClient: QueryClient, guildId: string, roleId: string) {
+  queryClient.setQueriesData<GuildRoleSummary[]>(
+    {
+      predicate: (query) => isGuildMemberRolesQueryKey(query.queryKey, guildId),
+    },
+    (current) => current?.filter((role) => role.id !== roleId),
+  )
 }
 
 function toGuildSummary(guild: GatewayReadyData['guilds'][number]): GuildSummary {

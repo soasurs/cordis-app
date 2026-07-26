@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 
 import { GuildChannelType } from '@/api/guild'
 import { Button } from '@/components/ui/button'
-import { authSessionQueryOptions } from '@/features/auth/auth-session'
 import { ChannelNavigation } from '@/features/guilds/components/channel-navigation'
 import { CreateGuildChannelDialog } from '@/features/guilds/components/create-guild-channel-dialog'
 import { GuildChannelHeader } from '@/features/guilds/components/guild-channel-header'
@@ -11,7 +10,6 @@ import {
   ChannelListSkeleton,
   ChannelLoadError,
   ChannelWelcome,
-  EmptyGuild,
   PageLoading,
 } from '@/features/guilds/components/guild-channel-states'
 import { GuildPageHeader } from '@/features/guilds/components/guild-page-header'
@@ -21,6 +19,7 @@ import {
   type GuildChannelSummary,
 } from '@/features/guilds/guild-queries'
 import { useChannelReordering } from '@/features/guilds/use-channel-reordering'
+import { useGuildCapabilities } from '@/features/guilds/use-guild-permissions'
 
 interface GuildPageProps {
   channelId?: string
@@ -32,16 +31,21 @@ interface GuildPageProps {
 type CreateChannelTarget =
   { kind: 'category' } | { kind: 'channel'; parentCategory?: GuildChannelSummary }
 
-export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel }: GuildPageProps) {
+export function GuildPage({
+  channelId,
+  guildId,
+  onOpenSettings,
+  onSelectChannel,
+}: GuildPageProps) {
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => new Set())
   const [createChannelTarget, setCreateChannelTarget] = useState<CreateChannelTarget>()
-  const { data: session } = useQuery(authSessionQueryOptions)
   const { data: guilds } = useQuery(guildsQueryOptions)
   const channelsQuery = useQuery(guildChannelsQueryOptions(guildId))
   const channelReordering = useChannelReordering(guildId)
+  const { can } = useGuildCapabilities(guildId)
+  const canManageChannels = can('manageChannels')
+  const canOpenSettings = can('openGuildSettings')
   const guild = guilds?.find((item) => item.id === guildId)
-  // Settings are owner-gated for now; finer-grained manageGuild comes later.
-  const canManageGuild = guild?.ownerId === session?.user.userId.toString()
   const channels = [...(channelsQuery.data ?? [])].sort(compareChannels)
   const selectedChannel = channels.find((channel) => channel.id === channelId)
   const toggleCategory = (categoryId: string) => {
@@ -53,6 +57,7 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
     })
   }
   const moveChannel = (nextChannels: GuildChannelSummary[], parentId?: string) => {
+    if (!canManageChannels) return
     if (parentId) {
       // Expanding the destination category so the dropped channel stays visible.
       setCollapsedCategoryIds((current) => {
@@ -74,9 +79,13 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
           guildId={guildId}
           iconAssetId={guild?.iconAssetId ?? '0'}
           name={guild?.name ?? 'Community'}
-          onCreateCategory={() => setCreateChannelTarget({ kind: 'category' })}
-          onCreateChannel={() => setCreateChannelTarget({ kind: 'channel' })}
-          onOpenSettings={canManageGuild ? onOpenSettings : undefined}
+          onCreateCategory={
+            canManageChannels ? () => setCreateChannelTarget({ kind: 'category' }) : undefined
+          }
+          onCreateChannel={
+            canManageChannels ? () => setCreateChannelTarget({ kind: 'channel' }) : undefined
+          }
+          onOpenSettings={canOpenSettings ? onOpenSettings : undefined}
         />
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2 py-3">
           {channelsQuery.isPending ? <ChannelListSkeleton /> : null}
@@ -92,9 +101,12 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
               collapsedCategoryIds={collapsedCategoryIds}
               moveError={channelReordering.error}
               movePending={channelReordering.isPending}
+              reorderEnabled={canManageChannels}
               selectedChannelId={selectedChannel?.id}
-              onCreateChannel={(parentCategory) =>
-                setCreateChannelTarget({ kind: 'channel', parentCategory })
+              onCreateChannel={
+                canManageChannels
+                  ? (parentCategory) => setCreateChannelTarget({ kind: 'channel', parentCategory })
+                  : undefined
               }
               onMoveChannel={moveChannel}
               onSelectChannel={onSelectChannel}
@@ -113,7 +125,7 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
                 <p className="min-w-0 flex-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
                   Channels
                 </p>
-                {canManageGuild && onOpenSettings ? (
+                {canOpenSettings && onOpenSettings ? (
                   <Button
                     aria-label="Open community settings"
                     size="small"
@@ -138,9 +150,13 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
                   collapsedCategoryIds={collapsedCategoryIds}
                   moveError={channelReordering.error}
                   movePending={channelReordering.isPending}
+                  reorderEnabled={canManageChannels}
                   selectedChannelId={selectedChannel?.id}
-                  onCreateChannel={(parentCategory) =>
-                    setCreateChannelTarget({ kind: 'channel', parentCategory })
+                  onCreateChannel={
+                    canManageChannels
+                      ? (parentCategory) =>
+                          setCreateChannelTarget({ kind: 'channel', parentCategory })
+                      : undefined
                   }
                   onMoveChannel={moveChannel}
                   onSelectChannel={onSelectChannel}
@@ -152,13 +168,12 @@ export function GuildPage({ channelId, guildId, onOpenSettings, onSelectChannel 
             {channelsQuery.isSuccess && selectedChannel ? (
               <ChannelWelcome channel={selectedChannel} />
             ) : null}
-            {channelsQuery.isSuccess && !selectedChannel ? <EmptyGuild /> : null}
             {channelsQuery.isPending ? <PageLoading /> : null}
           </div>
         </div>
       </section>
 
-      {createChannelTarget ? (
+      {canManageChannels && createChannelTarget ? (
         <CreateGuildChannelDialog
           guildId={guildId}
           guildName={guild?.name ?? 'Community'}

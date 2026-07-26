@@ -9,6 +9,7 @@ import {
   completeGuildIconUpload,
   createGuildIconUpload,
   updateGuild,
+  type UpdateGuildDetails,
 } from '@/api/guild'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,13 +26,24 @@ import {
 import { GuildIcon } from '@/features/guilds/components/guild-icon'
 import { GuildIconCropDialog } from '@/features/guilds/components/guild-icon-crop-dialog'
 
+function buildGuildUpdate(guild: GuildSummary, values: UpdateGuildFormValues): UpdateGuildDetails {
+  const patch: UpdateGuildDetails = {}
+  if (values.name !== guild.name) {
+    patch.name = values.name
+  }
+  if (values.description !== guild.description) {
+    patch.description = values.description
+  }
+  return patch
+}
+
 export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [cropFile, setCropFile] = useState<File>()
   const [selectionError, setSelectionError] = useState<string>()
   const updateMutation = useMutation({
-    mutationFn: (details: UpdateGuildFormValues) => updateGuild(guild.id, details),
+    mutationFn: (details: UpdateGuildDetails) => updateGuild(guild.id, details),
   })
   const iconMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -66,7 +78,8 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
     validators: { onSubmit: updateGuildSchema },
     onSubmit: async ({ value }) => {
       try {
-        const updatedGuild = await updateMutation.mutateAsync(updateGuildSchema.parse(value))
+        const parsed = updateGuildSchema.parse(value)
+        const updatedGuild = await updateMutation.mutateAsync(buildGuildUpdate(guild, parsed))
         form.reset({
           description: updatedGuild.description,
           name: updatedGuild.name,

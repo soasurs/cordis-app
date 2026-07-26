@@ -38,7 +38,7 @@ export function CategoryChannelGroup({
   dragDisabled: boolean
   dropActive: boolean
   dropVisual: DropVisual
-  onCreateChannel: (category: GuildChannelSummary) => void
+  onCreateChannel?: (category: GuildChannelSummary) => void
   onSelectChannel?: (channelId: string) => void
   onToggleCategory: (categoryId: string) => void
   selectedChannelId?: string
@@ -76,14 +76,16 @@ export function CategoryChannelGroup({
           <ChevronIcon collapsed={collapsed} />
           <span className="truncate">{category.name}</span>
         </button>
-        <button
-          type="button"
-          aria-label={`Create a channel in ${category.name}`}
-          className="grid size-7 shrink-0 place-items-center rounded-control text-base leading-none text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
-          onClick={() => onCreateChannel(category)}
-        >
-          +
-        </button>
+        {onCreateChannel ? (
+          <button
+            type="button"
+            aria-label={`Create a channel in ${category.name}`}
+            className="grid size-7 shrink-0 place-items-center rounded-control text-base leading-none text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
+            onClick={() => onCreateChannel(category)}
+          >
+            +
+          </button>
+        ) : null}
       </div>
       {!collapsed ? (
         <SortableContext
@@ -152,7 +154,7 @@ export function SortableChannelButton({
   return (
     <div
       ref={setNodeRef}
-      className={`relative flex min-w-0 items-center ${isDragging ? 'opacity-35' : ''}`}
+      className={`relative flex min-w-0 items-center gap-0.5 ${isDragging ? 'opacity-35' : ''}`}
     >
       {indicatorEdge === 'before' ? <InsertionIndicator edge="before" /> : null}
       <ChannelButton

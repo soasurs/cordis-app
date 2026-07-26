@@ -96,7 +96,7 @@ const readyData = {
       description: 'A community for thoughtful tools.',
       icon_asset_id: '0',
       id: '42',
-      member_role_ids: [],
+      member_role_ids: ['50'],
       name: 'Cordis Studio',
       owner_id: '7',
       permission_overwrites: [],
@@ -159,6 +159,15 @@ describe('GatewayProvider', () => {
     expect(queryClient.getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))?.[0]?.name).toBe(
       'Everyone',
     )
+    expect(queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))).toEqual(
+      [
+        expect.objectContaining({
+          id: '50',
+          name: 'Everyone',
+          permissions: '1',
+        }),
+      ],
+    )
 
     act(() =>
       connection.dispatch({
@@ -186,6 +195,24 @@ describe('GatewayProvider', () => {
     act(() =>
       connection.dispatch({
         data: {
+          guild_id: '42',
+          role_ids: ['50', '51'],
+          updated_at: 2_100,
+          user_id: '7',
+        },
+        sequence: 3,
+        type: 'guild.member.roles.updated',
+      }),
+    )
+    expect(
+      queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))?.map(
+        (role) => role.id,
+      ),
+    ).toEqual(['50', '51'])
+
+    act(() =>
+      connection.dispatch({
+        data: {
           created_at: 2_000,
           guild_id: '42',
           id: '51',
@@ -196,7 +223,7 @@ describe('GatewayProvider', () => {
           revision: 2,
           updated_at: 2_500,
         },
-        sequence: 3,
+        sequence: 4,
         type: 'guild.role.updated',
       }),
     )
@@ -205,17 +232,27 @@ describe('GatewayProvider', () => {
         .getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))
         ?.find((role) => role.id === '51'),
     ).toMatchObject({ name: 'Moderators', permissions: '6', revision: 2 })
+    expect(
+      queryClient
+        .getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))
+        ?.find((role) => role.id === '51'),
+    ).toMatchObject({ name: 'Moderators', permissions: '6', revision: 2 })
 
     act(() =>
       connection.dispatch({
         data: { deleted_at: 3_000, guild_id: '42', id: '51', revision: 3 },
-        sequence: 4,
+        sequence: 5,
         type: 'guild.role.deleted',
       }),
     )
     expect(
       queryClient
         .getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))
+        ?.some((role) => role.id === '51'),
+    ).toBe(false)
+    expect(
+      queryClient
+        .getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))
         ?.some((role) => role.id === '51'),
     ).toBe(false)
 
@@ -234,16 +271,12 @@ describe('GatewayProvider', () => {
           updated_at: 3_000,
           user_id: '7',
         },
-        sequence: 5,
+        sequence: 6,
         type: 'guild.member.updated',
       }),
     )
     expect(queryClient.getQueryState(guildMembersQueryKey('42'))?.isInvalidated).toBe(true)
 
-    queryClient.setQueryData(guildMemberRolesQueryKey('42', '7'), [])
-    expect(queryClient.getQueryState(guildMemberRolesQueryKey('42', '7'))?.isInvalidated).toBe(
-      false,
-    )
     act(() =>
       connection.dispatch({
         data: {
@@ -252,11 +285,16 @@ describe('GatewayProvider', () => {
           updated_at: 3_000,
           user_id: '7',
         },
-        sequence: 6,
+        sequence: 7,
         type: 'guild.member.roles.updated',
       }),
     )
-    expect(queryClient.getQueryState(guildMemberRolesQueryKey('42', '7'))?.isInvalidated).toBe(true)
+    expect(queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))).toEqual(
+      [expect.objectContaining({ id: '50', name: 'Everyone' })],
+    )
+    expect(queryClient.getQueryState(guildMemberRolesQueryKey('42', '7'))?.isInvalidated).toBe(
+      false,
+    )
 
     act(() =>
       connection.dispatch({
@@ -270,7 +308,7 @@ describe('GatewayProvider', () => {
           revision: 1,
           updated_at: 2_000,
         },
-        sequence: 7,
+        sequence: 8,
         type: 'guild.created',
       }),
     )
