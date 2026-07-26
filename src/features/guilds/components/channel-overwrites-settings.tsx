@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import {
   deleteGuildChannelPermissionOverwrite,
@@ -189,18 +189,21 @@ function OverwriteDetail({
 }) {
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState({ allow: overwrite.allow, deny: overwrite.deny })
+  const [baseline, setBaseline] = useState({
+    allow: overwrite.allow,
+    deny: overwrite.deny,
+  })
   const [savedFlash, setSavedFlash] = useState(false)
   const isDefaultEveryone =
     overwrite.appliesTo === 'role' && overwrite.appliesToId === overwrite.guildId
   const dirty = draft.allow !== overwrite.allow || draft.deny !== overwrite.deny
 
-  useEffect(() => {
+  // Remount via parent key handles overwrite identity changes; sync draft when
+  // the same overwrite's server allow/deny change (gateway / refetch).
+  if (overwrite.allow !== baseline.allow || overwrite.deny !== baseline.deny) {
+    setBaseline({ allow: overwrite.allow, deny: overwrite.deny })
     setDraft({ allow: overwrite.allow, deny: overwrite.deny })
-  }, [overwrite.allow, overwrite.deny, overwrite.appliesTo, overwrite.appliesToId])
-
-  useEffect(() => {
-    setSavedFlash(false)
-  }, [overwrite.appliesTo, overwrite.appliesToId])
+  }
 
   const saveMutation = useMutation({
     mutationFn: (next: { allow: string; deny: string }) =>
