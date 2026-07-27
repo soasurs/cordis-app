@@ -42,6 +42,7 @@ const guildApi = vi.hoisted(() => ({
 const messageApi = vi.hoisted(() => ({
   createMessage: vi.fn(),
   deleteMessage: vi.fn(),
+  getReadStatesForGuild: vi.fn(),
   listMessages: vi.fn(),
   MessageType: { DEFAULT: 1 },
   updateMessage: vi.fn(),
@@ -117,6 +118,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   guildApi.listGuildRoles.mockResolvedValue([everyoneRole])
   guildApi.listGuildMemberRoles.mockResolvedValue([])
+  messageApi.getReadStatesForGuild.mockResolvedValue([])
   messageApi.listMessages.mockResolvedValue({ messages: [] })
 })
 

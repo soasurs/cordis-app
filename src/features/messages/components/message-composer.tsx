@@ -16,6 +16,7 @@ import {
   type PendingAttachmentDraft,
 } from '@/features/messages/components/pending-attachment-chip'
 import { upsertChannelMessageFromApi } from '@/features/messages/message-queries'
+import { markChannelReadThrough } from '@/features/messages/read-state-queries'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
 
 interface MessageComposerProps {
@@ -28,10 +29,15 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
   const queryClient = useQueryClient()
   const fileInputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingRef = useRef<PendingAttachmentDraft[]>([])
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState<PendingAttachmentDraft[]>([])
   const [error, setError] = useState<string>()
+
+  const focusComposer = () => {
+    textareaRef.current?.focus()
+  }
 
   const sendMutation = useMutation({
     mutationFn: (input: { content: string; attachmentAssetIds: string[] }) =>
@@ -42,12 +48,13 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
       }),
     onSuccess: (message) => {
       upsertChannelMessageFromApi(queryClient, message)
-      setDraft('')
-      clearPending()
+      markChannelReadThrough(queryClient, channelId, message.id)
       setError(undefined)
+      queueMicrotask(focusComposer)
     },
     onError: (sendError) => {
       setError(getApiErrorMessage(sendError, 'Unable to send message. Please try again.'))
+      queueMicrotask(focusComposer)
     },
   })
 
@@ -86,10 +93,22 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
   const submit = (event?: FormEvent) => {
     event?.preventDefault()
     if (!canSubmit) return
-    sendMutation.mutate({
-      attachmentAssetIds: readyAttachments.map((attachment) => attachment.assetId),
-      content: trimmed,
-    })
+    const content = trimmed
+    const attachmentAssetIds = readyAttachments.map((attachment) => attachment.assetId)
+    // Clear immediately so the next message can be typed while this send is in flight.
+    setDraft('')
+    clearPending()
+    setError(undefined)
+    sendMutation.mutate(
+      { attachmentAssetIds, content },
+      {
+        onError: () => {
+          setDraft(content)
+        },
+      },
+    )
+    // Clicking Send moves focus to the button; keep the composer ready for the next message.
+    focusComposer()
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -239,11 +258,11 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
             Message #{channelName}
           </label>
           <textarea
+            ref={textareaRef}
             id={`message-composer-${channelId}`}
             rows={1}
             value={draft}
             placeholder={`Message #${channelName}`}
-            disabled={sendMutation.isPending}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKeyDown}
             className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"

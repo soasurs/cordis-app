@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const messageClient = vi.hoisted(() => ({
   abortAttachmentUpload: vi.fn(),
+  ackMessage: vi.fn(),
   completeAttachmentUpload: vi.fn(),
   createAttachmentUpload: vi.fn(),
   createMessage: vi.fn(),
   deleteMessage: vi.fn(),
+  getReadStates: vi.fn(),
   listMessages: vi.fn(),
   updateMessage: vi.fn(),
 }))
@@ -17,10 +19,12 @@ vi.mock('@/api/client', () => ({ apiTransport: {} }))
 
 import {
   abortAttachmentUpload,
+  ackMessage,
   completeAttachmentUpload,
   createAttachmentUpload,
   createMessage,
   deleteMessage,
+  getReadStatesForGuild,
   listMessages,
   updateMessage,
 } from '@/api/message'
@@ -315,5 +319,51 @@ describe('message API', () => {
   it('rejects invalid identifiers', async () => {
     await expect(listMessages('abc')).rejects.toThrow('channel id is invalid')
     await expect(deleteMessage('x')).rejects.toThrow('message id is invalid')
+  })
+
+  it('acks a message and loads guild read states', async () => {
+    messageClient.ackMessage.mockResolvedValue({
+      readState: {
+        channelId: 43n,
+        lastMessageId: 200n,
+        lastReadMessageId: 200n,
+        mentionCount: 0,
+      },
+    })
+    messageClient.getReadStates.mockResolvedValue({
+      dmChannels: [],
+      readStates: [
+        {
+          channelId: 43n,
+          lastMessageId: 200n,
+          lastReadMessageId: 150n,
+          mentionCount: 2,
+        },
+      ],
+    })
+
+    await expect(ackMessage('43', '200')).resolves.toEqual({
+      channelId: '43',
+      lastMessageId: '200',
+      lastReadMessageId: '200',
+      mentionCount: 0,
+    })
+    expect(messageClient.ackMessage).toHaveBeenCalledWith({
+      channelId: 43n,
+      messageId: 200n,
+    })
+
+    await expect(getReadStatesForGuild('42')).resolves.toEqual([
+      {
+        channelId: '43',
+        lastMessageId: '200',
+        lastReadMessageId: '150',
+        mentionCount: 2,
+      },
+    ])
+    expect(messageClient.getReadStates).toHaveBeenCalledWith({
+      guildId: 42n,
+      scope: 1,
+    })
   })
 })

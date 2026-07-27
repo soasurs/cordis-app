@@ -3,6 +3,7 @@ export type {
   AttachmentUploadContract,
   ChannelMessage,
   ChannelMessagePage,
+  ChannelReadStateSummary,
   CreateAttachmentUploadDetails,
   CreateChannelMessageDetails,
   ListChannelMessagesOptions,
@@ -22,3 +23,8 @@ export {
   toChannelMessage,
   updateMessage,
 } from '@/api/message/messages'
+export {
+  ackMessage,
+  getReadStatesForGuild,
+  toChannelReadState,
+} from '@/api/message/read-states'

@@ -22,6 +22,13 @@ import {
   removeChannelMessageFromGateway,
   upsertChannelMessageFromGateway,
 } from '@/features/messages/message-queries'
+import {
+  bumpChannelLastMessageId,
+  clearChannelReadStateQueries,
+  replaceChannelReadStatesFromReady,
+  setChannelLastMessageId,
+  upsertChannelReadStateFromGateway,
+} from '@/features/messages/read-state-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
@@ -30,6 +37,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
   if (isGatewayDispatch(dispatch, 'ready')) {
     queryClient.setQueryData<GatewayReadyData>(gatewayReadyQueryKey, dispatch.data)
     replaceGuildsFromReady(queryClient, dispatch.data)
+    replaceChannelReadStatesFromReady(queryClient, dispatch.data.read_states)
     return
   }
 
@@ -116,6 +124,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'message.created')) {
     upsertChannelMessageFromGateway(queryClient, dispatch.data)
+    bumpChannelLastMessageId(queryClient, dispatch.data.channel_id, dispatch.data.id)
     return
   }
 
@@ -126,6 +135,12 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'message.deleted')) {
     removeChannelMessageFromGateway(queryClient, dispatch.data)
+    setChannelLastMessageId(queryClient, dispatch.data.channel_id, dispatch.data.last_message_id)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'message.read.updated')) {
+    upsertChannelReadStateFromGateway(queryClient, dispatch.data)
   }
 }
 
@@ -133,4 +148,5 @@ export function clearGatewayQueries(queryClient: QueryClient) {
   queryClient.removeQueries({ queryKey: gatewayReadyQueryKey })
   queryClient.removeQueries({ queryKey: guildsQueryKey })
   clearChannelMessageQueries(queryClient)
+  clearChannelReadStateQueries(queryClient)
 }

@@ -1,6 +1,13 @@
 import type { PublicUserProfile } from '@/api/user'
 
 // Domain models use decimal strings for snowflake IDs (JSON cannot carry bigint).
+export interface ChannelReadStateSummary {
+  channelId: string
+  lastMessageId: string
+  lastReadMessageId: string
+  mentionCount: number
+}
+
 export interface MessageAttachment {
   assetId: string
   contentType: string
