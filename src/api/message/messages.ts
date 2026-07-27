@@ -12,7 +12,7 @@ import type {
 } from '@/api/message/types'
 import { toPublicUserProfile } from '@/api/user'
 
-const DEFAULT_LIST_LIMIT = 50
+const DEFAULT_LIST_LIMIT = 20
 
 export async function listMessages(
   channelId: string,

@@ -28,6 +28,8 @@ export function CategoryChannelGroup({
   dragDisabled,
   dropActive,
   dropVisual,
+  getMentionCount,
+  isUnread,
   onCreateChannel,
   onOpenChannelSettings,
   onSelectChannel,
@@ -40,6 +42,8 @@ export function CategoryChannelGroup({
   dragDisabled: boolean
   dropActive: boolean
   dropVisual: DropVisual
+  getMentionCount: (channel: GuildChannelSummary) => number
+  isUnread: (channel: GuildChannelSummary) => boolean
   onCreateChannel?: (category: GuildChannelSummary) => void
   onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onSelectChannel?: (channelId: string) => void
@@ -63,21 +67,34 @@ export function CategoryChannelGroup({
       : undefined
   const categoryEndIsTarget =
     dropVisual.target?.parentId === category.id && dropVisual.target.placement === 'end'
+  const hasUnreadChildren = channels.some((channel) => isUnread(channel))
+  const collapsedUnread = collapsed && hasUnreadChildren
 
   return (
     <section ref={setNodeRef} className={`relative min-w-0 ${isDragging ? 'opacity-35' : ''}`}>
       {categoryEdge === 'before' ? <InsertionIndicator edge="before" /> : null}
-      <div className="flex items-center gap-1 px-1">
+      <div className="relative flex items-center gap-1 px-1">
+        {collapsedUnread ? (
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 -left-1 z-10 h-3.5 w-1 -translate-y-1/2 rounded-r-full bg-ink"
+          />
+        ) : null}
         <button
           type="button"
           {...attributes}
           {...listeners}
           aria-expanded={!collapsed}
-          className="flex min-h-7 min-w-0 flex-1 touch-manipulation items-center gap-1.5 rounded-control px-1 text-left text-[0.9rem] font-semibold tracking-[0.01em] text-subtle transition hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70"
+          className={`flex min-h-7 min-w-0 flex-1 touch-manipulation items-center gap-1.5 rounded-control px-1 text-left text-[0.9rem] font-semibold tracking-[0.01em] transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 ${
+            collapsedUnread ? 'text-ink' : 'text-subtle hover:text-ink'
+          }`}
           onClick={() => onToggleCategory(category.id)}
         >
           <ChevronIcon collapsed={collapsed} />
-          <span className="truncate">{category.name}</span>
+          <span className="min-w-0 flex-1 truncate">{category.name}</span>
+          {collapsedUnread ? (
+            <span aria-label="Unread" className="size-1.5 shrink-0 rounded-full bg-brand" />
+          ) : null}
         </button>
         {onCreateChannel ? (
           <button
@@ -118,9 +135,11 @@ export function CategoryChannelGroup({
                   channel={channel}
                   dragDisabled={dragDisabled}
                   dropVisual={dropVisual}
+                  mentionCount={getMentionCount(channel)}
                   onOpenChannelSettings={onOpenChannelSettings}
                   onSelectChannel={onSelectChannel}
                   selected={channel.id === selectedChannelId}
+                  unread={isUnread(channel)}
                 />
               ))
             ) : (
@@ -149,16 +168,20 @@ export function SortableChannelButton({
   channel,
   dragDisabled,
   dropVisual,
+  mentionCount = 0,
   onOpenChannelSettings,
   onSelectChannel,
   selected,
+  unread = false,
 }: {
   channel: GuildChannelSummary
   dragDisabled: boolean
   dropVisual: DropVisual
+  mentionCount?: number
   onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onSelectChannel?: (channelId: string) => void
   selected: boolean
+  unread?: boolean
 }) {
   const { attributes, isDragging, listeners, setNodeRef } = useSortable({
     data: { channel, kind: 'channel' as const },
@@ -173,13 +196,21 @@ export function SortableChannelButton({
       className={`relative flex min-w-0 items-center gap-0.5 ${isDragging ? 'opacity-35' : ''}`}
     >
       {indicatorEdge === 'before' ? <InsertionIndicator edge="before" /> : null}
+      {unread ? (
+        <span
+          aria-hidden="true"
+          className="absolute top-1/2 -left-1 z-10 h-4 w-1 -translate-y-1/2 rounded-r-full bg-ink"
+        />
+      ) : null}
       <ChannelButton
         attributes={attributes}
         channel={channel}
         listeners={listeners}
+        mentionCount={mentionCount}
         onSelectChannel={onSelectChannel}
         selected={selected}
         type={channel.type === GuildChannelType.VOICE ? 'voice' : 'text'}
+        unread={unread}
       />
       {onOpenChannelSettings ? (
         <button
@@ -240,16 +271,20 @@ function ChannelButton({
   attributes,
   channel,
   listeners,
+  mentionCount = 0,
   onSelectChannel,
   selected,
   type,
+  unread = false,
 }: {
   attributes: DraggableAttributes
   channel: GuildChannelSummary
   listeners: DraggableSyntheticListeners
+  mentionCount?: number
   onSelectChannel?: (channelId: string) => void
   selected: boolean
   type: 'text' | 'voice'
+  unread?: boolean
 }) {
   return (
     <button
@@ -261,14 +296,28 @@ function ChannelButton({
       className={`flex min-h-9 min-w-0 flex-1 touch-manipulation items-center gap-2 rounded-control px-2.5 text-left text-sm transition ${
         selected
           ? 'bg-brand-soft font-semibold text-brand-text'
-          : 'text-muted hover:bg-surface-hover hover:text-ink'
+          : unread
+            ? 'bg-surface-hover/70 font-semibold text-ink hover:bg-surface-hover'
+            : 'text-muted hover:bg-surface-hover hover:text-ink'
       }`}
       onClick={() => !selected && onSelectChannel?.(channel.id)}
     >
-      <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center text-subtle">
+      <span
+        aria-hidden="true"
+        className={`grid size-4 shrink-0 place-items-center ${
+          selected ? 'text-brand-text' : unread ? 'text-ink' : 'text-subtle'
+        }`}
+      >
         {type === 'voice' ? <VoiceChannelIcon /> : <TextChannelIcon />}
       </span>
       <span className="min-w-0 flex-1 truncate">{channel.name}</span>
+      {mentionCount > 0 ? (
+        <span className="grid min-w-4 shrink-0 place-items-center rounded-full bg-accent px-1.5 py-0.5 text-[0.58rem] font-bold leading-none text-white">
+          {mentionCount > 99 ? '99+' : mentionCount}
+        </span>
+      ) : unread ? (
+        <span aria-label="Unread" className="size-2 shrink-0 rounded-full bg-brand" />
+      ) : null}
     </button>
   )
 }

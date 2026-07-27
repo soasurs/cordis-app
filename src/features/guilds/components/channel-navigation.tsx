@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
   DragOverlay,
@@ -33,6 +34,12 @@ import {
   SortableChannelButton,
 } from '@/features/guilds/components/channel-navigation-items'
 import type { GuildChannelSummary } from '@/features/guilds/guild-queries'
+import {
+  channelReadStatesQueryKey,
+  getMentionCount,
+  isChannelUnread,
+  type ChannelReadStatesMap,
+} from '@/features/messages/read-state-queries'
 
 interface ChannelNavigationProps {
   channels: GuildChannelSummary[]
@@ -70,6 +77,13 @@ export function ChannelNavigation({
   reorderEnabled = false,
   selectedChannelId,
 }: ChannelNavigationProps) {
+  const queryClient = useQueryClient()
+  const { data: readStates = {} } = useQuery({
+    queryFn: () =>
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey()) ?? {},
+    queryKey: channelReadStatesQueryKey(),
+    staleTime: Infinity,
+  })
   const [activeChannel, setActiveChannel] = useState<GuildChannelSummary>()
   const [dropVisual, setDropVisual] = useState<DropVisual>({})
   const visibleDropVisual = activeChannel ? dropVisual : hiddenDropVisual
@@ -86,6 +100,10 @@ export function ChannelNavigation({
         channel.type === GuildChannelType.TEXT ||
         channel.type === GuildChannelType.VOICE),
   )
+  const channelUnread = (channel: GuildChannelSummary) =>
+    channel.type === GuildChannelType.TEXT && isChannelUnread(readStates[channel.id])
+  const channelMentionCount = (channel: GuildChannelSummary) =>
+    channel.type === GuildChannelType.TEXT ? getMentionCount(readStates[channel.id]) : 0
 
   if (topLevelChannels.length === 0) {
     return null
@@ -170,6 +188,8 @@ export function ChannelNavigation({
                 )}
                 dragDisabled={dragDisabled}
                 dropVisual={visibleDropVisual}
+                getMentionCount={channelMentionCount}
+                isUnread={channelUnread}
                 onCreateChannel={onCreateChannel}
                 onOpenChannelSettings={onOpenChannelSettings}
                 onSelectChannel={onSelectChannel}
@@ -182,9 +202,11 @@ export function ChannelNavigation({
                 channel={channel}
                 dragDisabled={dragDisabled}
                 dropVisual={visibleDropVisual}
+                mentionCount={channelMentionCount(channel)}
                 onOpenChannelSettings={onOpenChannelSettings}
                 onSelectChannel={onSelectChannel}
                 selected={channel.id === selectedChannelId}
+                unread={channelUnread(channel)}
               />
             ),
           )}

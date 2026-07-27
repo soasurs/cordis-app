@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 
 import { GuildChannelType } from '@/api/guild'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,10 @@ import {
 import { useChannelReordering } from '@/features/guilds/use-channel-reordering'
 import { useGuildCapabilities } from '@/features/guilds/use-guild-permissions'
 import { TextChannelView } from '@/features/messages/components/text-channel-view'
+import {
+  guildReadStatesQueryOptions,
+  mergeChannelReadStates,
+} from '@/features/messages/read-state-queries'
 
 interface GuildPageProps {
   channelId?: string
@@ -40,10 +44,12 @@ export function GuildPage({
   onOpenSettings,
   onSelectChannel,
 }: GuildPageProps) {
+  const queryClient = useQueryClient()
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => new Set())
   const [createChannelTarget, setCreateChannelTarget] = useState<CreateChannelTarget>()
   const { data: guilds } = useQuery(guildsQueryOptions)
   const channelsQuery = useQuery(guildChannelsQueryOptions(guildId))
+  const readStatesQuery = useQuery(guildReadStatesQueryOptions(guildId))
   const channelReordering = useChannelReordering(guildId)
   const { can } = useGuildCapabilities(guildId)
   const canManageChannels = can('manageChannels')
@@ -54,6 +60,12 @@ export function GuildPage({
   const channels = [...(channelsQuery.data ?? [])].sort(compareChannels)
   const selectedChannel = channels.find((channel) => channel.id === channelId)
   const isTextChannel = selectedChannel?.type === GuildChannelType.TEXT
+
+  useEffect(() => {
+    if (!readStatesQuery.data) return
+    mergeChannelReadStates(queryClient, readStatesQuery.data)
+  }, [queryClient, readStatesQuery.data])
+
   const toggleCategory = (categoryId: string) => {
     setCollapsedCategoryIds((current) => {
       const next = new Set(current)
@@ -150,6 +162,7 @@ export function GuildPage({
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="border-b border-line px-5 py-4 sm:hidden">{mobileChannelList}</div>
             <TextChannelView
+              key={selectedChannel.id}
               canManageMessages={canManageMessages}
               canSend={canSendMessages}
               channel={selectedChannel}
