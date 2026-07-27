@@ -5,11 +5,13 @@ import { syncGatewayDispatch } from '@/app/gateway-query-sync'
 import {
   guildChannelOverwritesQueryKey,
   guildChannelsQueryKey,
+  guildRolesQueryKey,
   type GuildChannelOverwriteSummary,
+  type GuildRoleSummary,
 } from '@/features/guilds/guild-queries'
 
 describe('syncGatewayDispatch channel overwrites', () => {
-  it('patches overwrite cache and invalidates channel list on update', () => {
+  it('patches overwrite cache and invalidates channel list when View Channel changes', () => {
     const queryClient = new QueryClient()
     const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
@@ -67,8 +69,50 @@ describe('syncGatewayDispatch channel overwrites', () => {
     })
   })
 
+  it('does not invalidate channel list when overwrite update ignores View Channel', () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+    queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+      guildChannelOverwritesQueryKey('42', '43'),
+      [
+        {
+          allow: '0',
+          appliesTo: 'role',
+          appliesToId: '42',
+          channelId: '43',
+          createdAt: 1_000,
+          deny: '0',
+          guildId: '42',
+          revision: 1,
+          updatedAt: 1_000,
+        },
+      ],
+    )
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.channel.overwrite.updated',
+      sequence: 1,
+      data: {
+        allow: '64',
+        applies_to: 1,
+        applies_to_id: '42',
+        channel_id: '43',
+        deny: '0',
+        guild_id: '42',
+        revision: 2,
+        updated_at: 3_000,
+      },
+    })
+
+    expect(queryClient.getQueryData(guildChannelOverwritesQueryKey('42', '43'))).toEqual([
+      expect.objectContaining({ allow: '64', deny: '0', revision: 2 }),
+    ])
+    expect(invalidateQueries).not.toHaveBeenCalled()
+  })
+
   it('does not synthesize overwrite cache when update arrives before seed', () => {
     const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
 
     syncGatewayDispatch(queryClient, {
       type: 'guild.channel.overwrite.updated',
@@ -86,9 +130,15 @@ describe('syncGatewayDispatch channel overwrites', () => {
     })
 
     expect(queryClient.getQueryData(guildChannelOverwritesQueryKey('42', '43'))).toBeUndefined()
+    // Cold overwrite cache: refresh channels because previous View Channel state is unknown.
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
+    })
   })
 
-  it('removes overwrite cache entries and invalidates channel list on delete', () => {
+  it('removes overwrite cache entries and invalidates channel list when View Channel overwrite is deleted', () => {
     const queryClient = new QueryClient()
     const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
@@ -103,7 +153,7 @@ describe('syncGatewayDispatch channel overwrites', () => {
           deny: '0',
           guildId: '42',
           revision: 2,
-          updatedAt: 3_000,
+          updatedAt: 1_000,
         },
         {
           allow: '0',
@@ -150,8 +200,44 @@ describe('syncGatewayDispatch channel overwrites', () => {
     })
   })
 
+  it('does not invalidate channel list when deleted overwrite ignored View Channel', () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+    queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+      guildChannelOverwritesQueryKey('42', '43'),
+      [
+        {
+          allow: '64',
+          appliesTo: 'role',
+          appliesToId: '42',
+          channelId: '43',
+          createdAt: 1_000,
+          deny: '0',
+          guildId: '42',
+          revision: 1,
+          updatedAt: 1_000,
+        },
+      ],
+    )
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.channel.overwrite.deleted',
+      sequence: 2,
+      data: {
+        applies_to: 1,
+        applies_to_id: '42',
+        channel_id: '43',
+        guild_id: '42',
+      },
+    })
+
+    expect(queryClient.getQueryData(guildChannelOverwritesQueryKey('42', '43'))).toEqual([])
+    expect(invalidateQueries).not.toHaveBeenCalled()
+  })
+
   it('does not synthesize empty overwrite cache when delete arrives before seed', () => {
     const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
 
     syncGatewayDispatch(queryClient, {
       type: 'guild.channel.overwrite.deleted',
@@ -165,6 +251,11 @@ describe('syncGatewayDispatch channel overwrites', () => {
     })
 
     expect(queryClient.getQueryData(guildChannelOverwritesQueryKey('42', '43'))).toBeUndefined()
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
+    })
   })
 
   it('seeds empty overwrite cache on channel create so later overwrite events can patch', () => {
@@ -240,5 +331,88 @@ describe('syncGatewayDispatch channel overwrites', () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: guildChannelOverwritesQueryKey('42', '43'),
     })
+  })
+})
+
+describe('syncGatewayDispatch role visibility refresh', () => {
+  it('invalidates channel list only when role View Channel or Administrator changes', () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+    queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'), [
+      {
+        createdAt: 1_000,
+        guildId: '42',
+        id: '51',
+        isDefault: false,
+        name: 'Helpers',
+        permissions: '64',
+        position: 1,
+        revision: 1,
+        updatedAt: 1_000,
+      },
+    ])
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.role.updated',
+      sequence: 1,
+      data: {
+        created_at: 1_000,
+        guild_id: '42',
+        id: '51',
+        is_default: false,
+        name: 'Helpers',
+        permissions: '192',
+        position: 1,
+        revision: 2,
+        updated_at: 2_000,
+      },
+    })
+
+    expect(invalidateQueries).not.toHaveBeenCalled()
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.role.updated',
+      sequence: 2,
+      data: {
+        created_at: 1_000,
+        guild_id: '42',
+        id: '51',
+        is_default: false,
+        name: 'Helpers',
+        permissions: '224',
+        position: 1,
+        revision: 3,
+        updated_at: 3_000,
+      },
+    })
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
+    })
+  })
+
+  it('does not invalidate channel list when a role is created', () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.role.created',
+      sequence: 1,
+      data: {
+        created_at: 1_000,
+        guild_id: '42',
+        id: '51',
+        is_default: false,
+        name: 'Helpers',
+        permissions: '32',
+        position: 1,
+        revision: 1,
+        updated_at: 1_000,
+      },
+    })
+
+    expect(invalidateQueries).not.toHaveBeenCalled()
   })
 })
