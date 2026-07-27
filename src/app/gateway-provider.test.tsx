@@ -159,15 +159,15 @@ describe('GatewayProvider', () => {
     expect(queryClient.getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))?.[0]?.name).toBe(
       'Everyone',
     )
-    expect(queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))).toEqual(
-      [
-        expect.objectContaining({
-          id: '50',
-          name: 'Everyone',
-          permissions: '1',
-        }),
-      ],
-    )
+    expect(
+      queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7')),
+    ).toEqual([
+      expect.objectContaining({
+        id: '50',
+        name: 'Everyone',
+        permissions: '1',
+      }),
+    ])
 
     act(() =>
       connection.dispatch({
@@ -205,9 +205,9 @@ describe('GatewayProvider', () => {
       }),
     )
     expect(
-      queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))?.map(
-        (role) => role.id,
-      ),
+      queryClient
+        .getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))
+        ?.map((role) => role.id),
     ).toEqual(['50', '51'])
 
     act(() =>
@@ -237,6 +237,8 @@ describe('GatewayProvider', () => {
         .getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))
         ?.find((role) => role.id === '51'),
     ).toMatchObject({ name: 'Moderators', permissions: '6', revision: 2 })
+    // member.roles.updated above refreshes channels; permission-only role updates
+    // without View Channel / Administrator changes do not.
     expect(queryClient.getQueryState(guildChannelsQueryKey('42'))?.isInvalidated).toBe(true)
 
     act(() =>
@@ -290,9 +292,9 @@ describe('GatewayProvider', () => {
         type: 'guild.member.roles.updated',
       }),
     )
-    expect(queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7'))).toEqual(
-      [expect.objectContaining({ id: '50', name: 'Everyone' })],
-    )
+    expect(
+      queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7')),
+    ).toEqual([expect.objectContaining({ id: '50', name: 'Everyone' })])
     expect(queryClient.getQueryState(guildMemberRolesQueryKey('42', '7'))?.isInvalidated).toBe(
       false,
     )

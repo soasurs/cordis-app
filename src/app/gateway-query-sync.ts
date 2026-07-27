@@ -67,25 +67,21 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
     isGatewayDispatch(dispatch, 'guild.role.updated')
   ) {
     upsertGuildRoleFromGateway(queryClient, dispatch.data)
-    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
   if (isGatewayDispatch(dispatch, 'guild.role.deleted')) {
     removeGuildRoleFromGateway(queryClient, dispatch.data.guild_id, dispatch.data.id)
-    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
   if (isGatewayDispatch(dispatch, 'guild.channel.overwrite.updated')) {
     upsertGuildChannelOverwriteFromGateway(queryClient, dispatch.data)
-    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
   if (isGatewayDispatch(dispatch, 'guild.channel.overwrite.deleted')) {
     removeGuildChannelOverwriteFromGateway(queryClient, dispatch.data)
-    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
