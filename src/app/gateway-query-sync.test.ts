@@ -416,3 +416,144 @@ describe('syncGatewayDispatch role visibility refresh', () => {
     expect(invalidateQueries).not.toHaveBeenCalled()
   })
 })
+
+describe('syncGatewayDispatch messages', () => {
+  it('upserts and removes messages in a warm channel cache', async () => {
+    const { channelMessagesQueryKey } = await import('@/features/messages/message-queries')
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(channelMessagesQueryKey('43'), {
+      pageParams: [undefined],
+      pages: [
+        {
+          messages: [
+            {
+              channelId: '43',
+              content: 'Earlier',
+              createdAt: 1_500,
+              editedAt: 0,
+              flags: 0,
+              id: '101',
+              revision: 1,
+              type: 1,
+              updatedAt: 1_500,
+            },
+          ],
+        },
+      ],
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.created',
+      sequence: 1,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '7',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Hello',
+        created_at: 2_000,
+        edited_at: 0,
+        flags: 0,
+        id: '102',
+        mention_user_ids: [],
+        revision: 1,
+        type: 1,
+        updated_at: 2_000,
+      },
+    })
+
+    const afterCreate = queryClient.getQueryData<{
+      pages: Array<{ messages: Array<{ id: string; content: string }> }>
+    }>(channelMessagesQueryKey('43'))
+    expect(afterCreate?.pages[0]?.messages.map((item) => item.id)).toEqual(['102', '101'])
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.updated',
+      sequence: 2,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '7',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Hello edited',
+        created_at: 2_000,
+        edited_at: 3_000,
+        flags: 0,
+        id: '102',
+        mention_user_ids: [],
+        revision: 2,
+        type: 1,
+        updated_at: 3_000,
+      },
+    })
+
+    const afterUpdate = queryClient.getQueryData<{
+      pages: Array<{ messages: Array<{ id: string; content: string }> }>
+    }>(channelMessagesQueryKey('43'))
+    expect(afterUpdate?.pages[0]?.messages[0]?.content).toBe('Hello edited')
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.updated',
+      sequence: 3,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '7',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Ghost edit',
+        created_at: 4_000,
+        edited_at: 4_000,
+        flags: 0,
+        id: '999',
+        mention_user_ids: [],
+        revision: 1,
+        type: 1,
+        updated_at: 4_000,
+      },
+    })
+
+    expect(
+      queryClient
+        .getQueryData<{ pages: Array<{ messages: Array<{ id: string }> }> }>(
+          channelMessagesQueryKey('43'),
+        )
+        ?.pages[0]?.messages.map((item) => item.id),
+    ).toEqual(['102', '101'])
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.deleted',
+      sequence: 4,
+      data: {
+        channel_id: '43',
+        deleted_at: 4_000,
+        id: '102',
+        last_message_id: '101',
+        mention_user_ids: [],
+        revision: 2,
+      },
+    })
+
+    const afterDelete = queryClient.getQueryData<{
+      pages: Array<{ messages: Array<{ id: string }> }>
+    }>(channelMessagesQueryKey('43'))
+    expect(afterDelete?.pages[0]?.messages.map((item) => item.id)).toEqual(['101'])
+  })
+})
