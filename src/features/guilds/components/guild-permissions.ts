@@ -1,40 +1,52 @@
 import { guildPermission, type GuildRole } from '@/api/guild'
 
+export interface GuildPermissionItem {
+  description: string
+  label: string
+  value: string
+}
+
+export interface GuildPermissionGroup {
+  id: string
+  label: string
+  permissions: readonly GuildPermissionItem[]
+}
+
 const viewChannelsPermission = {
   description: 'See channels that are available to this role.',
   label: 'View channels',
   value: guildPermission.viewChannel,
-} as const
+} as const satisfies GuildPermissionItem
 
 const sendMessagesPermission = {
   description: 'Send messages in channels this role can access.',
   label: 'Send messages',
   value: guildPermission.sendMessages,
-} as const
+} as const satisfies GuildPermissionItem
 
 const manageChannelsPermission = {
   description: 'Create, update, reorder, and delete channels.',
   label: 'Manage channels',
   value: guildPermission.manageChannels,
-} as const
+} as const satisfies GuildPermissionItem
 
 const manageRolesPermission = {
   description: 'Create, update, reorder, and delete roles.',
   label: 'Manage roles',
   value: guildPermission.manageRoles,
-} as const
+} as const satisfies GuildPermissionItem
 
 const manageMessagesPermission = {
   description: 'Moderate messages sent by other members.',
   label: 'Manage messages',
   value: guildPermission.manageMessages,
-} as const
+} as const satisfies GuildPermissionItem
 
 const createInvitesPermission = {
   description: 'Create invitation links for this community.',
   label: 'Create invites',
   value: guildPermission.createInvite,
-} as const
+} as const satisfies GuildPermissionItem
 
 export const guildPermissionGroups = [
   {
@@ -86,7 +98,7 @@ export const guildPermissionGroups = [
       manageMessagesPermission,
     ],
   },
-] as const
+] satisfies readonly GuildPermissionGroup[]
 
 /**
  * Permissions that can be meaningfully allow/deny'd on a single channel.
@@ -134,7 +146,7 @@ export const channelPermissionGroups = [
       },
     ],
   },
-] as const
+] satisfies readonly GuildPermissionGroup[]
 
 export function countGuildPermissions(value: string) {
   let permissions = BigInt(value)
