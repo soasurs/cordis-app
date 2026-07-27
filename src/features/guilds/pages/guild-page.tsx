@@ -47,6 +47,7 @@ export function GuildPage({
   const channelReordering = useChannelReordering(guildId)
   const { can } = useGuildCapabilities(guildId)
   const canManageChannels = can('manageChannels')
+  const canManageMessages = can('manageMessages')
   const canOpenSettings = can('openGuildSettings')
   const canSendMessages = can('sendMessages')
   const guild = guilds?.find((item) => item.id === guildId)
@@ -148,7 +149,11 @@ export function GuildPage({
         {isTextChannel && selectedChannel ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="border-b border-line px-5 py-4 sm:hidden">{mobileChannelList}</div>
-            <TextChannelView canSend={canSendMessages} channel={selectedChannel} />
+            <TextChannelView
+              canManageMessages={canManageMessages}
+              canSend={canSendMessages}
+              channel={selectedChannel}
+            />
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
