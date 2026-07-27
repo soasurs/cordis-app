@@ -16,8 +16,9 @@ const messageApi = vi.hoisted(() => ({
   createAttachmentUpload: vi.fn(),
   createMessage: vi.fn(),
   deleteMessage: vi.fn(),
+  getMessage: vi.fn(),
   listMessages: vi.fn(),
-  MessageType: { DEFAULT: 1 },
+  MessageType: { DEFAULT: 1, REPLY: 19 },
   updateMessage: vi.fn(),
 }))
 
@@ -84,6 +85,52 @@ describe('MessageComposer', () => {
       }),
     )
     expect(screen.getByLabelText('Message #general')).toHaveValue('')
+  })
+
+  it('sends a reply with both reference ids and clears the reply bar', async () => {
+    const user = userEvent.setup()
+    const onClearReply = vi.fn()
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: 'Agreed',
+      id: '201',
+      referencedChannelId: '43',
+      referencedMessageId: '102',
+      type: 19,
+    })
+    const queryClient = createQueryClient()
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          replyTo={{
+            authorName: 'Alex Chen',
+            channelId: '43',
+            contentPreview: 'Hello room',
+            id: '102',
+          }}
+          onClearReply={onClearReply}
+        />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByText('Replying to Alex Chen')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Message #general'), 'Agreed')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: 'Agreed',
+        referencedChannelId: '43',
+        referencedMessageId: '102',
+      }),
+    )
+    await waitFor(() => expect(onClearReply).toHaveBeenCalled())
   })
 
   it('uploads an attachment and sends its asset id', async () => {
@@ -318,6 +365,110 @@ describe('MessageItem', () => {
     expect(screen.queryByRole('menu', { name: 'Message actions' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
+  it('offers reply for other authors when onReply is provided', async () => {
+    const user = userEvent.setup()
+    const onReply = vi.fn()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem currentUserId="99" message={sampleMessage} onReply={onReply} />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Reply' }))
+    expect(onReply).toHaveBeenCalledWith(sampleMessage)
+  })
+
+  it('shows a reply preview from the channel cache', () => {
+    const queryClient = createQueryClient()
+    const original: ChannelMessageSummary = {
+      ...sampleMessage,
+      content: 'Original thought',
+      id: '101',
+    }
+    queryClient.setQueryData(channelMessagesQueryKey('43'), {
+      pageParams: [undefined],
+      pages: [{ messages: [original] }],
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MessageItem
+          currentUserId="7"
+          message={{
+            ...sampleMessage,
+            content: 'Agreed',
+            id: '201',
+            referencedChannelId: '43',
+            referencedMessageId: '101',
+            type: 19,
+          }}
+        />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByText('Original thought')).toBeInTheDocument()
+    expect(screen.getByText('Agreed')).toBeInTheDocument()
+    expect(messageApi.getMessage).not.toHaveBeenCalled()
+  })
+
+  it('falls back when the referenced message cannot be loaded', async () => {
+    messageApi.getMessage.mockRejectedValue(new Error('not found'))
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={{
+            ...sampleMessage,
+            content: 'Agreed',
+            id: '201',
+            referencedChannelId: '43',
+            referencedMessageId: '999',
+            type: 19,
+          }}
+        />
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() =>
+      expect(screen.getByText('Original message was deleted')).toBeInTheDocument(),
+    )
+  })
+
+  it('keeps reply previews clickable when the target is only loaded via getMessage', async () => {
+    const user = userEvent.setup()
+    const onJumpToMessage = vi.fn()
+    messageApi.getMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: 'Far away',
+      id: '50',
+    })
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={{
+            ...sampleMessage,
+            content: 'Agreed',
+            id: '201',
+            referencedChannelId: '43',
+            referencedMessageId: '50',
+            type: 19,
+          }}
+          onJumpToMessage={onJumpToMessage}
+        />
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByText('Far away')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: /Far away/i }))
+    expect(onJumpToMessage).toHaveBeenCalledWith('50')
   })
 
   it('lets manageMessages delete another author message without edit', async () => {

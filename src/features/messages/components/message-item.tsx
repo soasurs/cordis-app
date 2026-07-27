@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useEffect,
   useId,
@@ -29,10 +29,13 @@ import {
   type PendingAttachmentDraft,
 } from '@/features/messages/components/pending-attachment-chip'
 import {
+  findChannelMessageInCache,
+  referencedMessageQueryOptions,
   removeChannelMessageFromApi,
   upsertChannelMessageFromApi,
   type ChannelMessageSummary,
 } from '@/features/messages/message-queries'
+import { toMessageContentPreview } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
 
 interface MessageItemProps {
@@ -40,6 +43,8 @@ interface MessageItemProps {
   canManageMessages?: boolean
   currentUserId?: string
   message: ChannelMessageSummary
+  onJumpToMessage?: (messageId: string) => void
+  onReply?: (message: ChannelMessageSummary) => void
 }
 
 interface ContextMenuPosition {
@@ -53,6 +58,8 @@ export function MessageItem({
   canManageMessages = false,
   currentUserId,
   message,
+  onJumpToMessage,
+  onReply,
 }: MessageItemProps) {
   const queryClient = useQueryClient()
   const fileInputId = useId()
@@ -69,7 +76,8 @@ export function MessageItem({
   const isOwn = Boolean(currentUserId && message.author?.userId === currentUserId)
   const canEdit = isOwn
   const canDelete = isOwn || canManageMessages
-  const hasMessageActions = canEdit || canDelete
+  const canReply = Boolean(onReply)
+  const hasMessageActions = canEdit || canDelete || canReply
   const displayName =
     message.author?.name || message.author?.username || `User ${message.author?.userId ?? ''}`
   const username = message.author?.username ?? ''
@@ -325,125 +333,140 @@ export function MessageItem({
 
   return (
     <article
-      className="group flex gap-3 px-1 py-1.5 hover:bg-surface-hover/60"
+      data-message-id={message.id}
+      className="group px-1 py-1.5 hover:bg-surface-hover/60"
       onContextMenu={onContextMenu}
     >
-      <span
-        aria-hidden="true"
-        className="mt-0.5 grid size-10 shrink-0 place-items-center overflow-hidden rounded-control bg-surface-hover text-xs font-bold text-muted"
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="size-full object-cover" />
-        ) : (
-          initials
-        )}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <p className="text-sm font-semibold text-ink">{displayName}</p>
-          <time
-            className="text-[0.65rem] text-subtle"
-            dateTime={new Date(message.createdAt).toISOString()}
-          >
-            {formatMessageTime(message.createdAt)}
-          </time>
-          {message.editedAt > 0 ? (
-            <span className="text-[0.65rem] text-subtle">(edited)</span>
-          ) : null}
-        </div>
+      {message.referencedMessageId ? (
+        <MessageReplyReference
+          channelId={message.channelId}
+          referencedMessageId={message.referencedMessageId}
+          onJumpToMessage={onJumpToMessage}
+        />
+      ) : null}
 
-        {editing ? (
-          <form className="mt-1.5" onSubmit={submitEdit}>
-            <div className="rounded-control border border-line bg-surface-raised focus-within:border-brand">
-              {keptAttachments.length > 0 || pending.length > 0 ? (
-                <ul
-                  className="flex flex-wrap gap-2 border-b border-line px-2 pt-2.5 pb-2"
-                  aria-label="Message attachments"
-                >
-                  {keptAttachments.map((attachment) => (
-                    <li key={attachment.assetId}>
-                      <ExistingAttachmentChip
-                        attachment={attachment}
-                        onRemove={() =>
-                          setKeptAttachments((current) =>
-                            current.filter((item) => item.assetId !== attachment.assetId),
-                          )
-                        }
-                      />
-                    </li>
-                  ))}
-                  {pending.map((item) => (
-                    <li key={item.id}>
-                      <PendingAttachmentChip item={item} onRemove={() => removePending(item.id)} />
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+      <div className="flex gap-3">
+        <span
+          aria-hidden="true"
+          className="mt-0.5 grid size-10 shrink-0 place-items-center overflow-hidden rounded-control bg-surface-hover text-xs font-bold text-muted"
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="size-full object-cover" />
+          ) : (
+            initials
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className="text-sm font-semibold text-ink">{displayName}</p>
+            <time
+              className="text-[0.65rem] text-subtle"
+              dateTime={new Date(message.createdAt).toISOString()}
+            >
+              {formatMessageTime(message.createdAt)}
+            </time>
+            {message.editedAt > 0 ? (
+              <span className="text-[0.65rem] text-subtle">(edited)</span>
+            ) : null}
+          </div>
 
-              <div className="flex items-start gap-2 px-2 py-1.5">
-                <input
-                  ref={fileInputRef}
-                  id={fileInputId}
-                  type="file"
-                  multiple
-                  className="sr-only"
-                  onChange={(event) => addFiles(event.target.files)}
-                />
+          {editing ? (
+            <form className="mt-1.5" onSubmit={submitEdit}>
+              <div className="rounded-control border border-line bg-surface-raised focus-within:border-brand">
+                {keptAttachments.length > 0 || pending.length > 0 ? (
+                  <ul
+                    className="flex flex-wrap gap-2 border-b border-line px-2 pt-2.5 pb-2"
+                    aria-label="Message attachments"
+                  >
+                    {keptAttachments.map((attachment) => (
+                      <li key={attachment.assetId}>
+                        <ExistingAttachmentChip
+                          attachment={attachment}
+                          onRemove={() =>
+                            setKeptAttachments((current) =>
+                              current.filter((item) => item.assetId !== attachment.assetId),
+                            )
+                          }
+                        />
+                      </li>
+                    ))}
+                    {pending.map((item) => (
+                      <li key={item.id}>
+                        <PendingAttachmentChip
+                          item={item}
+                          onRemove={() => removePending(item.id)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                <div className="flex items-start gap-2 px-2 py-1.5">
+                  <input
+                    ref={fileInputRef}
+                    id={fileInputId}
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    onChange={(event) => addFiles(event.target.files)}
+                  />
+                  <Button
+                    size="small"
+                    variant="ghost"
+                    type="button"
+                    className="mt-0.5 h-9 w-9 shrink-0 px-0"
+                    aria-label="Attach files"
+                    disabled={
+                      updateMutation.isPending ||
+                      attachmentSlotsUsed >= MESSAGE_ATTACHMENT_MAX_COUNT
+                    }
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    +
+                  </Button>
+                  <textarea
+                    value={draft}
+                    rows={3}
+                    disabled={updateMutation.isPending}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={onKeyDown}
+                    className="max-h-48 min-h-16 min-w-0 flex-1 resize-y bg-transparent py-2 text-sm leading-5 text-ink outline-none"
+                  />
+                </div>
+              </div>
+              <div className="mt-2 flex gap-2">
                 <Button
                   size="small"
-                  variant="ghost"
-                  type="button"
-                  className="mt-0.5 h-9 w-9 shrink-0 px-0"
-                  aria-label="Attach files"
-                  disabled={
-                    updateMutation.isPending || attachmentSlotsUsed >= MESSAGE_ATTACHMENT_MAX_COUNT
-                  }
-                  onClick={() => fileInputRef.current?.click()}
+                  type="submit"
+                  disabled={!canSave}
+                  loading={updateMutation.isPending}
                 >
-                  +
+                  Save
                 </Button>
-                <textarea
-                  value={draft}
-                  rows={3}
-                  disabled={updateMutation.isPending}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={onKeyDown}
-                  className="max-h-48 min-h-16 min-w-0 flex-1 resize-y bg-transparent py-2 text-sm leading-5 text-ink outline-none"
-                />
+                <Button size="small" variant="secondary" type="button" onClick={cancelEdit}>
+                  Cancel
+                </Button>
               </div>
-            </div>
-            <div className="mt-2 flex gap-2">
-              <Button
-                size="small"
-                type="submit"
-                disabled={!canSave}
-                loading={updateMutation.isPending}
-              >
-                Save
-              </Button>
-              <Button size="small" variant="secondary" type="button" onClick={cancelEdit}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <>
-            {message.content ? (
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-ink">
-                {message.content}
-              </p>
-            ) : null}
-            {message.attachments.length > 0 ? (
-              <MessageAttachments attachments={message.attachments} />
-            ) : null}
-          </>
-        )}
+            </form>
+          ) : (
+            <>
+              {message.content ? (
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-ink">
+                  {message.content}
+                </p>
+              ) : null}
+              {message.attachments.length > 0 ? (
+                <MessageAttachments attachments={message.attachments} />
+              ) : null}
+            </>
+          )}
 
-        {error ? (
-          <p role="alert" className="mt-1 text-xs text-negative">
-            {error}
-          </p>
-        ) : null}
+          {error ? (
+            <p role="alert" className="mt-1 text-xs text-negative">
+              {error}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       {menu ? (
@@ -454,6 +477,19 @@ export function MessageItem({
           className="fixed z-40 grid gap-1 rounded-panel border border-line bg-surface-raised p-1.5 shadow-panel"
           style={{ left: menu.x, top: menu.y, width: CONTEXT_MENU_WIDTH }}
         >
+          {canReply ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="rounded-control px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface-hover focus:bg-surface-hover focus:outline-none"
+              onClick={() => {
+                setMenu(null)
+                onReply?.(message)
+              }}
+            >
+              Reply
+            </button>
+          ) : null}
           {canEdit ? (
             <button
               type="button"
@@ -536,6 +572,103 @@ export function MessageItem({
         </Dialog.Portal>
       </Dialog.Root>
     </article>
+  )
+}
+
+function MessageReplyReference({
+  channelId,
+  onJumpToMessage,
+  referencedMessageId,
+}: {
+  channelId: string
+  onJumpToMessage?: (messageId: string) => void
+  referencedMessageId: string
+}) {
+  const queryClient = useQueryClient()
+  const cached = findChannelMessageInCache(queryClient, channelId, referencedMessageId)
+  const referencedQuery = useQuery({
+    ...referencedMessageQueryOptions(referencedMessageId),
+    enabled: !cached,
+  })
+  const referenced = cached ?? referencedQuery.data
+  const canJump = Boolean(onJumpToMessage && referenced)
+
+  if (referencedQuery.isError && !cached) {
+    return (
+      <div className="mb-0.5 flex items-end gap-1.5">
+        <ReplyConnector />
+        <p className="min-w-0 truncate pb-0.5 text-[0.72rem] text-muted">
+          Original message was deleted
+        </p>
+      </div>
+    )
+  }
+
+  if (!referenced) {
+    return (
+      <div className="mb-0.5 flex items-end gap-1.5">
+        <ReplyConnector />
+        <p className="min-w-0 truncate pb-0.5 text-[0.72rem] text-muted" role="status">
+          Loading reply…
+        </p>
+      </div>
+    )
+  }
+
+  const authorName =
+    referenced.author?.name ||
+    referenced.author?.username ||
+    `User ${referenced.author?.userId ?? ''}`
+  const preview = toMessageContentPreview(referenced)
+  const avatarUrl =
+    referenced.author &&
+    resolveAvatarUrl(referenced.author.userId, referenced.author.avatarAssetId)
+  const initials = getInitials(authorName, referenced.author?.username ?? '')
+
+  const body = (
+    <>
+      <span
+        aria-hidden="true"
+        className="grid size-4 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-hover text-[0.5rem] font-bold text-muted"
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-full object-cover" />
+        ) : (
+          initials.slice(0, 2)
+        )}
+      </span>
+      <span className="shrink-0 font-semibold text-ink/80">{authorName}</span>
+      <span className="min-w-0 truncate text-muted">{preview}</span>
+    </>
+  )
+
+  const rowClassName =
+    'flex min-w-0 flex-1 items-center gap-1.5 rounded-control px-1.5 py-0.5 text-left text-[0.72rem] leading-4 transition'
+
+  return (
+    <div className="mb-0.5 flex items-end gap-1">
+      <ReplyConnector />
+      {canJump ? (
+        <button
+          type="button"
+          className={`${rowClassName} hover:bg-brand-soft/70`}
+          onClick={() => onJumpToMessage?.(referencedMessageId)}
+        >
+          {body}
+        </button>
+      ) : (
+        <div className={rowClassName}>{body}</div>
+      )}
+    </div>
+  )
+}
+
+/** Soft L-rail from the avatar gutter into the reply chip (Discord-inspired, not identical). */
+function ReplyConnector() {
+  return (
+    <span aria-hidden="true" className="relative mb-[7px] ml-[18px] h-2.5 w-[22px] shrink-0">
+      <span className="absolute inset-0 rounded-tl-[7px] border-t border-l border-line-strong group-hover:border-brand/45" />
+    </span>
   )
 }
 

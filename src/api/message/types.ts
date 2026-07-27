@@ -50,6 +50,9 @@ export interface CreateChannelMessageDetails {
   attachmentAssetIds?: string[]
   channelId: string
   content: string
+  /** Both reference fields must be set together for a reply. */
+  referencedChannelId?: string
+  referencedMessageId?: string
 }
 
 export interface UpdateChannelMessageDetails {
@@ -62,8 +65,12 @@ export interface UpdateChannelMessageDetails {
 }
 
 export interface ListChannelMessagesOptions {
+  /** Load messages around this ID (mutually exclusive with before/after). */
+  around?: string
   /** Load messages older than this ID (exclusive). */
   before?: string
+  /** Load messages newer than this ID (exclusive). */
+  after?: string
   limit?: number
 }
 

@@ -7,6 +7,7 @@ const messageClient = vi.hoisted(() => ({
   createAttachmentUpload: vi.fn(),
   createMessage: vi.fn(),
   deleteMessage: vi.fn(),
+  getMessage: vi.fn(),
   getReadStates: vi.fn(),
   listMessages: vi.fn(),
   updateMessage: vi.fn(),
@@ -24,6 +25,7 @@ import {
   createAttachmentUpload,
   createMessage,
   deleteMessage,
+  getMessage,
   getReadStatesForGuild,
   listMessages,
   updateMessage,
@@ -169,6 +171,28 @@ describe('message API', () => {
     })
   })
 
+  it('lists messages around a cursor', async () => {
+    messageClient.listMessages.mockResolvedValue({
+      afterCursor: 110n,
+      beforeCursor: 90n,
+      messages: [],
+    })
+
+    await listMessages('43', { around: '100' })
+    expect(messageClient.listMessages).toHaveBeenCalledWith({
+      channelId: 43n,
+      cursor: { case: 'around', value: 100n },
+      limit: 20,
+    })
+  })
+
+  it('rejects mutually exclusive list cursors', async () => {
+    await expect(listMessages('43', { before: '100', around: '90' })).rejects.toThrow(
+      'message list cursors are mutually exclusive',
+    )
+    expect(messageClient.listMessages).not.toHaveBeenCalled()
+  })
+
   it('creates messages with attachments and allows attachment-only content', async () => {
     messageClient.createMessage.mockResolvedValue({
       message: {
@@ -210,6 +234,86 @@ describe('message API', () => {
       'message content or attachments are required',
     )
     expect(messageClient.createMessage).not.toHaveBeenCalled()
+  })
+
+  it('creates reply messages with both reference ids', async () => {
+    messageClient.createMessage.mockResolvedValue({
+      message: {
+        attachments: [],
+        author: sampleAuthor,
+        channelId: 43n,
+        content: 'Agreed',
+        createdAt: 4_000n,
+        editedAt: 0n,
+        flags: 0,
+        id: 201n,
+        referencedChannelId: 43n,
+        referencedMessageId: 102n,
+        revision: 1n,
+        type: 19,
+        updatedAt: 4_000n,
+      },
+    })
+
+    await expect(
+      createMessage({
+        channelId: '43',
+        content: 'Agreed',
+        referencedChannelId: '43',
+        referencedMessageId: '102',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: '201',
+        referencedChannelId: '43',
+        referencedMessageId: '102',
+        type: 19,
+      }),
+    )
+    expect(messageClient.createMessage).toHaveBeenCalledWith({
+      attachments: [],
+      channelId: 43n,
+      content: 'Agreed',
+      referencedChannelId: 43n,
+      referencedMessageId: 102n,
+      type: 19,
+    })
+  })
+
+  it('rejects reply creates with only one reference id', async () => {
+    await expect(
+      createMessage({
+        channelId: '43',
+        content: 'Agreed',
+        referencedMessageId: '102',
+      }),
+    ).rejects.toThrow('reply requires both referenced message and channel ids')
+    expect(messageClient.createMessage).not.toHaveBeenCalled()
+  })
+
+  it('loads a single message by id', async () => {
+    messageClient.getMessage.mockResolvedValue({
+      message: {
+        attachments: [],
+        author: sampleAuthor,
+        channelId: 43n,
+        content: 'Hello',
+        createdAt: 2_000n,
+        editedAt: 0n,
+        flags: 0,
+        id: 102n,
+        referencedChannelId: 0n,
+        referencedMessageId: 0n,
+        revision: 1n,
+        type: 1,
+        updatedAt: 2_000n,
+      },
+    })
+
+    await expect(getMessage('102')).resolves.toEqual(
+      expect.objectContaining({ channelId: '43', content: 'Hello', id: '102' }),
+    )
+    expect(messageClient.getMessage).toHaveBeenCalledWith({ messageId: 102n })
   })
 
   it('maps attachment upload create/complete/abort', async () => {
