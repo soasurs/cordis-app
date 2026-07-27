@@ -6,11 +6,13 @@ import {
   invalidateGuildChannelsFromGateway,
   invalidateGuildMembersFromGateway,
   removeGuildChannelFromGateway,
+  removeGuildChannelOverwriteFromGateway,
   removeGuildFromGateway,
   removeGuildRoleFromGateway,
   replaceGuildMemberRolesFromGateway,
   replaceGuildsFromReady,
   upsertGuildChannelFromGateway,
+  upsertGuildChannelOverwriteFromGateway,
   upsertGuildFromGateway,
   upsertGuildRoleFromGateway,
 } from '@/features/guilds/guild-queries'
@@ -75,21 +77,25 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
     return
   }
 
-  if (
-    isGatewayDispatch(dispatch, 'guild.channel.overwrite.updated') ||
-    isGatewayDispatch(dispatch, 'guild.channel.overwrite.deleted')
-  ) {
+  if (isGatewayDispatch(dispatch, 'guild.channel.overwrite.updated')) {
+    upsertGuildChannelOverwriteFromGateway(queryClient, dispatch.data)
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'guild.channel.overwrite.deleted')) {
+    removeGuildChannelOverwriteFromGateway(queryClient, dispatch.data)
+    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'session.reconcile')) {
     invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     invalidateGuildChannelOverwritesFromGateway(
       queryClient,
       dispatch.data.guild_id,
       dispatch.data.channel_id,
     )
-    return
-  }
-
-  if (isGatewayDispatch(dispatch, 'session.reconcile')) {
-    invalidateGuildChannelsFromGateway(queryClient, dispatch.data.guild_id)
     return
   }
 
