@@ -25,11 +25,14 @@ import {
 } from '@/api/guild'
 import type {
   GatewayReadyData,
+  GuildChannelOverwriteDeletedPayload,
+  GuildChannelOverwritePayload,
   GuildChannelPayload,
   GuildDeletedPayload,
   GuildPayload,
   GuildRolePayload,
   ReadyChannel,
+  ReadyPermissionOverwrite,
   ReadyRole,
 } from '@/gateway'
 
@@ -83,7 +86,7 @@ export function guildChannelOverwritesQueryOptions(guildId: string, channelId: s
   return queryOptions({
     queryFn: () => listGuildChannelPermissionOverwrites(channelId),
     queryKey: guildChannelOverwritesQueryKey(guildId, channelId),
-    staleTime: 30_000,
+    staleTime: Number.POSITIVE_INFINITY,
   })
 }
 
@@ -91,16 +94,7 @@ export function upsertGuildChannelOverwriteFromApi(
   queryClient: QueryClient,
   overwrite: GuildChannelOverwriteSummary,
 ) {
-  queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
-    guildChannelOverwritesQueryKey(overwrite.guildId, overwrite.channelId),
-    (current = []) => {
-      const next = current.filter(
-        (item) =>
-          !(item.appliesTo === overwrite.appliesTo && item.appliesToId === overwrite.appliesToId),
-      )
-      return [...next, overwrite]
-    },
-  )
+  upsertGuildChannelOverwrite(queryClient, overwrite)
   // View Channel overwrites change the server-visible channel set; always re-pull.
   invalidateGuildChannelsFromGateway(queryClient, overwrite.guildId)
 }
@@ -112,14 +106,44 @@ export function removeGuildChannelOverwriteFromApi(
   appliesTo: GuildChannelOverwriteSummary['appliesTo'],
   appliesToId: string,
 ) {
-  queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
-    guildChannelOverwritesQueryKey(guildId, channelId),
-    (current = []) =>
-      current.filter(
-        (item) => !(item.appliesTo === appliesTo && item.appliesToId === appliesToId),
-      ),
-  )
+  removeGuildChannelOverwrite(queryClient, guildId, channelId, appliesTo, appliesToId)
   invalidateGuildChannelsFromGateway(queryClient, guildId)
+}
+
+export function upsertGuildChannelOverwriteFromGateway(
+  queryClient: QueryClient,
+  overwrite: GuildChannelOverwritePayload,
+) {
+  const appliesTo = toOverwriteAppliesTo(overwrite.applies_to)
+  const key = guildChannelOverwritesQueryKey(overwrite.guild_id, overwrite.channel_id)
+  const existing = queryClient
+    .getQueryData<GuildChannelOverwriteSummary[]>(key)
+    ?.find((item) => item.appliesTo === appliesTo && item.appliesToId === overwrite.applies_to_id)
+
+  upsertGuildChannelOverwrite(queryClient, {
+    allow: overwrite.allow,
+    appliesTo,
+    appliesToId: overwrite.applies_to_id,
+    channelId: overwrite.channel_id,
+    createdAt: existing?.createdAt ?? overwrite.updated_at,
+    deny: overwrite.deny,
+    guildId: overwrite.guild_id,
+    revision: overwrite.revision,
+    updatedAt: overwrite.updated_at,
+  })
+}
+
+export function removeGuildChannelOverwriteFromGateway(
+  queryClient: QueryClient,
+  overwrite: GuildChannelOverwriteDeletedPayload,
+) {
+  removeGuildChannelOverwrite(
+    queryClient,
+    overwrite.guild_id,
+    overwrite.channel_id,
+    toOverwriteAppliesTo(overwrite.applies_to),
+    overwrite.applies_to_id,
+  )
 }
 
 export function guildMembersQueryKey(guildId: string) {
@@ -454,7 +478,24 @@ export function replaceGuildsFromReady(queryClient: QueryClient, ready: GatewayR
   }
 
   for (const guild of ready.guilds) {
+    const previousChannelIds =
+      queryClient.getQueryData<GuildChannelSummary[]>(guildChannelsQueryKey(guild.id))?.map(
+        (channel) => channel.id,
+      ) ?? []
+    const nextChannelIds = new Set(guild.channels.map((channel) => channel.id))
     const roles = guild.roles.map(toRoleSummary)
+    const overwritesByChannel = new Map<string, GuildChannelOverwriteSummary[]>()
+
+    for (const overwrite of guild.permission_overwrites) {
+      const summary = toOverwriteSummary(overwrite)
+      const current = overwritesByChannel.get(summary.channelId)
+      if (current) {
+        current.push(summary)
+      } else {
+        overwritesByChannel.set(summary.channelId, [summary])
+      }
+    }
+
     queryClient.setQueryData<GuildChannelSummary[]>(
       guildChannelsQueryKey(guild.id),
       guild.channels.map(toChannelSummary),
@@ -464,6 +505,21 @@ export function replaceGuildsFromReady(queryClient: QueryClient, ready: GatewayR
       guildMemberRolesQueryKey(guild.id, ready.user_id),
       resolveMemberRolesFromIds(roles, guild.member_role_ids),
     )
+
+    for (const channel of guild.channels) {
+      queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+        guildChannelOverwritesQueryKey(guild.id, channel.id),
+        overwritesByChannel.get(channel.id) ?? [],
+      )
+    }
+
+    for (const channelId of previousChannelIds) {
+      if (!nextChannelIds.has(channelId)) {
+        queryClient.removeQueries({
+          queryKey: guildChannelOverwritesQueryKey(guild.id, channelId),
+        })
+      }
+    }
   }
 }
 
@@ -496,17 +552,33 @@ export function upsertGuildChannelFromGateway(
   channel: GuildChannelPayload,
 ) {
   const nextChannel = toChannelSummary(channel)
-  queryClient.setQueryData<GuildChannelSummary[]>(
-    guildChannelsQueryKey(channel.guild_id),
-    (current = []) => upsertByRevision(current, nextChannel),
+  const channelsKey = guildChannelsQueryKey(channel.guild_id)
+  const isNew = !queryClient
+    .getQueryData<GuildChannelSummary[]>(channelsKey)
+    ?.some((item) => item.id === channel.id)
+
+  queryClient.setQueryData<GuildChannelSummary[]>(channelsKey, (current = []) =>
+    upsertByRevision(current, nextChannel),
   )
+
+  if (isNew) {
+    ensureEmptyGuildChannelOverwrites(queryClient, channel.guild_id, channel.id)
+  }
 }
 
 export function upsertGuildChannelFromApi(queryClient: QueryClient, channel: GuildChannelSummary) {
-  queryClient.setQueryData<GuildChannelSummary[]>(
-    guildChannelsQueryKey(channel.guildId),
-    (current = []) => upsertByRevision(current, channel),
+  const channelsKey = guildChannelsQueryKey(channel.guildId)
+  const isNew = !queryClient
+    .getQueryData<GuildChannelSummary[]>(channelsKey)
+    ?.some((item) => item.id === channel.id)
+
+  queryClient.setQueryData<GuildChannelSummary[]>(channelsKey, (current = []) =>
+    upsertByRevision(current, channel),
   )
+
+  if (isNew) {
+    ensureEmptyGuildChannelOverwrites(queryClient, channel.guildId, channel.id)
+  }
 }
 
 export function upsertGuildChannelsFromApi(
@@ -527,12 +599,73 @@ export function removeGuildChannelFromGateway(
   queryClient.setQueryData<GuildChannelSummary[]>(guildChannelsQueryKey(guildId), (current = []) =>
     current.filter((channel) => channel.id !== channelId),
   )
+  queryClient.removeQueries({ queryKey: guildChannelOverwritesQueryKey(guildId, channelId) })
+}
+
+function ensureEmptyGuildChannelOverwrites(
+  queryClient: QueryClient,
+  guildId: string,
+  channelId: string,
+) {
+  const key = guildChannelOverwritesQueryKey(guildId, channelId)
+  if (queryClient.getQueryData(key) === undefined) {
+    queryClient.setQueryData<GuildChannelOverwriteSummary[]>(key, [])
+  }
+}
+
+function upsertGuildChannelOverwrite(
+  queryClient: QueryClient,
+  overwrite: GuildChannelOverwriteSummary,
+) {
+  queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+    guildChannelOverwritesQueryKey(overwrite.guildId, overwrite.channelId),
+    // Never synthesize a partial list when the cache was never seeded/fetched.
+    (current) => (current ? upsertOverwriteByRevision(current, overwrite) : current),
+  )
+}
+
+function removeGuildChannelOverwrite(
+  queryClient: QueryClient,
+  guildId: string,
+  channelId: string,
+  appliesTo: GuildChannelOverwriteSummary['appliesTo'],
+  appliesToId: string,
+) {
+  queryClient.setQueryData<GuildChannelOverwriteSummary[]>(
+    guildChannelOverwritesQueryKey(guildId, channelId),
+    (current) =>
+      current
+        ? current.filter(
+            (item) => !(item.appliesTo === appliesTo && item.appliesToId === appliesToId),
+          )
+        : current,
+  )
 }
 
 function upsertGuild(queryClient: QueryClient, guild: GuildSummary) {
   queryClient.setQueryData<GuildSummary[]>(guildsQueryKey, (current = []) =>
     upsertByRevision(current, guild),
   )
+}
+
+function upsertOverwriteByRevision(
+  current: GuildChannelOverwriteSummary[],
+  next: GuildChannelOverwriteSummary,
+) {
+  const existing = current.find(
+    (item) => item.appliesTo === next.appliesTo && item.appliesToId === next.appliesToId,
+  )
+  if (existing && existing.revision > next.revision) {
+    return current
+  }
+
+  if (existing) {
+    return current.map((item) =>
+      item.appliesTo === next.appliesTo && item.appliesToId === next.appliesToId ? next : item,
+    )
+  }
+
+  return [...current, next]
 }
 
 function upsertByRevision<T extends { id: string; revision: number }>(current: T[], next: T) {
@@ -629,4 +762,26 @@ function toRoleSummary(role: ReadyRole): GuildRoleSummary {
     revision: role.revision,
     updatedAt: role.updated_at,
   }
+}
+
+function toOverwriteSummary(overwrite: ReadyPermissionOverwrite): GuildChannelOverwriteSummary {
+  return {
+    allow: overwrite.allow,
+    appliesTo: toOverwriteAppliesTo(overwrite.applies_to),
+    appliesToId: overwrite.applies_to_id,
+    channelId: overwrite.channel_id,
+    createdAt: overwrite.created_at,
+    deny: overwrite.deny,
+    guildId: overwrite.guild_id,
+    revision: overwrite.revision,
+    updatedAt: overwrite.updated_at,
+  }
+}
+
+function toOverwriteAppliesTo(
+  value: number,
+): GuildChannelOverwriteSummary['appliesTo'] {
+  if (value === 1) return 'role'
+  if (value === 2) return 'member'
+  throw new Error('permission overwrite applies_to is invalid')
 }
