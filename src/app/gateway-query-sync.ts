@@ -16,6 +16,12 @@ import {
   upsertGuildFromGateway,
   upsertGuildRoleFromGateway,
 } from '@/features/guilds/guild-queries'
+import {
+  clearChannelMessageQueries,
+  patchChannelMessageFromGateway,
+  removeChannelMessageFromGateway,
+  upsertChannelMessageFromGateway,
+} from '@/features/messages/message-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
@@ -105,10 +111,26 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'guild.channel.deleted')) {
     removeGuildChannelFromGateway(queryClient, dispatch.data.guild_id, dispatch.data.id)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'message.created')) {
+    upsertChannelMessageFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'message.updated')) {
+    patchChannelMessageFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'message.deleted')) {
+    removeChannelMessageFromGateway(queryClient, dispatch.data)
   }
 }
 
 export function clearGatewayQueries(queryClient: QueryClient) {
   queryClient.removeQueries({ queryKey: gatewayReadyQueryKey })
   queryClient.removeQueries({ queryKey: guildsQueryKey })
+  clearChannelMessageQueries(queryClient)
 }

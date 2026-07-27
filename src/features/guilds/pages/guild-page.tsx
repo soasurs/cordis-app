@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 
 import { GuildChannelType } from '@/api/guild'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ import {
 } from '@/features/guilds/guild-queries'
 import { useChannelReordering } from '@/features/guilds/use-channel-reordering'
 import { useGuildCapabilities } from '@/features/guilds/use-guild-permissions'
+import { TextChannelView } from '@/features/messages/components/text-channel-view'
 
 interface GuildPageProps {
   channelId?: string
@@ -47,9 +48,11 @@ export function GuildPage({
   const { can } = useGuildCapabilities(guildId)
   const canManageChannels = can('manageChannels')
   const canOpenSettings = can('openGuildSettings')
+  const canSendMessages = can('sendMessages')
   const guild = guilds?.find((item) => item.id === guildId)
   const channels = [...(channelsQuery.data ?? [])].sort(compareChannels)
   const selectedChannel = channels.find((channel) => channel.id === channelId)
+  const isTextChannel = selectedChannel?.type === GuildChannelType.TEXT
   const toggleCategory = (categoryId: string) => {
     setCollapsedCategoryIds((current) => {
       const next = new Set(current)
@@ -73,6 +76,27 @@ export function GuildPage({
       previousChannels: channels,
     })
   }
+
+  const mobileChannelList = (
+    <MobileChannelList
+      canManageChannels={canManageChannels}
+      canOpenSettings={canOpenSettings}
+      channels={channels}
+      channelsQuery={channelsQuery}
+      collapsedCategoryIds={collapsedCategoryIds}
+      moveError={channelReordering.error}
+      movePending={channelReordering.isPending}
+      selectedChannelId={selectedChannel?.id}
+      onCreateChannel={(parentCategory) =>
+        setCreateChannelTarget({ kind: 'channel', parentCategory })
+      }
+      onMoveChannel={moveChannel}
+      onOpenChannelSettings={onOpenChannelSettings}
+      onOpenSettings={onOpenSettings}
+      onSelectChannel={onSelectChannel}
+      onToggleCategory={toggleCategory}
+    />
+  )
 
   return (
     <main className="flex min-h-0 flex-1 bg-surface">
@@ -121,60 +145,22 @@ export function GuildPage({
 
       <section className="flex min-w-0 flex-1 flex-col bg-surface">
         <GuildChannelHeader channel={selectedChannel} guildName={guild?.name ?? 'Community'} />
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-7 sm:px-8 sm:py-10">
-            <div className="mb-7 sm:hidden">
-              <div className="flex items-center gap-3">
-                <p className="min-w-0 flex-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
-                  Channels
-                </p>
-                {canOpenSettings && onOpenSettings ? (
-                  <Button
-                    aria-label="Open community settings"
-                    size="small"
-                    variant="ghost"
-                    onClick={onOpenSettings}
-                  >
-                    Settings
-                  </Button>
-                ) : null}
-              </div>
-              {channelsQuery.isPending ? <ChannelListSkeleton /> : null}
-              {channelsQuery.isError ? (
-                <ChannelLoadError
-                  error={channelsQuery.error}
-                  onRetry={() => void channelsQuery.refetch()}
-                />
-              ) : null}
-              {channelsQuery.isSuccess ? (
-                <ChannelNavigation
-                  channels={channels}
-                  compact
-                  collapsedCategoryIds={collapsedCategoryIds}
-                  moveError={channelReordering.error}
-                  movePending={channelReordering.isPending}
-                  reorderEnabled={canManageChannels}
-                  selectedChannelId={selectedChannel?.id}
-                  onCreateChannel={
-                    canManageChannels
-                      ? (parentCategory) =>
-                          setCreateChannelTarget({ kind: 'channel', parentCategory })
-                      : undefined
-                  }
-                  onMoveChannel={moveChannel}
-                  onOpenChannelSettings={canManageChannels ? onOpenChannelSettings : undefined}
-                  onSelectChannel={onSelectChannel}
-                  onToggleCategory={toggleCategory}
-                />
-              ) : null}
-            </div>
-
-            {channelsQuery.isSuccess && selectedChannel ? (
-              <ChannelWelcome channel={selectedChannel} />
-            ) : null}
-            {channelsQuery.isPending ? <PageLoading /> : null}
+        {isTextChannel && selectedChannel ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="border-b border-line px-5 py-4 sm:hidden">{mobileChannelList}</div>
+            <TextChannelView canSend={canSendMessages} channel={selectedChannel} />
           </div>
-        </div>
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-7 sm:px-8 sm:py-10">
+              <div className="mb-7 sm:hidden">{mobileChannelList}</div>
+              {channelsQuery.isSuccess && selectedChannel ? (
+                <ChannelWelcome channel={selectedChannel} />
+              ) : null}
+              {channelsQuery.isPending ? <PageLoading /> : null}
+            </div>
+          </div>
+        )}
       </section>
 
       {canManageChannels && createChannelTarget ? (
@@ -202,6 +188,81 @@ export function GuildPage({
         />
       ) : null}
     </main>
+  )
+}
+
+function MobileChannelList({
+  canManageChannels,
+  canOpenSettings,
+  channels,
+  channelsQuery,
+  collapsedCategoryIds,
+  moveError,
+  movePending,
+  onCreateChannel,
+  onMoveChannel,
+  onOpenChannelSettings,
+  onOpenSettings,
+  onSelectChannel,
+  onToggleCategory,
+  selectedChannelId,
+}: {
+  canManageChannels: boolean
+  canOpenSettings: boolean
+  channels: GuildChannelSummary[]
+  channelsQuery: UseQueryResult<GuildChannelSummary[]>
+  collapsedCategoryIds: Set<string>
+  moveError: Error | null
+  movePending: boolean
+  onCreateChannel: (parentCategory?: GuildChannelSummary) => void
+  onMoveChannel: (nextChannels: GuildChannelSummary[], parentId?: string) => void
+  onOpenChannelSettings?: (channel: GuildChannelSummary) => void
+  onOpenSettings?: () => void
+  onSelectChannel?: (channelId: string) => void
+  onToggleCategory: (categoryId: string) => void
+  selectedChannelId?: string
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-text">
+          Channels
+        </p>
+        {canOpenSettings && onOpenSettings ? (
+          <Button
+            aria-label="Open community settings"
+            size="small"
+            variant="ghost"
+            onClick={onOpenSettings}
+          >
+            Settings
+          </Button>
+        ) : null}
+      </div>
+      {channelsQuery.isPending ? <ChannelListSkeleton /> : null}
+      {channelsQuery.isError ? (
+        <ChannelLoadError
+          error={channelsQuery.error}
+          onRetry={() => void channelsQuery.refetch()}
+        />
+      ) : null}
+      {channelsQuery.isSuccess ? (
+        <ChannelNavigation
+          channels={channels}
+          compact
+          collapsedCategoryIds={collapsedCategoryIds}
+          moveError={moveError}
+          movePending={movePending}
+          reorderEnabled={canManageChannels}
+          selectedChannelId={selectedChannelId}
+          onCreateChannel={canManageChannels ? onCreateChannel : undefined}
+          onMoveChannel={onMoveChannel}
+          onOpenChannelSettings={canManageChannels ? onOpenChannelSettings : undefined}
+          onSelectChannel={onSelectChannel}
+          onToggleCategory={onToggleCategory}
+        />
+      ) : null}
+    </>
   )
 }
 

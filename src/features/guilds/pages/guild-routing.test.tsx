@@ -54,6 +54,16 @@ const guildApi = vi.hoisted(() => ({
 
 vi.mock('@/api/guild', () => guildApi)
 
+const messageApi = vi.hoisted(() => ({
+  createMessage: vi.fn(),
+  deleteMessage: vi.fn(),
+  listMessages: vi.fn(),
+  MessageType: { DEFAULT: 1 },
+  updateMessage: vi.fn(),
+}))
+
+vi.mock('@/api/message', () => messageApi)
+
 const channels: GuildChannelSummary[] = [
   {
     guildId: '42',
@@ -73,6 +83,7 @@ beforeEach(() => {
   guildApi.listGuildMembers.mockResolvedValue({ members: [] })
   guildApi.listGuildRoles.mockResolvedValue([])
   guildApi.listGuildChannelPermissionOverwrites.mockResolvedValue([])
+  messageApi.listMessages.mockResolvedValue({ messages: [] })
 })
 
 describe('guild routing', () => {

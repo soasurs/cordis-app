@@ -39,7 +39,16 @@ const guildApi = vi.hoisted(() => ({
   listGuildRoles: vi.fn(),
 }))
 
+const messageApi = vi.hoisted(() => ({
+  createMessage: vi.fn(),
+  deleteMessage: vi.fn(),
+  listMessages: vi.fn(),
+  MessageType: { DEFAULT: 1 },
+  updateMessage: vi.fn(),
+}))
+
 vi.mock('@/api/guild', () => guildApi)
+vi.mock('@/api/message', () => messageApi)
 
 const guild: GuildSummary = {
   createdAt: 1_000,
@@ -108,6 +117,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   guildApi.listGuildRoles.mockResolvedValue([everyoneRole])
   guildApi.listGuildMemberRoles.mockResolvedValue([])
+  messageApi.listMessages.mockResolvedValue({ messages: [] })
 })
 
 describe('GuildPage', () => {
@@ -416,6 +426,34 @@ describe('GuildPage', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome to #general' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Open channel settings' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Open category settings' })).not.toBeInTheDocument()
+  })
+
+  it('disables the composer when the member lacks Send Messages', async () => {
+    guildApi.listGuildRoles.mockResolvedValue([
+      {
+        ...everyoneRole,
+        permissions: '32',
+      },
+    ])
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildsQueryKey, [{ ...guild, ownerId: '99' }])
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43' })
+
+    expect(
+      await screen.findByText('You do not have permission to send messages in #general.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Message #general')).not.toBeInTheDocument()
+  })
+
+  it('keeps the voice channel welcome stub', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '44' })
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to Lounge' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Message #Lounge')).not.toBeInTheDocument()
+    expect(messageApi.listMessages).not.toHaveBeenCalled()
   })
 })
 
