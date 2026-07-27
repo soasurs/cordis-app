@@ -20,6 +20,13 @@ export async function listMessages(
 ): Promise<ChannelMessagePage> {
   assertIdentifier(channelId, 'channel')
   if (options.before) assertIdentifier(options.before, 'before cursor')
+  if (options.after) assertIdentifier(options.after, 'after cursor')
+  if (options.around) assertIdentifier(options.around, 'around cursor')
+
+  const cursorCount = [options.before, options.after, options.around].filter(Boolean).length
+  if (cursorCount > 1) {
+    throw new Error('message list cursors are mutually exclusive')
+  }
 
   const limit = options.limit ?? DEFAULT_LIST_LIMIT
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
@@ -31,7 +38,11 @@ export async function listMessages(
     limit,
     ...(options.before
       ? { cursor: { case: 'before' as const, value: BigInt(options.before) } }
-      : {}),
+      : options.after
+        ? { cursor: { case: 'after' as const, value: BigInt(options.after) } }
+        : options.around
+          ? { cursor: { case: 'around' as const, value: BigInt(options.around) } }
+          : {}),
   })
 
   return {
@@ -54,15 +65,46 @@ export async function createMessage(
     throw new Error('message content or attachments are required')
   }
 
+  const referencedMessageId = details.referencedMessageId
+  const referencedChannelId = details.referencedChannelId
+  const hasReferencedMessage = Boolean(referencedMessageId)
+  const hasReferencedChannel = Boolean(referencedChannelId)
+  if (hasReferencedMessage !== hasReferencedChannel) {
+    throw new Error('reply requires both referenced message and channel ids')
+  }
+  if (referencedMessageId) assertIdentifier(referencedMessageId, 'referenced message')
+  if (referencedChannelId) assertIdentifier(referencedChannelId, 'referenced channel')
+  const isReply = Boolean(referencedMessageId && referencedChannelId)
+
   const response = await messageClient.createMessage({
     channelId: BigInt(details.channelId),
     content,
-    type: MessageType.DEFAULT,
+    type: isReply ? MessageType.REPLY : MessageType.DEFAULT,
     attachments: attachmentAssetIds.map((assetId) => ({ assetId: BigInt(assetId) })),
+    ...(isReply
+      ? {
+          referencedChannelId: BigInt(referencedChannelId!),
+          referencedMessageId: BigInt(referencedMessageId!),
+        }
+      : {}),
   })
 
   if (!response.message) {
     throw new Error('create message response was incomplete')
+  }
+
+  return toChannelMessage(response.message)
+}
+
+export async function getMessage(messageId: string): Promise<ChannelMessage> {
+  assertIdentifier(messageId, 'message')
+
+  const response = await messageClient.getMessage({
+    messageId: BigInt(messageId),
+  })
+
+  if (!response.message) {
+    throw new Error('get message response was incomplete')
   }
 
   return toChannelMessage(response.message)

@@ -1,10 +1,12 @@
 import {
   infiniteQueryOptions,
+  queryOptions,
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query'
 
 import {
+  getMessage,
   listMessages,
   type ChannelMessage,
   type ChannelMessagePage,
@@ -21,6 +23,10 @@ export function channelMessagesQueryKey(channelId: string) {
   return ['messages', channelId] as const
 }
 
+export function referencedMessageQueryKey(messageId: string) {
+  return ['message', messageId] as const
+}
+
 export function channelMessagesInfiniteQueryOptions(channelId: string) {
   return infiniteQueryOptions<
     ChannelMessagePage,
@@ -31,10 +37,24 @@ export function channelMessagesInfiniteQueryOptions(channelId: string) {
   >({
     getNextPageParam: (lastPage) => lastPage.beforeCursor,
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) =>
-      listMessages(channelId, pageParam ? { before: pageParam } : {}),
+    queryFn: async ({ pageParam }) => {
+      if (!pageParam) {
+        const page = await listMessages(channelId, {})
+        // Fresh channel open is already the live tip; do not advertise newer pages.
+        return { ...page, afterCursor: undefined }
+      }
+      return listMessages(channelId, { before: pageParam })
+    },
     queryKey: channelMessagesQueryKey(channelId),
     staleTime: 30_000,
+  })
+}
+
+export function referencedMessageQueryOptions(messageId: string) {
+  return queryOptions({
+    queryFn: () => getMessage(messageId),
+    queryKey: referencedMessageQueryKey(messageId),
+    staleTime: 60_000,
   })
 }
 
@@ -47,6 +67,86 @@ export function flattenMessagesChronological(
     .flatMap((page) => page.messages)
     .slice()
     .reverse()
+}
+
+export function findChannelMessageInCache(
+  queryClient: QueryClient,
+  channelId: string,
+  messageId: string,
+): ChannelMessageSummary | undefined {
+  const data = queryClient.getQueryData<InfiniteData<ChannelMessagePage>>(
+    channelMessagesQueryKey(channelId),
+  )
+  if (!data) return undefined
+  for (const page of data.pages) {
+    const found = page.messages.find((item) => item.id === messageId)
+    if (found) return found
+  }
+  return undefined
+}
+
+/** Replace the channel timeline with one page (used after ListMessages around jumps). */
+export function replaceChannelMessagesPage(
+  queryClient: QueryClient,
+  channelId: string,
+  page: ChannelMessagePage,
+) {
+  queryClient.setQueryData<InfiniteData<ChannelMessagePage>>(channelMessagesQueryKey(channelId), {
+    pageParams: [undefined],
+    pages: [page],
+  })
+}
+
+export function channelHasNewerMessages(
+  data: InfiniteData<ChannelMessagePage> | undefined,
+): boolean {
+  return Boolean(data?.pages[0]?.afterCursor)
+}
+
+/**
+ * Load messages newer than the current head via ListMessages(after).
+ * Clears afterCursor when the tip is reached.
+ */
+export async function loadNewerChannelMessages(
+  queryClient: QueryClient,
+  channelId: string,
+): Promise<{ loaded: boolean }> {
+  const key = channelMessagesQueryKey(channelId)
+  const current = queryClient.getQueryData<InfiniteData<ChannelMessagePage>>(key)
+  const afterCursor = current?.pages[0]?.afterCursor
+  if (!afterCursor) return { loaded: false }
+
+  const page = await listMessages(channelId, { after: afterCursor })
+  queryClient.setQueryData<InfiniteData<ChannelMessagePage>>(key, (previous) => {
+    if (!previous || previous.pages.length === 0) return previous
+    const [firstPage, ...rest] = previous.pages
+    if (!firstPage) return previous
+
+    if (page.messages.length === 0) {
+      return {
+        ...previous,
+        pages: [{ ...firstPage, afterCursor: undefined }, ...rest],
+      }
+    }
+
+    const existingIds = new Set(page.messages.map((message) => message.id))
+    return {
+      ...previous,
+      pages: [
+        {
+          afterCursor: page.afterCursor,
+          beforeCursor: firstPage.beforeCursor,
+          messages: [
+            ...page.messages,
+            ...firstPage.messages.filter((message) => !existingIds.has(message.id)),
+          ],
+        },
+        ...rest,
+      ],
+    }
+  })
+
+  return { loaded: page.messages.length > 0 }
 }
 
 export function upsertChannelMessageFromApi(

@@ -17,15 +17,24 @@ import {
 } from '@/features/messages/components/pending-attachment-chip'
 import { upsertChannelMessageFromApi } from '@/features/messages/message-queries'
 import { markChannelReadThrough } from '@/features/messages/read-state-queries'
+import type { MessageReplyTarget } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
 
 interface MessageComposerProps {
   canSend: boolean
   channelId: string
   channelName: string
+  onClearReply?: () => void
+  replyTo?: MessageReplyTarget
 }
 
-export function MessageComposer({ canSend, channelId, channelName }: MessageComposerProps) {
+export function MessageComposer({
+  canSend,
+  channelId,
+  channelName,
+  onClearReply,
+  replyTo,
+}: MessageComposerProps) {
   const queryClient = useQueryClient()
   const fileInputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -40,16 +49,24 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
   }
 
   const sendMutation = useMutation({
-    mutationFn: (input: { content: string; attachmentAssetIds: string[] }) =>
+    mutationFn: (input: {
+      attachmentAssetIds: string[]
+      content: string
+      referencedChannelId?: string
+      referencedMessageId?: string
+    }) =>
       createMessage({
         attachmentAssetIds: input.attachmentAssetIds,
         channelId,
         content: input.content,
+        referencedChannelId: input.referencedChannelId,
+        referencedMessageId: input.referencedMessageId,
       }),
     onSuccess: (message) => {
       upsertChannelMessageFromApi(queryClient, message)
       markChannelReadThrough(queryClient, channelId, message.id)
       setError(undefined)
+      onClearReply?.()
       queueMicrotask(focusComposer)
     },
     onError: (sendError) => {
@@ -69,6 +86,11 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!replyTo) return
+    focusComposer()
+  }, [replyTo])
 
   const trimmed = draft.trim()
   const readyAttachments = pending.flatMap((item) =>
@@ -95,12 +117,19 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
     if (!canSubmit) return
     const content = trimmed
     const attachmentAssetIds = readyAttachments.map((attachment) => attachment.assetId)
+    const referencedChannelId = replyTo?.channelId
+    const referencedMessageId = replyTo?.id
     // Clear immediately so the next message can be typed while this send is in flight.
     setDraft('')
     clearPending()
     setError(undefined)
     sendMutation.mutate(
-      { attachmentAssetIds, content },
+      {
+        attachmentAssetIds,
+        content,
+        referencedChannelId,
+        referencedMessageId,
+      },
       {
         onError: () => {
           setDraft(content)
@@ -210,7 +239,7 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
 
   if (!canSend) {
     return (
-      <div className="border-t border-line px-4 py-3 sm:px-5">
+      <div className="border-t border-line px-4 pt-2 pb-3 sm:px-5 sm:pt-2.5 sm:pb-4">
         <p className="rounded-control border border-line bg-surface-raised px-3 py-2.5 text-sm text-muted">
           You do not have permission to send messages in #{channelName}.
         </p>
@@ -219,8 +248,33 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
   }
 
   return (
-    <form className="border-t border-line p-3 sm:p-4" onSubmit={submit}>
+    <form className="border-t border-line px-3 pt-2 pb-3 sm:px-4 sm:pt-2.5 sm:pb-4" onSubmit={submit}>
       <div className="rounded-control border border-line bg-surface-raised focus-within:border-brand">
+        {replyTo ? (
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2">
+            <span
+              aria-hidden="true"
+              className="mb-px h-3 w-3 shrink-0 rounded-tl-md border-t border-l border-brand/50"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[0.72rem] leading-4">
+                <span className="font-semibold text-brand-text">Replying to {replyTo.authorName}</span>
+                <span className="text-muted"> · {replyTo.contentPreview}</span>
+              </p>
+            </div>
+            <Button
+              size="small"
+              variant="ghost"
+              type="button"
+              className="h-7 shrink-0 px-2 text-xs"
+              aria-label="Cancel reply"
+              onClick={() => onClearReply?.()}
+            >
+              ×
+            </Button>
+          </div>
+        ) : null}
+
         {pending.length > 0 ? (
           <ul
             className="flex flex-wrap gap-2 border-b border-line px-2 pt-2.5 pb-2"
@@ -262,7 +316,9 @@ export function MessageComposer({ canSend, channelId, channelName }: MessageComp
             id={`message-composer-${channelId}`}
             rows={1}
             value={draft}
-            placeholder={`Message #${channelName}`}
+            placeholder={
+              replyTo ? `Reply to ${replyTo.authorName}` : `Message #${channelName}`
+            }
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKeyDown}
             className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"

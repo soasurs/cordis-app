@@ -1,13 +1,31 @@
 import { QueryClient, type InfiniteData } from '@tanstack/react-query'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const messageApi = vi.hoisted(() => ({
+  getMessage: vi.fn(),
+  listMessages: vi.fn(),
+}))
+
+vi.mock('@/api/message', async () => {
+  const actual = await vi.importActual<typeof import('@/api/message')>('@/api/message')
+  return {
+    ...actual,
+    getMessage: messageApi.getMessage,
+    listMessages: messageApi.listMessages,
+  }
+})
 
 import type { ChannelMessagePage } from '@/api/message'
 import {
+  channelHasNewerMessages,
   channelMessagesQueryKey,
+  findChannelMessageInCache,
   flattenMessagesChronological,
+  loadNewerChannelMessages,
   patchChannelMessageFromGateway,
   removeChannelMessageFromApi,
   removeChannelMessageFromGateway,
+  replaceChannelMessagesPage,
   upsertChannelMessageFromApi,
   upsertChannelMessageFromGateway,
   type ChannelMessageSummary,
@@ -55,6 +73,10 @@ const newer: ChannelMessageSummary = {
   updatedAt: 2_000,
 }
 
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
 describe('message query helpers', () => {
   it('flattens newest-first pages into chronological order', () => {
     const data: InfiniteData<ChannelMessagePage> = {
@@ -63,6 +85,60 @@ describe('message query helpers', () => {
     }
 
     expect(flattenMessagesChronological(data).map((item) => item.id)).toEqual(['101', '102'])
+  })
+
+  it('finds a message inside the channel infinite cache', () => {
+    const queryClient = new QueryClient()
+    seedMessages(queryClient, [newer, older])
+
+    expect(findChannelMessageInCache(queryClient, '43', '101')).toEqual(older)
+    expect(findChannelMessageInCache(queryClient, '43', '999')).toBeUndefined()
+  })
+
+  it('replaces the channel timeline with an around page', () => {
+    const queryClient = new QueryClient()
+    seedMessages(queryClient, [newer, older])
+
+    replaceChannelMessagesPage(queryClient, '43', {
+      afterCursor: '50',
+      beforeCursor: '40',
+      messages: [{ ...older, id: '50', content: 'Around' }],
+    })
+
+    expect(messageIds(queryClient)).toEqual(['50'])
+    expect(findChannelMessageInCache(queryClient, '43', '50')?.content).toBe('Around')
+  })
+
+  it('loads newer messages after an around jump and clears the tip cursor', async () => {
+    const queryClient = new QueryClient()
+    replaceChannelMessagesPage(queryClient, '43', {
+      afterCursor: '50',
+      beforeCursor: '40',
+      messages: [{ ...older, id: '50', content: 'Around' }],
+    })
+
+    messageApi.listMessages.mockResolvedValueOnce({
+      afterCursor: '60',
+      beforeCursor: '51',
+      messages: [{ ...newer, id: '60', content: 'Later' }],
+    })
+
+    await expect(loadNewerChannelMessages(queryClient, '43')).resolves.toEqual({ loaded: true })
+    expect(messageIds(queryClient)).toEqual(['60', '50'])
+    expect(channelHasNewerMessages(queryClient.getQueryData(channelMessagesQueryKey('43')))).toBe(
+      true,
+    )
+    expect(messageApi.listMessages).toHaveBeenCalledWith('43', { after: '50' })
+
+    messageApi.listMessages.mockResolvedValueOnce({
+      afterCursor: undefined,
+      beforeCursor: undefined,
+      messages: [],
+    })
+    await expect(loadNewerChannelMessages(queryClient, '43')).resolves.toEqual({ loaded: false })
+    expect(channelHasNewerMessages(queryClient.getQueryData(channelMessagesQueryKey('43')))).toBe(
+      false,
+    )
   })
 
   it('prepends created messages and replaces updates by revision', () => {

@@ -19,6 +19,7 @@ export {
 export {
   createMessage,
   deleteMessage,
+  getMessage,
   listMessages,
   toChannelMessage,
   updateMessage,
