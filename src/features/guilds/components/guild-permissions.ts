@@ -1,5 +1,53 @@
 import { guildPermission, type GuildRole } from '@/api/guild'
 
+export interface GuildPermissionItem {
+  description: string
+  label: string
+  value: string
+}
+
+export interface GuildPermissionGroup {
+  id: string
+  label: string
+  permissions: readonly GuildPermissionItem[]
+}
+
+const viewChannelsPermission = {
+  description: 'See channels that are available to this role.',
+  label: 'View channels',
+  value: guildPermission.viewChannel,
+} as const satisfies GuildPermissionItem
+
+const sendMessagesPermission = {
+  description: 'Send messages in channels this role can access.',
+  label: 'Send messages',
+  value: guildPermission.sendMessages,
+} as const satisfies GuildPermissionItem
+
+const manageChannelsPermission = {
+  description: 'Create, update, reorder, and delete channels.',
+  label: 'Manage channels',
+  value: guildPermission.manageChannels,
+} as const satisfies GuildPermissionItem
+
+const manageRolesPermission = {
+  description: 'Create, update, reorder, and delete roles.',
+  label: 'Manage roles',
+  value: guildPermission.manageRoles,
+} as const satisfies GuildPermissionItem
+
+const manageMessagesPermission = {
+  description: 'Moderate messages sent by other members.',
+  label: 'Manage messages',
+  value: guildPermission.manageMessages,
+} as const satisfies GuildPermissionItem
+
+const createInvitesPermission = {
+  description: 'Create invitation links for this community.',
+  label: 'Create invites',
+  value: guildPermission.createInvite,
+} as const satisfies GuildPermissionItem
+
 export const guildPermissionGroups = [
   {
     id: 'general',
@@ -15,11 +63,7 @@ export const guildPermissionGroups = [
         label: 'Manage community',
         value: guildPermission.manageGuild,
       },
-      {
-        description: 'Create, update, reorder, and delete roles.',
-        label: 'Manage roles',
-        value: guildPermission.manageRoles,
-      },
+      manageRolesPermission,
     ],
   },
   {
@@ -41,40 +85,68 @@ export const guildPermissionGroups = [
         label: 'Ban members',
         value: guildPermission.banMembers,
       },
-      {
-        description: 'Create invitation links for this community.',
-        label: 'Create invites',
-        value: guildPermission.createInvite,
-      },
+      createInvitesPermission,
     ],
   },
   {
     id: 'channels',
     label: 'Channels',
     permissions: [
+      viewChannelsPermission,
+      sendMessagesPermission,
+      manageChannelsPermission,
+      manageMessagesPermission,
+    ],
+  },
+] satisfies readonly GuildPermissionGroup[]
+
+/**
+ * Permissions that can be meaningfully allow/deny'd on a single channel.
+ * Guild-scoped flags (Administrator, Manage community, Kick/Ban, etc.) are
+ * excluded — they only apply at the community level.
+ *
+ * Manage roles is included under Discord’s channel-side alias: the same bit
+ * grants “Manage permissions” for this channel’s overwrites.
+ */
+export const channelPermissionGroups = [
+  {
+    id: 'general',
+    label: 'General',
+    permissions: [
       {
-        description: 'See channels that are available to this role.',
-        label: 'View channels',
-        value: guildPermission.viewChannel,
+        ...viewChannelsPermission,
+        description: 'See this channel in the sidebar.',
       },
       {
-        description: 'Send messages in channels this role can access.',
-        label: 'Send messages',
-        value: guildPermission.sendMessages,
+        ...manageChannelsPermission,
+        description: "Edit this channel's settings and delete it.",
       },
       {
-        description: 'Create, update, reorder, and delete channels.',
-        label: 'Manage channels',
-        value: guildPermission.manageChannels,
+        ...manageRolesPermission,
+        description: 'Edit permission overwrites for this channel.',
+        label: 'Manage permissions',
       },
       {
-        description: 'Moderate messages sent by other members.',
-        label: 'Manage messages',
-        value: guildPermission.manageMessages,
+        ...createInvitesPermission,
+        description: 'Create invitation links that land in this channel.',
       },
     ],
   },
-] as const
+  {
+    id: 'text',
+    label: 'Text',
+    permissions: [
+      {
+        ...sendMessagesPermission,
+        description: 'Send messages in this channel.',
+      },
+      {
+        ...manageMessagesPermission,
+        description: 'Delete messages sent by other members in this channel.',
+      },
+    ],
+  },
+] satisfies readonly GuildPermissionGroup[]
 
 export function countGuildPermissions(value: string) {
   let permissions = BigInt(value)

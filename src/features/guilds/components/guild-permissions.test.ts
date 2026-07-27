@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { guildPermission, type GuildRole } from '@/api/guild'
 import {
+  channelPermissionGroups,
   combineGuildRolePermissions,
   getChannelOverwritePermissionState,
+  guildPermissionGroups,
   memberHasGuildPermission,
   resolveHeldGuildRoles,
   setChannelOverwritePermissionState,
@@ -57,12 +59,57 @@ describe('memberHasGuildPermission', () => {
   })
 
   it('grants every permission to the guild owner', () => {
-    expect(
-      memberHasGuildPermission('0', guildPermission.manageChannels, { isOwner: true }),
-    ).toBe(true)
-    expect(memberHasGuildPermission('0', guildPermission.manageGuild, { isOwner: true })).toBe(
+    expect(memberHasGuildPermission('0', guildPermission.manageChannels, { isOwner: true })).toBe(
       true,
     )
+    expect(memberHasGuildPermission('0', guildPermission.manageGuild, { isOwner: true })).toBe(true)
+  })
+})
+
+describe('channelPermissionGroups', () => {
+  it('only lists permissions that apply to a single channel', () => {
+    const values = channelPermissionGroups.flatMap((group) =>
+      group.permissions.map((permission) => permission.value),
+    )
+
+    expect(values).toEqual([
+      guildPermission.viewChannel,
+      guildPermission.manageChannels,
+      guildPermission.manageRoles,
+      guildPermission.createInvite,
+      guildPermission.sendMessages,
+      guildPermission.manageMessages,
+    ])
+  })
+
+  it('excludes guild-scoped permissions that still appear on roles', () => {
+    const channelValues = new Set(
+      channelPermissionGroups.flatMap((group) =>
+        group.permissions.map((permission) => permission.value),
+      ),
+    )
+    const guildOnly = [
+      guildPermission.administrator,
+      guildPermission.manageGuild,
+      guildPermission.manageMembers,
+      guildPermission.kickMembers,
+      guildPermission.banMembers,
+    ]
+
+    expect(guildPermissionGroups.flatMap((group) => group.permissions).length).toBeGreaterThan(
+      channelValues.size,
+    )
+    for (const permission of guildOnly) {
+      expect(channelValues.has(permission)).toBe(false)
+    }
+  })
+
+  it('labels Manage roles as Manage permissions in channel overwrites', () => {
+    const managePermissions = channelPermissionGroups
+      .flatMap((group) => group.permissions)
+      .find((permission) => permission.value === guildPermission.manageRoles)
+
+    expect(managePermissions?.label).toBe('Manage permissions')
   })
 })
 
@@ -71,9 +118,7 @@ describe('channel overwrite permission state', () => {
     expect(getChannelOverwritePermissionState('32', '64', guildPermission.viewChannel)).toBe(
       'allow',
     )
-    expect(getChannelOverwritePermissionState('0', '64', guildPermission.sendMessages)).toBe(
-      'deny',
-    )
+    expect(getChannelOverwritePermissionState('0', '64', guildPermission.sendMessages)).toBe('deny')
     expect(getChannelOverwritePermissionState('0', '0', guildPermission.viewChannel)).toBe('noop')
   })
 

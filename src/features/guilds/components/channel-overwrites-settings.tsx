@@ -9,8 +9,8 @@ import { getApiErrorMessage } from '@/api/errors'
 import type { GuildChannelPermissionOverwrite } from '@/api/guild'
 import { Button } from '@/components/ui/button'
 import {
+  channelPermissionGroups,
   getChannelOverwritePermissionState,
-  guildPermissionGroups,
   setChannelOverwritePermissionState,
   type ChannelOverwritePermissionState,
 } from '@/features/guilds/components/guild-permissions'
@@ -44,8 +44,7 @@ export function ChannelOverwritesSettings({
   const roles = rolesQuery.data ?? []
   const [selectedKey, setSelectedKey] = useState<string>()
   const [pickerOpen, setPickerOpen] = useState(false)
-  const selected =
-    overwrites.find((item) => overwriteKey(item) === selectedKey) ?? overwrites[0]
+  const selected = overwrites.find((item) => overwriteKey(item) === selectedKey) ?? overwrites[0]
   const existingRoleIds = new Set(
     overwrites.filter((item) => item.appliesTo === 'role').map((item) => item.appliesToId),
   )
@@ -272,7 +271,7 @@ function OverwriteDetail({
         ) : null}
 
         <div className="mt-6 grid gap-6">
-          {guildPermissionGroups.map((group) => (
+          {channelPermissionGroups.map((group) => (
             <section aria-labelledby={`overwrite-group-${group.id}`} key={group.id}>
               <h4
                 id={`overwrite-group-${group.id}`}
@@ -400,12 +399,7 @@ function OverwriteDeleteAction({
           </div>
         </div>
       ) : (
-        <Button
-          size="small"
-          disabled={busy}
-          variant="danger"
-          onClick={() => setConfirming(true)}
-        >
+        <Button size="small" disabled={busy} variant="danger" onClick={() => setConfirming(true)}>
           Delete overwrite
         </Button>
       )}

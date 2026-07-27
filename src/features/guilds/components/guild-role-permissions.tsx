@@ -4,6 +4,7 @@ import {
   guildPermissionGroups,
   hasGuildPermission,
   toggleGuildPermission,
+  type GuildPermissionGroup,
 } from '@/features/guilds/components/guild-permissions'
 
 interface GuildRolePermissionsProps {
@@ -39,7 +40,7 @@ function PermissionGroup({
   permissions,
 }: {
   disabled: boolean
-  group: (typeof guildPermissionGroups)[number]
+  group: GuildPermissionGroup
   onChange: (permissions: string) => void
   permissions: string
 }) {
