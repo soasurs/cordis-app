@@ -1,5 +1,6 @@
 import { MessageType, type Message as ProtoMessage } from '@/gen/api/v1/message_pb'
 
+import { toMessageAttachment } from '@/api/message/attachments'
 import { assertIdentifier } from '@/api/message/internal'
 import { messageClient } from '@/api/message/client'
 import type {
@@ -45,14 +46,19 @@ export async function createMessage(
 ): Promise<ChannelMessage> {
   assertIdentifier(details.channelId, 'channel')
   const content = details.content.trim()
-  if (!content) {
-    throw new Error('message content is required')
+  const attachmentAssetIds = details.attachmentAssetIds ?? []
+  for (const assetId of attachmentAssetIds) {
+    assertIdentifier(assetId, 'attachment asset')
+  }
+  if (!content && attachmentAssetIds.length === 0) {
+    throw new Error('message content or attachments are required')
   }
 
   const response = await messageClient.createMessage({
     channelId: BigInt(details.channelId),
     content,
     type: MessageType.DEFAULT,
+    attachments: attachmentAssetIds.map((assetId) => ({ assetId: BigInt(assetId) })),
   })
 
   if (!response.message) {
@@ -68,13 +74,26 @@ export async function updateMessage(
 ): Promise<ChannelMessage> {
   assertIdentifier(messageId, 'message')
   const content = details.content.trim()
-  if (!content) {
-    throw new Error('message content is required')
+  const attachmentAssetIds = details.attachmentAssetIds
+  if (attachmentAssetIds) {
+    for (const assetId of attachmentAssetIds) {
+      assertIdentifier(assetId, 'attachment asset')
+    }
+  }
+  if (!content && (!attachmentAssetIds || attachmentAssetIds.length === 0)) {
+    throw new Error('message content or attachments are required')
   }
 
   const response = await messageClient.updateMessage({
     messageId: BigInt(messageId),
     content,
+    ...(attachmentAssetIds
+      ? {
+          attachments: {
+            attachments: attachmentAssetIds.map((assetId) => ({ assetId: BigInt(assetId) })),
+          },
+        }
+      : {}),
   })
 
   if (!response.message) {
@@ -94,6 +113,7 @@ export async function deleteMessage(messageId: string): Promise<void> {
 
 export function toChannelMessage(message: ProtoMessage): ChannelMessage {
   return {
+    attachments: message.attachments.map(toMessageAttachment),
     author: message.author ? toPublicUserProfile(message.author) : undefined,
     channelId: message.channelId.toString(),
     content: message.content,

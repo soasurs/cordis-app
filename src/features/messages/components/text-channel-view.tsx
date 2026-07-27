@@ -16,11 +16,12 @@ import {
 const NEAR_BOTTOM_PX = 80
 
 interface TextChannelViewProps {
+  canManageMessages: boolean
   canSend: boolean
   channel: GuildChannelSummary
 }
 
-export function TextChannelView({ canSend, channel }: TextChannelViewProps) {
+export function TextChannelView({ canManageMessages, canSend, channel }: TextChannelViewProps) {
   const { data: session } = useQuery(authSessionQueryOptions)
   const messagesQuery = useInfiniteQuery(channelMessagesInfiniteQueryOptions(channel.id))
   const messages = flattenMessagesChronological(messagesQuery.data)
@@ -61,7 +62,7 @@ export function TextChannelView({ canSend, channel }: TextChannelViewProps) {
             element.scrollHeight - element.scrollTop - element.clientHeight <= NEAR_BOTTOM_PX
         }}
       >
-        <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-7 sm:px-8 sm:py-10">
+        <div className="flex min-h-full w-full flex-col px-4 py-6 sm:px-5 sm:py-7">
           <div className="mb-6">
             {messagesQuery.hasNextPage ? (
               <div className="mb-4">
@@ -108,6 +109,7 @@ export function TextChannelView({ canSend, channel }: TextChannelViewProps) {
               {messages.map((message) => (
                 <MessageItem
                   key={message.id}
+                  canManageMessages={canManageMessages}
                   message={message}
                   currentUserId={currentUserId}
                 />

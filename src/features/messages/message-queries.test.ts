@@ -14,6 +14,7 @@ import {
 } from '@/features/messages/message-queries'
 
 const older: ChannelMessageSummary = {
+  attachments: [],
   author: {
     avatarAssetId: '0',
     createdAt: 1_000,
@@ -34,6 +35,7 @@ const older: ChannelMessageSummary = {
 }
 
 const newer: ChannelMessageSummary = {
+  attachments: [],
   author: {
     avatarAssetId: '0',
     createdAt: 1_000,
@@ -204,6 +206,57 @@ describe('message query helpers', () => {
     })
 
     expect(messageIds(queryClient)).toEqual(['101'])
+  })
+
+  it('maps gateway attachments onto message summaries', () => {
+    const queryClient = new QueryClient()
+    seedMessages(queryClient, [older])
+
+    upsertChannelMessageFromGateway(queryClient, {
+      attachments: [
+        {
+          asset_id: '900',
+          content_type: 'image/png',
+          filename: 'shot.png',
+          height: 10,
+          size: 12,
+          url: 'https://cdn.example.com/shot.png',
+          url_expires_at: 0,
+          width: 20,
+        },
+      ],
+      author: {
+        avatar_asset_id: '0',
+        created_at: 1_000,
+        name: 'Alex',
+        updated_at: 1_000,
+        user_id: '7',
+        username: 'alex',
+      },
+      channel_id: '43',
+      content: 'With image',
+      created_at: 2_000,
+      edited_at: 0,
+      flags: 0,
+      id: '102',
+      mention_user_ids: [],
+      revision: 1,
+      type: 1,
+      updated_at: 2_000,
+    })
+
+    expect(getMessages(queryClient)[0]?.attachments).toEqual([
+      {
+        assetId: '900',
+        contentType: 'image/png',
+        filename: 'shot.png',
+        height: 10,
+        size: 12,
+        url: 'https://cdn.example.com/shot.png',
+        urlExpiresAt: 0,
+        width: 20,
+      },
+    ])
   })
 })
 

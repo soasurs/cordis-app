@@ -117,6 +117,16 @@ export function clearChannelMessageQueries(queryClient: QueryClient) {
 
 export function toMessageSummaryFromGateway(payload: MessagePayload): ChannelMessageSummary {
   return {
+    attachments: payload.attachments.map((attachment) => ({
+      assetId: attachment.asset_id,
+      contentType: attachment.content_type,
+      filename: attachment.filename,
+      height: attachment.height,
+      size: attachment.size,
+      url: attachment.url,
+      urlExpiresAt: attachment.url_expires_at,
+      width: attachment.width,
+    })),
     author: toAuthorProfile(payload.author),
     channelId: payload.channel_id,
     content: payload.content,

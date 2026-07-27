@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,6 +11,9 @@ import {
 } from '@/features/messages/message-queries'
 
 const messageApi = vi.hoisted(() => ({
+  abortAttachmentUpload: vi.fn(),
+  completeAttachmentUpload: vi.fn(),
+  createAttachmentUpload: vi.fn(),
   createMessage: vi.fn(),
   deleteMessage: vi.fn(),
   listMessages: vi.fn(),
@@ -18,9 +21,15 @@ const messageApi = vi.hoisted(() => ({
   updateMessage: vi.fn(),
 }))
 
+const uploadApi = vi.hoisted(() => ({
+  uploadMessageAttachment: vi.fn(),
+}))
+
 vi.mock('@/api/message', () => messageApi)
+vi.mock('@/features/messages/upload-attachment', () => uploadApi)
 
 const sampleMessage: ChannelMessageSummary = {
+  attachments: [],
   author: {
     avatarAssetId: '0',
     createdAt: 1_000,
@@ -67,11 +76,101 @@ describe('MessageComposer', () => {
     await user.type(screen.getByLabelText('Message #general'), 'Ship it')
     await user.click(screen.getByRole('button', { name: 'Send' }))
 
-    await waitFor(() => expect(messageApi.createMessage).toHaveBeenCalledWith({
-      channelId: '43',
-      content: 'Ship it',
-    }))
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: 'Ship it',
+      }),
+    )
     expect(screen.getByLabelText('Message #general')).toHaveValue('')
+  })
+
+  it('uploads an attachment and sends its asset id', async () => {
+    const user = userEvent.setup()
+    uploadApi.uploadMessageAttachment.mockResolvedValue({
+      assetId: '900',
+      contentType: 'image/png',
+      filename: 'shot.png',
+      height: 0,
+      size: 4,
+      url: 'https://cdn.example.com/shot.png',
+      urlExpiresAt: 0,
+      width: 0,
+    })
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      attachments: [
+        {
+          assetId: '900',
+          contentType: 'image/png',
+          filename: 'shot.png',
+          height: 0,
+          size: 4,
+          url: 'https://cdn.example.com/shot.png',
+          urlExpiresAt: 0,
+          width: 0,
+        },
+      ],
+      content: '',
+      id: '201',
+    })
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(channelMessagesQueryKey('43'), {
+      pageParams: [undefined],
+      pages: [{ messages: [] }],
+    })
+
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer canSend channelId="43" channelName="general" />
+      </QueryClientProvider>,
+    )
+
+    const input = container.querySelector('input[type="file"]')
+    expect(input).toBeTruthy()
+    await user.upload(input as HTMLInputElement, new File(['abcd'], 'shot.png', { type: 'image/png' }))
+
+    expect(await screen.findByRole('img', { name: 'shot.png' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: ['900'],
+        channelId: '43',
+        content: '',
+      }),
+    )
+  })
+
+  it('shows a filename chip for non-image attachments', async () => {
+    const user = userEvent.setup()
+    uploadApi.uploadMessageAttachment.mockResolvedValue({
+      assetId: '901',
+      contentType: 'application/pdf',
+      filename: 'notes.pdf',
+      height: 0,
+      size: 4,
+      url: 'https://cdn.example.com/notes.pdf',
+      urlExpiresAt: 0,
+      width: 0,
+    })
+    const queryClient = createQueryClient()
+
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer canSend channelId="43" channelName="general" />
+      </QueryClientProvider>,
+    )
+
+    const input = container.querySelector('input[type="file"]')
+    await user.upload(
+      input as HTMLInputElement,
+      new File(['abcd'], 'notes.pdf', { type: 'application/pdf' }),
+    )
+
+    expect(await screen.findByText('notes.pdf')).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'notes.pdf' })).not.toBeInTheDocument()
   })
 
   it('shows a permission notice when send is denied', () => {
@@ -111,14 +210,18 @@ describe('MessageItem', () => {
       </QueryClientProvider>,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
     const editor = screen.getByDisplayValue('Hello room')
     await user.clear(editor)
     await user.type(editor, 'Updated')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() =>
-      expect(messageApi.updateMessage).toHaveBeenCalledWith('102', { content: 'Updated' }),
+      expect(messageApi.updateMessage).toHaveBeenCalledWith('102', {
+        attachmentAssetIds: [],
+        content: 'Updated',
+      }),
     )
 
     rerender(
@@ -136,19 +239,179 @@ describe('MessageItem', () => {
       </QueryClientProvider>,
     )
 
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    expect(messageApi.deleteMessage).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(messageApi.deleteMessage).toHaveBeenCalledWith('102'))
   })
 
-  it('hides edit actions for other authors', () => {
+  it('renders image attachments inline and files as cards', () => {
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={{
+            ...sampleMessage,
+            attachments: [
+              {
+                assetId: '1',
+                contentType: 'image/png',
+                filename: 'shot.png',
+                height: 10,
+                size: 12,
+                url: 'https://cdn.example.com/shot.png',
+                urlExpiresAt: 0,
+                width: 20,
+              },
+              {
+                assetId: '2',
+                contentType: 'application/pdf',
+                filename: 'notes.pdf',
+                height: 0,
+                size: 20_480,
+                url: 'https://cdn.example.com/notes.pdf',
+                urlExpiresAt: 0,
+                width: 0,
+              },
+              {
+                assetId: '3',
+                contentType: 'video/mp4',
+                filename: 'clip.mp4',
+                height: 0,
+                size: 1_024_000,
+                url: 'https://cdn.example.com/clip.mp4',
+                urlExpiresAt: 0,
+                width: 0,
+              },
+            ],
+            content: '',
+          }}
+        />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByRole('img', { name: 'shot.png' })).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/shot.png',
+    )
+    expect(screen.getByRole('link', { name: /notes\.pdf/i })).toHaveAttribute(
+      'href',
+      'https://cdn.example.com/notes.pdf',
+    )
+    expect(screen.getByText('20 KB · PDF')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play clip.mp4' })).toBeInTheDocument()
+    expect(screen.getByLabelText('clip.mp4')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/clip.mp4',
+    )
+  })
+
+  it('hides edit actions for other authors without manageMessages', () => {
     render(
       <QueryClientProvider client={createQueryClient()}>
         <MessageItem currentUserId="99" message={sampleMessage} />
       </QueryClientProvider>,
     )
 
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    fireEvent.contextMenu(screen.getByRole('article'))
+    expect(screen.queryByRole('menu', { name: 'Message actions' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
+  it('lets manageMessages delete another author message without edit', async () => {
+    const user = userEvent.setup()
+    messageApi.deleteMessage.mockResolvedValue(undefined)
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(channelMessagesQueryKey('43'), {
+      pageParams: [undefined],
+      pages: [{ messages: [sampleMessage] }],
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MessageItem canManageMessages currentUserId="99" message={sampleMessage} />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    expect(messageApi.deleteMessage).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(messageApi.deleteMessage).toHaveBeenCalledWith('102'))
+  })
+
+  it('edits attachments by removing kept files and uploading new ones', async () => {
+    const user = userEvent.setup()
+    const withAttachment: ChannelMessageSummary = {
+      ...sampleMessage,
+      attachments: [
+        {
+          assetId: '1',
+          contentType: 'image/png',
+          filename: 'old.png',
+          height: 10,
+          size: 12,
+          url: 'https://cdn.example.com/old.png',
+          urlExpiresAt: 0,
+          width: 20,
+        },
+      ],
+      content: 'With file',
+    }
+    messageApi.updateMessage.mockResolvedValue({
+      ...withAttachment,
+      attachments: [
+        {
+          assetId: '2',
+          contentType: 'application/pdf',
+          filename: 'new.pdf',
+          height: 0,
+          size: 40,
+          url: 'https://cdn.example.com/new.pdf',
+          urlExpiresAt: 0,
+          width: 0,
+        },
+      ],
+      editedAt: 4_000,
+      revision: 2,
+      updatedAt: 4_000,
+    })
+    uploadApi.uploadMessageAttachment.mockResolvedValue({
+      assetId: '2',
+      contentType: 'application/pdf',
+      filename: 'new.pdf',
+      height: 0,
+      size: 40,
+      url: 'https://cdn.example.com/new.pdf',
+      urlExpiresAt: 0,
+      width: 0,
+    })
+
+    const { container } = render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem currentUserId="7" message={withAttachment} />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    await user.click(screen.getByRole('button', { name: 'Remove old.png' }))
+
+    const input = container.querySelector('input[type="file"]')
+    expect(input).toBeTruthy()
+    await user.upload(input as HTMLInputElement, new File(['pdf'], 'new.pdf', { type: 'application/pdf' }))
+    await screen.findByText('new.pdf')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(messageApi.updateMessage).toHaveBeenCalledWith('102', {
+        attachmentAssetIds: ['2'],
+        content: 'With file',
+      }),
+    )
   })
 })
 
