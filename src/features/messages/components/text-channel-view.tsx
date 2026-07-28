@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 
 import { getApiErrorMessage } from '@/api/errors'
 import { ackMessage, listMessages } from '@/api/message'
@@ -238,6 +238,8 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
       })
   }
 
+  const startNewerLoadOnIntersect = useEffectEvent(startNewerLoad)
+
   useEffect(() => {
     const root = scrollRef.current
     const sentinel = loadNewerSentinelRef.current
@@ -247,7 +249,7 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return
         if (!allowNewerAutoloadRef.current) return
-        startNewerLoad()
+        startNewerLoadOnIntersect()
       },
       { root, rootMargin: LOAD_NEWER_ROOT_MARGIN },
     )

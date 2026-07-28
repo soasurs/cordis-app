@@ -37,13 +37,11 @@ class FakeGatewaySocket implements GatewaySocket {
   }
 }
 
-function createHarness(
-  getAccessToken: () => string | null | Promise<string | null> = () => 'token',
-) {
+function createHarness(getGatewayTicket: () => string | Promise<string> = () => 'ticket') {
   const sockets: FakeGatewaySocket[] = []
   const client = new GatewayClient({
     url: 'ws://cordis.test',
-    getAccessToken,
+    getGatewayTicket,
     identify: {
       deviceType: 'web',
       status: 'online',
@@ -71,6 +69,7 @@ async function receiveHello(socket: FakeGatewaySocket, interval = 1_000) {
     d: { heartbeat_interval_ms: interval, gateway_id: 'gw-1' },
   })
   await Promise.resolve()
+  await Promise.resolve()
 }
 
 afterEach(() => {
@@ -83,7 +82,7 @@ describe('GatewayClient', () => {
     vi.stubEnv('VITE_GATEWAY_URL', 'wss://gateway.cordis.test')
     const urls: string[] = []
     const client = new GatewayClient({
-      getAccessToken: () => 'token',
+      getGatewayTicket: () => 'ticket',
       webSocketFactory: (url) => {
         urls.push(url)
         return new FakeGatewaySocket()
@@ -102,9 +101,98 @@ describe('GatewayClient', () => {
     expect(
       () =>
         new GatewayClient({
-          getAccessToken: () => 'token',
+          getGatewayTicket: () => 'ticket',
         }),
     ).toThrow('VITE_GATEWAY_URL must not include a path, query, or fragment')
+  })
+
+  it('requests a ticket while waiting for Gateway hello', async () => {
+    let resolveTicket!: (ticket: string) => void
+    const getGatewayTicket = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveTicket = resolve
+        }),
+    )
+    const { client, sockets } = createHarness(getGatewayTicket)
+
+    client.connect()
+    await Promise.resolve()
+    expect(getGatewayTicket).toHaveBeenCalledOnce()
+
+    sockets[0].open()
+    sockets[0].receive({
+      op: GatewayOpcode.Hello,
+      t: GatewayEventType.Hello,
+      d: { heartbeat_interval_ms: 1_000, gateway_id: 'gw-1' },
+    })
+    expect(sockets[0].sent).toEqual([])
+
+    resolveTicket('ticket')
+    await vi.waitFor(() => {
+      expect(sockets[0].sent[0]).toMatchObject({
+        op: GatewayOpcode.Identify,
+        d: { gateway_ticket: 'ticket' },
+      })
+    })
+
+    client.disconnect()
+  })
+
+  it('retries after a temporary ticket request failure', async () => {
+    vi.useFakeTimers()
+    const getGatewayTicket = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValue('ticket')
+    const { client, sockets } = createHarness(getGatewayTicket)
+    const errors = vi.fn()
+    client.onError(errors)
+
+    client.connect()
+    await receiveHello(sockets[0])
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(client.state).toBe('reconnecting')
+    expect(errors).toHaveBeenCalledWith(expect.objectContaining({ code: 'ticket_unavailable' }))
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(sockets).toHaveLength(2)
+    await receiveHello(sockets[1])
+    expect(sockets[1].sent[0]).toMatchObject({
+      op: GatewayOpcode.Identify,
+      d: { gateway_ticket: 'ticket' },
+    })
+  })
+
+  it('ignores a ticket failure after the connection is closed', async () => {
+    let rejectTicket!: (cause: unknown) => void
+    const { client, sockets } = createHarness(
+      () =>
+        new Promise<string>((_, reject) => {
+          rejectTicket = reject
+        }),
+    )
+    const errors = vi.fn()
+    client.onError(errors)
+
+    client.connect()
+    await Promise.resolve()
+    sockets[0].open()
+    sockets[0].receive({
+      op: GatewayOpcode.Hello,
+      t: GatewayEventType.Hello,
+      d: { heartbeat_interval_ms: 1_000, gateway_id: 'gw-1' },
+    })
+    client.disconnect()
+    rejectTicket(new Error('late failure'))
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(client.state).toBe('idle')
+    expect(errors).not.toHaveBeenCalled()
   })
 
   it('identifies, dispatches ready, and maintains heartbeat acknowledgements', async () => {
@@ -123,7 +211,7 @@ describe('GatewayClient', () => {
         op: GatewayOpcode.Identify,
         t: GatewayEventType.Identify,
         d: {
-          token: 'token',
+          gateway_ticket: 'ticket',
           device_type: 'web',
           status: 'online',
           client_state: 'foreground',
@@ -167,8 +255,8 @@ describe('GatewayClient', () => {
 
   it('resumes a session after an unexpected disconnect', async () => {
     vi.useFakeTimers()
-    const tokens = ['first-token', 'refreshed-token']
-    const { client, sockets } = createHarness(() => tokens.shift() ?? null)
+    const tickets = ['first-ticket', 'second-ticket']
+    const { client, sockets } = createHarness(() => tickets.shift() ?? 'fallback-ticket')
 
     client.connect()
     await receiveHello(sockets[0])
@@ -188,7 +276,7 @@ describe('GatewayClient', () => {
       {
         op: GatewayOpcode.Resume,
         t: GatewayEventType.Resume,
-        d: { token: 'refreshed-token', session_id: 'session-1', seq: 42 },
+        d: { gateway_ticket: 'second-ticket', session_id: 'session-1', seq: 42 },
       },
     ])
 

@@ -1,7 +1,10 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 
-import { refreshAuthentication } from '@/api/refresh'
-import { restoreAccessToken } from '@/api/session'
+import {
+  clearLegacyAuthenticationTokens,
+  markAuthenticationEstablished,
+} from '@/api/authentication'
 import { getCurrentUser, type CurrentUser } from '@/api/user'
 
 export const authSessionQueryKey = ['auth', 'current-user'] as const
@@ -18,15 +21,18 @@ export function setAuthSession(queryClient: QueryClient, session: CurrentUser | 
 }
 
 async function restoreAuthSession() {
-  if (restoreAccessToken()) {
-    return getCurrentUser()
+  clearLegacyAuthenticationTokens()
+
+  try {
+    const currentUser = await getCurrentUser()
+    markAuthenticationEstablished()
+    return currentUser
+  } catch (error) {
+    const code = ConnectError.from(error).code
+    if (code === Code.Unauthenticated) {
+      return null
+    }
+
+    throw error
   }
-
-  const authenticated = await refreshAuthentication()
-
-  if (!authenticated) {
-    return null
-  }
-
-  return getCurrentUser()
 }
