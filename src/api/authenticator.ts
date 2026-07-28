@@ -1,11 +1,13 @@
 import { createClient } from '@connectrpc/connect'
 
-import { AuthenticatorService } from '@/gen/api/v1/authenticator_pb'
+import { AuthenticatorService, TokenTransport } from '@/gen/api/v1/authenticator_pb'
 
-import { clearAuthenticationTokens, storeAuthenticationTokens } from '@/api/session'
+import { markAuthenticationEstablished } from '@/api/authentication'
+import { apiTransport } from '@/api/client'
 import { publicApiTransport } from '@/api/transport'
 
 const authenticatorClient = createClient(AuthenticatorService, publicApiTransport)
+const authenticatedAuthenticatorClient = createClient(AuthenticatorService, apiTransport)
 
 export interface LoginCredentials {
   email: string
@@ -23,7 +25,10 @@ export type LoginOutcome =
   | { challengeToken: string; expiresAt: bigint; kind: 'twoFactorRequired' }
 
 export async function login(credentials: LoginCredentials): Promise<LoginOutcome> {
-  const response = await authenticatorClient.login(credentials)
+  const response = await authenticatorClient.login({
+    ...credentials,
+    tokenTransport: TokenTransport.COOKIE,
+  })
 
   if (response.outcome.case === 'twoFactorChallenge') {
     return {
@@ -37,8 +42,18 @@ export async function login(credentials: LoginCredentials): Promise<LoginOutcome
     throw new Error('login response did not contain an authenticated session')
   }
 
-  storeAuthenticationTokens(response.outcome.value)
+  markAuthenticationEstablished()
   return { kind: 'authenticated' }
+}
+
+export async function createGatewayTicket() {
+  const response = await authenticatedAuthenticatorClient.createGatewayTicket({})
+
+  if (!response.gatewayTicket) {
+    throw new Error('gateway ticket response was incomplete')
+  }
+
+  return response.gatewayTicket
 }
 
 export async function registerAccount(details: RegistrationDetails) {
@@ -69,8 +84,6 @@ export async function confirmPasswordReset(token: string, newPassword: string) {
   if (!response.ok) {
     throw new Error('password reset was not accepted')
   }
-
-  clearAuthenticationTokens()
 }
 
 export async function requestEmailVerification(email: string) {

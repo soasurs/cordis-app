@@ -1,8 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 
-import { refreshAuthentication } from '@/api/refresh'
-import { getUsableAccessToken } from '@/api/session'
+import { createGatewayTicket } from '@/api/authenticator'
 import {
   GatewayClient,
   type GatewayClientError,
@@ -88,21 +87,11 @@ export function GatewayProvider({
 
 function createGatewayConnection() {
   return new GatewayClient({
-    getAccessToken: getGatewayAccessToken,
+    getGatewayTicket: createGatewayTicket,
     identify: {
       clientState: document.visibilityState === 'visible' ? 'foreground' : 'background',
       deviceType: 'web',
       status: 'online',
     },
   })
-}
-
-async function getGatewayAccessToken() {
-  const currentAccessToken = getUsableAccessToken()
-  if (currentAccessToken) {
-    return currentAccessToken
-  }
-
-  const refreshed = await refreshAuthentication()
-  return refreshed ? (getUsableAccessToken() ?? null) : null
 }

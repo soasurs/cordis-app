@@ -13,14 +13,14 @@ export interface GatewayHelloData {
 }
 
 export interface GatewayIdentifyData {
-  token: string
+  gateway_ticket: string
   device_type?: string
   status?: string
   client_state?: string
 }
 
 export interface GatewayResumeData {
-  token: string
+  gateway_ticket: string
   session_id: string
   /** Last received dispatch sequence from this session. */
   seq: number

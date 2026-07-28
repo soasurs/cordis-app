@@ -45,7 +45,7 @@ export interface GatewaySocket {
 }
 
 export interface GatewayClientOptions {
-  getAccessToken: () => string | null | Promise<string | null>
+  getGatewayTicket: () => string | Promise<string>
   url?: string
   identify?: GatewayIdentifyOptions
   reconnect?: GatewayReconnectOptions
@@ -73,7 +73,7 @@ type ErrorListener = (error: GatewayClientError) => void
 type StateListener = (change: GatewayStateChange) => void
 
 export class GatewayClient {
-  private readonly getAccessToken: GatewayClientOptions['getAccessToken']
+  private readonly getGatewayTicket: GatewayClientOptions['getGatewayTicket']
   private readonly identify: GatewayIdentifyOptions
   private readonly initialReconnectDelayMs: number
   private readonly maximumReconnectDelayMs: number
@@ -96,7 +96,7 @@ export class GatewayClient {
   private sessionValue: GatewaySession | null = null
 
   constructor(options: GatewayClientOptions) {
-    this.getAccessToken = options.getAccessToken
+    this.getGatewayTicket = options.getGatewayTicket
     this.identify = options.identify ?? {}
     this.initialReconnectDelayMs = options.reconnect?.initialDelayMs ?? 1_000
     this.maximumReconnectDelayMs = options.reconnect?.maximumDelayMs ?? 30_000
@@ -190,6 +190,12 @@ export class GatewayClient {
     }
 
     this.socket = socket
+    const gatewayTicketPromise = Promise.resolve()
+      .then(() => this.getGatewayTicket())
+      .then(
+        (ticket) => ({ ticket }),
+        (cause: unknown) => ({ cause, ticket: null }),
+      )
     socket.onopen = () => {
       if (socket !== this.socket) {
         return
@@ -201,7 +207,7 @@ export class GatewayClient {
       if (socket !== this.socket) {
         return
       }
-      this.handleMessage(socket, event.data)
+      this.handleMessage(socket, event.data, gatewayTicketPromise)
     }
     socket.onerror = () => {
       if (socket === this.socket) {
@@ -222,7 +228,11 @@ export class GatewayClient {
     }
   }
 
-  private handleMessage(socket: GatewaySocket, data: unknown): void {
+  private handleMessage(
+    socket: GatewaySocket,
+    data: unknown,
+    gatewayTicketPromise: Promise<{ cause?: unknown; ticket: string | null }>,
+  ): void {
     if (typeof data !== 'string') {
       this.reportError('invalid_payload', 'gateway sent a non-text message')
       this.forceReconnect(socket)
@@ -243,7 +253,7 @@ export class GatewayClient {
         if (!this.validateEventType(socket, envelope, GatewayEventType.Hello)) {
           return
         }
-        void this.handleHello(socket, envelope.d)
+        void this.handleHello(socket, envelope.d, gatewayTicketPromise)
         break
       case GatewayOpcode.Dispatch:
         this.handleDispatch(envelope)
@@ -272,7 +282,11 @@ export class GatewayClient {
     }
   }
 
-  private async handleHello(socket: GatewaySocket, data: unknown): Promise<void> {
+  private async handleHello(
+    socket: GatewaySocket,
+    data: unknown,
+    gatewayTicketPromise: Promise<{ cause?: unknown; ticket: string | null }>,
+  ): Promise<void> {
     let heartbeatIntervalMs: number
     try {
       heartbeatIntervalMs = parseHelloData(data).heartbeat_interval_ms
@@ -282,27 +296,25 @@ export class GatewayClient {
       return
     }
 
-    let token: string | null
-    try {
-      token = await this.getAccessToken()
-    } catch (cause) {
-      this.reportError('token_unavailable', 'get gateway access token failed', cause)
-      this.stopSocket(socket)
-      return
-    }
+    const { cause, ticket } = await gatewayTicketPromise
     if (socket !== this.socket || !this.running) {
       return
     }
-    if (!token) {
-      this.reportError('token_unavailable', 'gateway access token is unavailable')
-      this.stopSocket(socket)
+    if (cause !== undefined) {
+      this.reportError('ticket_unavailable', 'create gateway ticket failed', cause)
+      this.retrySocket(socket)
+      return
+    }
+    if (!ticket) {
+      this.reportError('ticket_unavailable', 'gateway ticket is unavailable')
+      this.retrySocket(socket)
       return
     }
 
     this.heartbeatIntervalMs = heartbeatIntervalMs
     if (this.sessionValue) {
       const resume: GatewayResumeData = {
-        token,
+        gateway_ticket: ticket,
         session_id: this.sessionValue.sessionId,
         seq: this.sessionValue.sequence,
       }
@@ -315,7 +327,7 @@ export class GatewayClient {
     }
 
     const identify: GatewayIdentifyData = {
-      token,
+      gateway_ticket: ticket,
       device_type: this.identify.deviceType,
       status: this.identify.status,
       client_state: this.identify.clientState,
@@ -446,15 +458,14 @@ export class GatewayClient {
     this.scheduleReconnect(0)
   }
 
-  private stopSocket(socket: GatewaySocket): void {
+  private retrySocket(socket: GatewaySocket): void {
     if (socket !== this.socket) {
       return
     }
-    this.running = false
     this.socket = null
     this.clearHeartbeat()
-    socket.close(1000, 'authentication unavailable')
-    this.setState('idle')
+    socket.close(1012, 'gateway ticket unavailable')
+    this.scheduleReconnect()
   }
 
   private scheduleReconnect(delayOverride?: number): void {

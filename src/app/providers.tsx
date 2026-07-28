@@ -2,7 +2,7 @@ import { useEffect, type PropsWithChildren } from 'react'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import * as Tooltip from '@radix-ui/react-tooltip'
 
-import { subscribeToAuthenticationCleared } from '@/api/session'
+import { subscribeToAuthenticationExpired } from '@/api/authentication'
 import { authSessionQueryOptions, setAuthSession } from '@/features/auth/auth-session'
 
 import { queryClient } from '@/app/query-client'
@@ -19,13 +19,7 @@ export function AppProviders({ children }: PropsWithChildren) {
 function AuthenticationBootstrap({ children }: PropsWithChildren) {
   const sessionQuery = useQuery(authSessionQueryOptions)
 
-  useEffect(
-    () =>
-      subscribeToAuthenticationCleared(() => {
-        setAuthSession(queryClient, null)
-      }),
-    [],
-  )
+  useEffect(() => subscribeToAuthenticationExpired(() => setAuthSession(queryClient, null)), [])
 
   if (sessionQuery.isPending) {
     return <AuthenticationLoading />

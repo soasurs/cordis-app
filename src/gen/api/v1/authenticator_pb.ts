@@ -2,15 +2,15 @@
 // @generated from file api/v1/authenticator.proto (package api.v1, edition 2023)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file api/v1/authenticator.proto.
  */
 export const file_api_v1_authenticator: GenFile = /*@__PURE__*/
-  fileDesc("ChphcGkvdjEvYXV0aGVudGljYXRvci5wcm90bxIGYXBpLnYxItMBChRBdXRoZW50aWNhdGlvblJlc3VsdBIKCgJvaxgBIAEoCBIPCgd1c2VyX2lkGAIgASgDEhIKCnNlc3Npb25faWQYAyABKAMSFAoMYWNjZXNzX3Rva2VuGAQgASgJEh8KF2FjY2Vzc190b2tlbl9leHBpcmVzX2F0GAUgASgDEhUKDXJlZnJlc2hfdG9rZW4YBiABKAkSIAoYcmVmcmVzaF90b2tlbl9leHBpcmVzX2F0GAcgASgDEhoKEnNlc3Npb25fZXhwaXJlc19hdBgIIAEoAyJ0Cg9SZWdpc3RlclJlcXVlc3QSDAoEbmFtZRgBIAEoCRINCgVlbWFpbBgCIAEoCRIQCghwYXNzd29yZBgDIAEoCRIQCgh1c2VybmFtZRgEIAEoCRIgChhyZWdpc3RyYXRpb25faW52aXRlX2NvZGUYBSABKAkiHgoQUmVnaXN0ZXJSZXNwb25zZRIKCgJvaxgBIAEoCCIvCgxMb2dpblJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkiiwEKDUxvZ2luUmVzcG9uc2USLgoGcmVzdWx0GAEgASgLMhwuYXBpLnYxLkF1dGhlbnRpY2F0aW9uUmVzdWx0SAASPwoUdHdvX2ZhY3Rvcl9jaGFsbGVuZ2UYAiABKAsyHy5hcGkudjEuVHdvRmFjdG9yTG9naW5DaGFsbGVuZ2VIAEIJCgdvdXRjb21lIjwKF1R3b0ZhY3RvckxvZ2luQ2hhbGxlbmdlEg0KBXRva2VuGAEgASgJEhIKCmV4cGlyZXNfYXQYAiABKAMiRgodQ29tcGxldGVUd29GYWN0b3JMb2dpblJlcXVlc3QSFwoPY2hhbGxlbmdlX3Rva2VuGAEgASgJEgwKBGNvZGUYAiABKAkiTgoeQ29tcGxldGVUd29GYWN0b3JMb2dpblJlc3BvbnNlEiwKBnJlc3VsdBgBIAEoCzIcLmFwaS52MS5BdXRoZW50aWNhdGlvblJlc3VsdCInCg5SZWZyZXNoUmVxdWVzdBIVCg1yZWZyZXNoX3Rva2VuGAEgASgJIj8KD1JlZnJlc2hSZXNwb25zZRIsCgZyZXN1bHQYASABKAsyHC5hcGkudjEuQXV0aGVudGljYXRpb25SZXN1bHQiJgoNTG9nb3V0UmVxdWVzdBIVCg1yZWZyZXNoX3Rva2VuGAEgASgJIhwKDkxvZ291dFJlc3BvbnNlEgoKAm9rGAEgASgIIooBCgdTZXNzaW9uEhIKCnNlc3Npb25faWQYASABKAMSEgoKdXNlcl9hZ2VudBgCIAEoCRIKCgJpcBgDIAEoCRISCgpjcmVhdGVkX2F0GAQgASgDEhIKCnVwZGF0ZWRfYXQYBSABKAMSEgoKZXhwaXJlc19hdBgGIAEoAxIPCgdjdXJyZW50GAcgASgIIhUKE0xpc3RTZXNzaW9uc1JlcXVlc3QiOQoUTGlzdFNlc3Npb25zUmVzcG9uc2USIQoIc2Vzc2lvbnMYASADKAsyDy5hcGkudjEuU2Vzc2lvbiIqChRSZXZva2VTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgDIiMKFVJldm9rZVNlc3Npb25SZXNwb25zZRIKCgJvaxgBIAEoCCIbChlHZXRUd29GYWN0b3JTdGF0dXNSZXF1ZXN0Ik8KGkdldFR3b0ZhY3RvclN0YXR1c1Jlc3BvbnNlEg8KB2VuYWJsZWQYASABKAgSIAoYcmVjb3ZlcnlfY29kZXNfcmVtYWluaW5nGAIgASgFIjMKH0JlZ2luVHdvRmFjdG9yRW5yb2xsbWVudFJlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkifwogQmVnaW5Ud29GYWN0b3JFbnJvbGxtZW50UmVzcG9uc2USGAoQZW5yb2xsbWVudF90b2tlbhgBIAEoCRITCgtvdHBhdXRoX3VyaRgCIAEoCRIYChBtYW51YWxfZW50cnlfa2V5GAMgASgJEhIKCmV4cGlyZXNfYXQYBCABKAMiSwohQ29uZmlybVR3b0ZhY3RvckVucm9sbG1lbnRSZXF1ZXN0EhgKEGVucm9sbG1lbnRfdG9rZW4YASABKAkSDAoEY29kZRgCIAEoCSI8CiJDb25maXJtVHdvRmFjdG9yRW5yb2xsbWVudFJlc3BvbnNlEhYKDnJlY292ZXJ5X2NvZGVzGAEgAygJImQKF0Rpc2FibGVUd29GYWN0b3JSZXF1ZXN0EhAKCHBhc3N3b3JkGAEgASgJEg4KBGNvZGUYAiABKAlIABIXCg1yZWNvdmVyeV9jb2RlGAMgASgJSABCDgoMdmVyaWZpY2F0aW9uIiYKGERpc2FibGVUd29GYWN0b3JSZXNwb25zZRIKCgJvaxgBIAEoCCJJCidSZWdlbmVyYXRlVHdvRmFjdG9yUmVjb3ZlcnlDb2Rlc1JlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkSDAoEY29kZRgCIAEoCSJCCihSZWdlbmVyYXRlVHdvRmFjdG9yUmVjb3ZlcnlDb2Rlc1Jlc3BvbnNlEhYKDnJlY292ZXJ5X2NvZGVzGAEgAygJIiwKG1JlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBINCgVlbWFpbBgBIAEoCSIqChxSZXF1ZXN0UGFzc3dvcmRSZXNldFJlc3BvbnNlEgoKAm9rGAEgASgIIkIKG0NvbmZpcm1QYXNzd29yZFJlc2V0UmVxdWVzdBINCgV0b2tlbhgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiKgocQ29uZmlybVBhc3N3b3JkUmVzZXRSZXNwb25zZRIKCgJvaxgBIAEoCCIwCh9SZXF1ZXN0RW1haWxWZXJpZmljYXRpb25SZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIi4KIFJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlEgoKAm9rGAEgASgIIjAKH0NvbmZpcm1FbWFpbFZlcmlmaWNhdGlvblJlcXVlc3QSDQoFdG9rZW4YASABKAkiLgogQ29uZmlybUVtYWlsVmVyaWZpY2F0aW9uUmVzcG9uc2USCgoCb2sYASABKAgyxgsKFEF1dGhlbnRpY2F0b3JTZXJ2aWNlEj0KCFJlZ2lzdGVyEhcuYXBpLnYxLlJlZ2lzdGVyUmVxdWVzdBoYLmFwaS52MS5SZWdpc3RlclJlc3BvbnNlEjQKBUxvZ2luEhQuYXBpLnYxLkxvZ2luUmVxdWVzdBoVLmFwaS52MS5Mb2dpblJlc3BvbnNlEmcKFkNvbXBsZXRlVHdvRmFjdG9yTG9naW4SJS5hcGkudjEuQ29tcGxldGVUd29GYWN0b3JMb2dpblJlcXVlc3QaJi5hcGkudjEuQ29tcGxldGVUd29GYWN0b3JMb2dpblJlc3BvbnNlEjoKB1JlZnJlc2gSFi5hcGkudjEuUmVmcmVzaFJlcXVlc3QaFy5hcGkudjEuUmVmcmVzaFJlc3BvbnNlEjcKBkxvZ291dBIVLmFwaS52MS5Mb2dvdXRSZXF1ZXN0GhYuYXBpLnYxLkxvZ291dFJlc3BvbnNlEmEKFFJlcXVlc3RQYXNzd29yZFJlc2V0EiMuYXBpLnYxLlJlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBokLmFwaS52MS5SZXF1ZXN0UGFzc3dvcmRSZXNldFJlc3BvbnNlEmEKFENvbmZpcm1QYXNzd29yZFJlc2V0EiMuYXBpLnYxLkNvbmZpcm1QYXNzd29yZFJlc2V0UmVxdWVzdBokLmFwaS52MS5Db25maXJtUGFzc3dvcmRSZXNldFJlc3BvbnNlEm0KGFJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvbhInLmFwaS52MS5SZXF1ZXN0RW1haWxWZXJpZmljYXRpb25SZXF1ZXN0GiguYXBpLnYxLlJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlEm0KGENvbmZpcm1FbWFpbFZlcmlmaWNhdGlvbhInLmFwaS52MS5Db25maXJtRW1haWxWZXJpZmljYXRpb25SZXF1ZXN0GiguYXBpLnYxLkNvbmZpcm1FbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlEkkKDExpc3RTZXNzaW9ucxIbLmFwaS52MS5MaXN0U2Vzc2lvbnNSZXF1ZXN0GhwuYXBpLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEkwKDVJldm9rZVNlc3Npb24SHC5hcGkudjEuUmV2b2tlU2Vzc2lvblJlcXVlc3QaHS5hcGkudjEuUmV2b2tlU2Vzc2lvblJlc3BvbnNlElsKEkdldFR3b0ZhY3RvclN0YXR1cxIhLmFwaS52MS5HZXRUd29GYWN0b3JTdGF0dXNSZXF1ZXN0GiIuYXBpLnYxLkdldFR3b0ZhY3RvclN0YXR1c1Jlc3BvbnNlEm0KGEJlZ2luVHdvRmFjdG9yRW5yb2xsbWVudBInLmFwaS52MS5CZWdpblR3b0ZhY3RvckVucm9sbG1lbnRSZXF1ZXN0GiguYXBpLnYxLkJlZ2luVHdvRmFjdG9yRW5yb2xsbWVudFJlc3BvbnNlEnMKGkNvbmZpcm1Ud29GYWN0b3JFbnJvbGxtZW50EikuYXBpLnYxLkNvbmZpcm1Ud29GYWN0b3JFbnJvbGxtZW50UmVxdWVzdBoqLmFwaS52MS5Db25maXJtVHdvRmFjdG9yRW5yb2xsbWVudFJlc3BvbnNlElUKEERpc2FibGVUd29GYWN0b3ISHy5hcGkudjEuRGlzYWJsZVR3b0ZhY3RvclJlcXVlc3QaIC5hcGkudjEuRGlzYWJsZVR3b0ZhY3RvclJlc3BvbnNlEoUBCiBSZWdlbmVyYXRlVHdvRmFjdG9yUmVjb3ZlcnlDb2RlcxIvLmFwaS52MS5SZWdlbmVyYXRlVHdvRmFjdG9yUmVjb3ZlcnlDb2Rlc1JlcXVlc3QaMC5hcGkudjEuUmVnZW5lcmF0ZVR3b0ZhY3RvclJlY292ZXJ5Q29kZXNSZXNwb25zZWIIZWRpdGlvbnNw6Ac");
+  fileDesc("ChphcGkvdjEvYXV0aGVudGljYXRvci5wcm90bxIGYXBpLnYxIvgBChRBdXRoZW50aWNhdGlvblJlc3VsdBIKCgJvaxgBIAEoCBIPCgd1c2VyX2lkGAIgASgDEhIKCnNlc3Npb25faWQYAyABKAMSFAoMYWNjZXNzX3Rva2VuGAQgASgJEh8KF2FjY2Vzc190b2tlbl9leHBpcmVzX2F0GAUgASgDEhUKDXJlZnJlc2hfdG9rZW4YBiABKAkSIAoYcmVmcmVzaF90b2tlbl9leHBpcmVzX2F0GAcgASgDEhoKEnNlc3Npb25fZXhwaXJlc19hdBgIIAEoAxIjChthYnNvbHV0ZV9zZXNzaW9uX2V4cGlyZXNfYXQYCSABKAMidAoPUmVnaXN0ZXJSZXF1ZXN0EgwKBG5hbWUYASABKAkSDQoFZW1haWwYAiABKAkSEAoIcGFzc3dvcmQYAyABKAkSEAoIdXNlcm5hbWUYBCABKAkSIAoYcmVnaXN0cmF0aW9uX2ludml0ZV9jb2RlGAUgASgJIh4KEFJlZ2lzdGVyUmVzcG9uc2USCgoCb2sYASABKAgiYAoMTG9naW5SZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJEi8KD3Rva2VuX3RyYW5zcG9ydBgDIAEoDjIWLmFwaS52MS5Ub2tlblRyYW5zcG9ydCKLAQoNTG9naW5SZXNwb25zZRIuCgZyZXN1bHQYASABKAsyHC5hcGkudjEuQXV0aGVudGljYXRpb25SZXN1bHRIABI/ChR0d29fZmFjdG9yX2NoYWxsZW5nZRgCIAEoCzIfLmFwaS52MS5Ud29GYWN0b3JMb2dpbkNoYWxsZW5nZUgAQgkKB291dGNvbWUiPAoXVHdvRmFjdG9yTG9naW5DaGFsbGVuZ2USDQoFdG9rZW4YASABKAkSEgoKZXhwaXJlc19hdBgCIAEoAyJ3Ch1Db21wbGV0ZVR3b0ZhY3RvckxvZ2luUmVxdWVzdBIXCg9jaGFsbGVuZ2VfdG9rZW4YASABKAkSDAoEY29kZRgCIAEoCRIvCg90b2tlbl90cmFuc3BvcnQYAyABKA4yFi5hcGkudjEuVG9rZW5UcmFuc3BvcnQiTgoeQ29tcGxldGVUd29GYWN0b3JMb2dpblJlc3BvbnNlEiwKBnJlc3VsdBgBIAEoCzIcLmFwaS52MS5BdXRoZW50aWNhdGlvblJlc3VsdCInCg5SZWZyZXNoUmVxdWVzdBIVCg1yZWZyZXNoX3Rva2VuGAEgASgJIj8KD1JlZnJlc2hSZXNwb25zZRIsCgZyZXN1bHQYASABKAsyHC5hcGkudjEuQXV0aGVudGljYXRpb25SZXN1bHQiJgoNTG9nb3V0UmVxdWVzdBIVCg1yZWZyZXNoX3Rva2VuGAEgASgJIhwKDkxvZ291dFJlc3BvbnNlEgoKAm9rGAEgASgIIhwKGkNyZWF0ZUdhdGV3YXlUaWNrZXRSZXF1ZXN0IkkKG0NyZWF0ZUdhdGV3YXlUaWNrZXRSZXNwb25zZRIWCg5nYXRld2F5X3RpY2tldBgBIAEoCRISCgpleHBpcmVzX2F0GAIgASgDIqcBCgdTZXNzaW9uEhIKCnNlc3Npb25faWQYASABKAMSEgoKdXNlcl9hZ2VudBgCIAEoCRIKCgJpcBgDIAEoCRISCgpjcmVhdGVkX2F0GAQgASgDEhIKCnVwZGF0ZWRfYXQYBSABKAMSEgoKZXhwaXJlc19hdBgGIAEoAxIPCgdjdXJyZW50GAcgASgIEhsKE2Fic29sdXRlX2V4cGlyZXNfYXQYCCABKAMiFQoTTGlzdFNlc3Npb25zUmVxdWVzdCI5ChRMaXN0U2Vzc2lvbnNSZXNwb25zZRIhCghzZXNzaW9ucxgBIAMoCzIPLmFwaS52MS5TZXNzaW9uIioKFFJldm9rZVNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAMiIwoVUmV2b2tlU2Vzc2lvblJlc3BvbnNlEgoKAm9rGAEgASgIIhsKGUdldFR3b0ZhY3RvclN0YXR1c1JlcXVlc3QiTwoaR2V0VHdvRmFjdG9yU3RhdHVzUmVzcG9uc2USDwoHZW5hYmxlZBgBIAEoCBIgChhyZWNvdmVyeV9jb2Rlc19yZW1haW5pbmcYAiABKAUiMwofQmVnaW5Ud29GYWN0b3JFbnJvbGxtZW50UmVxdWVzdBIQCghwYXNzd29yZBgBIAEoCSJ/CiBCZWdpblR3b0ZhY3RvckVucm9sbG1lbnRSZXNwb25zZRIYChBlbnJvbGxtZW50X3Rva2VuGAEgASgJEhMKC290cGF1dGhfdXJpGAIgASgJEhgKEG1hbnVhbF9lbnRyeV9rZXkYAyABKAkSEgoKZXhwaXJlc19hdBgEIAEoAyJLCiFDb25maXJtVHdvRmFjdG9yRW5yb2xsbWVudFJlcXVlc3QSGAoQZW5yb2xsbWVudF90b2tlbhgBIAEoCRIMCgRjb2RlGAIgASgJIjwKIkNvbmZpcm1Ud29GYWN0b3JFbnJvbGxtZW50UmVzcG9uc2USFgoOcmVjb3ZlcnlfY29kZXMYASADKAkiZAoXRGlzYWJsZVR3b0ZhY3RvclJlcXVlc3QSEAoIcGFzc3dvcmQYASABKAkSDgoEY29kZRgCIAEoCUgAEhcKDXJlY292ZXJ5X2NvZGUYAyABKAlIAEIOCgx2ZXJpZmljYXRpb24iJgoYRGlzYWJsZVR3b0ZhY3RvclJlc3BvbnNlEgoKAm9rGAEgASgIIkkKJ1JlZ2VuZXJhdGVUd29GYWN0b3JSZWNvdmVyeUNvZGVzUmVxdWVzdBIQCghwYXNzd29yZBgBIAEoCRIMCgRjb2RlGAIgASgJIkIKKFJlZ2VuZXJhdGVUd29GYWN0b3JSZWNvdmVyeUNvZGVzUmVzcG9uc2USFgoOcmVjb3ZlcnlfY29kZXMYASADKAkiLAobUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIioKHFJlcXVlc3RQYXNzd29yZFJlc2V0UmVzcG9uc2USCgoCb2sYASABKAgiQgobQ29uZmlybVBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBXRva2VuGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIqChxDb25maXJtUGFzc3dvcmRSZXNldFJlc3BvbnNlEgoKAm9rGAEgASgIIjAKH1JlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlcXVlc3QSDQoFZW1haWwYASABKAkiLgogUmVxdWVzdEVtYWlsVmVyaWZpY2F0aW9uUmVzcG9uc2USCgoCb2sYASABKAgiMAofQ29uZmlybUVtYWlsVmVyaWZpY2F0aW9uUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIuCiBDb25maXJtRW1haWxWZXJpZmljYXRpb25SZXNwb25zZRIKCgJvaxgBIAEoCCpoCg5Ub2tlblRyYW5zcG9ydBIfChtUT0tFTl9UUkFOU1BPUlRfVU5TUEVDSUZJRUQQABIZChVUT0tFTl9UUkFOU1BPUlRfVE9LRU4QARIaChZUT0tFTl9UUkFOU1BPUlRfQ09PS0lFEAIypgwKFEF1dGhlbnRpY2F0b3JTZXJ2aWNlEj0KCFJlZ2lzdGVyEhcuYXBpLnYxLlJlZ2lzdGVyUmVxdWVzdBoYLmFwaS52MS5SZWdpc3RlclJlc3BvbnNlEjQKBUxvZ2luEhQuYXBpLnYxLkxvZ2luUmVxdWVzdBoVLmFwaS52MS5Mb2dpblJlc3BvbnNlEmcKFkNvbXBsZXRlVHdvRmFjdG9yTG9naW4SJS5hcGkudjEuQ29tcGxldGVUd29GYWN0b3JMb2dpblJlcXVlc3QaJi5hcGkudjEuQ29tcGxldGVUd29GYWN0b3JMb2dpblJlc3BvbnNlEjoKB1JlZnJlc2gSFi5hcGkudjEuUmVmcmVzaFJlcXVlc3QaFy5hcGkudjEuUmVmcmVzaFJlc3BvbnNlEjcKBkxvZ291dBIVLmFwaS52MS5Mb2dvdXRSZXF1ZXN0GhYuYXBpLnYxLkxvZ291dFJlc3BvbnNlEl4KE0NyZWF0ZUdhdGV3YXlUaWNrZXQSIi5hcGkudjEuQ3JlYXRlR2F0ZXdheVRpY2tldFJlcXVlc3QaIy5hcGkudjEuQ3JlYXRlR2F0ZXdheVRpY2tldFJlc3BvbnNlEmEKFFJlcXVlc3RQYXNzd29yZFJlc2V0EiMuYXBpLnYxLlJlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBokLmFwaS52MS5SZXF1ZXN0UGFzc3dvcmRSZXNldFJlc3BvbnNlEmEKFENvbmZpcm1QYXNzd29yZFJlc2V0EiMuYXBpLnYxLkNvbmZpcm1QYXNzd29yZFJlc2V0UmVxdWVzdBokLmFwaS52MS5Db25maXJtUGFzc3dvcmRSZXNldFJlc3BvbnNlEm0KGFJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvbhInLmFwaS52MS5SZXF1ZXN0RW1haWxWZXJpZmljYXRpb25SZXF1ZXN0GiguYXBpLnYxLlJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlEm0KGENvbmZpcm1FbWFpbFZlcmlmaWNhdGlvbhInLmFwaS52MS5Db25maXJtRW1haWxWZXJpZmljYXRpb25SZXF1ZXN0GiguYXBpLnYxLkNvbmZpcm1FbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlEkkKDExpc3RTZXNzaW9ucxIbLmFwaS52MS5MaXN0U2Vzc2lvbnNSZXF1ZXN0GhwuYXBpLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEkwKDVJldm9rZVNlc3Npb24SHC5hcGkudjEuUmV2b2tlU2Vzc2lvblJlcXVlc3QaHS5hcGkudjEuUmV2b2tlU2Vzc2lvblJlc3BvbnNlElsKEkdldFR3b0ZhY3RvclN0YXR1cxIhLmFwaS52MS5HZXRUd29GYWN0b3JTdGF0dXNSZXF1ZXN0GiIuYXBpLnYxLkdldFR3b0ZhY3RvclN0YXR1c1Jlc3BvbnNlEm0KGEJlZ2luVHdvRmFjdG9yRW5yb2xsbWVudBInLmFwaS52MS5CZWdpblR3b0ZhY3RvckVucm9sbG1lbnRSZXF1ZXN0GiguYXBpLnYxLkJlZ2luVHdvRmFjdG9yRW5yb2xsbWVudFJlc3BvbnNlEnMKGkNvbmZpcm1Ud29GYWN0b3JFbnJvbGxtZW50EikuYXBpLnYxLkNvbmZpcm1Ud29GYWN0b3JFbnJvbGxtZW50UmVxdWVzdBoqLmFwaS52MS5Db25maXJtVHdvRmFjdG9yRW5yb2xsbWVudFJlc3BvbnNlElUKEERpc2FibGVUd29GYWN0b3ISHy5hcGkudjEuRGlzYWJsZVR3b0ZhY3RvclJlcXVlc3QaIC5hcGkudjEuRGlzYWJsZVR3b0ZhY3RvclJlc3BvbnNlEoUBCiBSZWdlbmVyYXRlVHdvRmFjdG9yUmVjb3ZlcnlDb2RlcxIvLmFwaS52MS5SZWdlbmVyYXRlVHdvRmFjdG9yUmVjb3ZlcnlDb2Rlc1JlcXVlc3QaMC5hcGkudjEuUmVnZW5lcmF0ZVR3b0ZhY3RvclJlY292ZXJ5Q29kZXNSZXNwb25zZWIIZWRpdGlvbnNw6Ac");
 
 /**
  * AuthenticationResult contains the tokens and expiration times for an authenticated session.
@@ -58,6 +58,11 @@ export type AuthenticationResult = Message<"api.v1.AuthenticationResult"> & {
    * @generated from field: int64 session_expires_at = 8;
    */
   sessionExpiresAt: bigint;
+
+  /**
+   * @generated from field: int64 absolute_session_expires_at = 9;
+   */
+  absoluteSessionExpiresAt: bigint;
 };
 
 /**
@@ -138,6 +143,14 @@ export type LoginRequest = Message<"api.v1.LoginRequest"> & {
    * @generated from field: string password = 2;
    */
   password: string;
+
+  /**
+   * TOKEN is the compatibility default. COOKIE stores both tokens in
+   * HttpOnly cookies and omits them from the response body.
+   *
+   * @generated from field: api.v1.TokenTransport token_transport = 3;
+   */
+  tokenTransport: TokenTransport;
 };
 
 /**
@@ -211,6 +224,11 @@ export type CompleteTwoFactorLoginRequest = Message<"api.v1.CompleteTwoFactorLog
    * @generated from field: string code = 2;
    */
   code: string;
+
+  /**
+   * @generated from field: api.v1.TokenTransport token_transport = 3;
+   */
+  tokenTransport: TokenTransport;
 };
 
 /**
@@ -306,6 +324,41 @@ export const LogoutResponseSchema: GenMessage<LogoutResponse> = /*@__PURE__*/
   messageDesc(file_api_v1_authenticator, 11);
 
 /**
+ * @generated from message api.v1.CreateGatewayTicketRequest
+ */
+export type CreateGatewayTicketRequest = Message<"api.v1.CreateGatewayTicketRequest"> & {
+};
+
+/**
+ * Describes the message api.v1.CreateGatewayTicketRequest.
+ * Use `create(CreateGatewayTicketRequestSchema)` to create a new message.
+ */
+export const CreateGatewayTicketRequestSchema: GenMessage<CreateGatewayTicketRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_authenticator, 12);
+
+/**
+ * @generated from message api.v1.CreateGatewayTicketResponse
+ */
+export type CreateGatewayTicketResponse = Message<"api.v1.CreateGatewayTicketResponse"> & {
+  /**
+   * @generated from field: string gateway_ticket = 1;
+   */
+  gatewayTicket: string;
+
+  /**
+   * @generated from field: int64 expires_at = 2;
+   */
+  expiresAt: bigint;
+};
+
+/**
+ * Describes the message api.v1.CreateGatewayTicketResponse.
+ * Use `create(CreateGatewayTicketResponseSchema)` to create a new message.
+ */
+export const CreateGatewayTicketResponseSchema: GenMessage<CreateGatewayTicketResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_authenticator, 13);
+
+/**
  * Session contains client-visible metadata for an active authenticated session.
  * All timestamps are Unix time in milliseconds.
  *
@@ -346,6 +399,11 @@ export type Session = Message<"api.v1.Session"> & {
    * @generated from field: bool current = 7;
    */
   current: boolean;
+
+  /**
+   * @generated from field: int64 absolute_expires_at = 8;
+   */
+  absoluteExpiresAt: bigint;
 };
 
 /**
@@ -353,7 +411,7 @@ export type Session = Message<"api.v1.Session"> & {
  * Use `create(SessionSchema)` to create a new message.
  */
 export const SessionSchema: GenMessage<Session> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 12);
+  messageDesc(file_api_v1_authenticator, 14);
 
 /**
  * @generated from message api.v1.ListSessionsRequest
@@ -366,7 +424,7 @@ export type ListSessionsRequest = Message<"api.v1.ListSessionsRequest"> & {
  * Use `create(ListSessionsRequestSchema)` to create a new message.
  */
 export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 13);
+  messageDesc(file_api_v1_authenticator, 15);
 
 /**
  * @generated from message api.v1.ListSessionsResponse
@@ -383,7 +441,7 @@ export type ListSessionsResponse = Message<"api.v1.ListSessionsResponse"> & {
  * Use `create(ListSessionsResponseSchema)` to create a new message.
  */
 export const ListSessionsResponseSchema: GenMessage<ListSessionsResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 14);
+  messageDesc(file_api_v1_authenticator, 16);
 
 /**
  * @generated from message api.v1.RevokeSessionRequest
@@ -400,7 +458,7 @@ export type RevokeSessionRequest = Message<"api.v1.RevokeSessionRequest"> & {
  * Use `create(RevokeSessionRequestSchema)` to create a new message.
  */
 export const RevokeSessionRequestSchema: GenMessage<RevokeSessionRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 15);
+  messageDesc(file_api_v1_authenticator, 17);
 
 /**
  * @generated from message api.v1.RevokeSessionResponse
@@ -417,7 +475,7 @@ export type RevokeSessionResponse = Message<"api.v1.RevokeSessionResponse"> & {
  * Use `create(RevokeSessionResponseSchema)` to create a new message.
  */
 export const RevokeSessionResponseSchema: GenMessage<RevokeSessionResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 16);
+  messageDesc(file_api_v1_authenticator, 18);
 
 /**
  * @generated from message api.v1.GetTwoFactorStatusRequest
@@ -430,7 +488,7 @@ export type GetTwoFactorStatusRequest = Message<"api.v1.GetTwoFactorStatusReques
  * Use `create(GetTwoFactorStatusRequestSchema)` to create a new message.
  */
 export const GetTwoFactorStatusRequestSchema: GenMessage<GetTwoFactorStatusRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 17);
+  messageDesc(file_api_v1_authenticator, 19);
 
 /**
  * @generated from message api.v1.GetTwoFactorStatusResponse
@@ -452,7 +510,7 @@ export type GetTwoFactorStatusResponse = Message<"api.v1.GetTwoFactorStatusRespo
  * Use `create(GetTwoFactorStatusResponseSchema)` to create a new message.
  */
 export const GetTwoFactorStatusResponseSchema: GenMessage<GetTwoFactorStatusResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 18);
+  messageDesc(file_api_v1_authenticator, 20);
 
 /**
  * @generated from message api.v1.BeginTwoFactorEnrollmentRequest
@@ -469,7 +527,7 @@ export type BeginTwoFactorEnrollmentRequest = Message<"api.v1.BeginTwoFactorEnro
  * Use `create(BeginTwoFactorEnrollmentRequestSchema)` to create a new message.
  */
 export const BeginTwoFactorEnrollmentRequestSchema: GenMessage<BeginTwoFactorEnrollmentRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 19);
+  messageDesc(file_api_v1_authenticator, 21);
 
 /**
  * @generated from message api.v1.BeginTwoFactorEnrollmentResponse
@@ -501,7 +559,7 @@ export type BeginTwoFactorEnrollmentResponse = Message<"api.v1.BeginTwoFactorEnr
  * Use `create(BeginTwoFactorEnrollmentResponseSchema)` to create a new message.
  */
 export const BeginTwoFactorEnrollmentResponseSchema: GenMessage<BeginTwoFactorEnrollmentResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 20);
+  messageDesc(file_api_v1_authenticator, 22);
 
 /**
  * @generated from message api.v1.ConfirmTwoFactorEnrollmentRequest
@@ -523,7 +581,7 @@ export type ConfirmTwoFactorEnrollmentRequest = Message<"api.v1.ConfirmTwoFactor
  * Use `create(ConfirmTwoFactorEnrollmentRequestSchema)` to create a new message.
  */
 export const ConfirmTwoFactorEnrollmentRequestSchema: GenMessage<ConfirmTwoFactorEnrollmentRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 21);
+  messageDesc(file_api_v1_authenticator, 23);
 
 /**
  * @generated from message api.v1.ConfirmTwoFactorEnrollmentResponse
@@ -540,7 +598,7 @@ export type ConfirmTwoFactorEnrollmentResponse = Message<"api.v1.ConfirmTwoFacto
  * Use `create(ConfirmTwoFactorEnrollmentResponseSchema)` to create a new message.
  */
 export const ConfirmTwoFactorEnrollmentResponseSchema: GenMessage<ConfirmTwoFactorEnrollmentResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 22);
+  messageDesc(file_api_v1_authenticator, 24);
 
 /**
  * @generated from message api.v1.DisableTwoFactorRequest
@@ -574,7 +632,7 @@ export type DisableTwoFactorRequest = Message<"api.v1.DisableTwoFactorRequest"> 
  * Use `create(DisableTwoFactorRequestSchema)` to create a new message.
  */
 export const DisableTwoFactorRequestSchema: GenMessage<DisableTwoFactorRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 23);
+  messageDesc(file_api_v1_authenticator, 25);
 
 /**
  * @generated from message api.v1.DisableTwoFactorResponse
@@ -591,7 +649,7 @@ export type DisableTwoFactorResponse = Message<"api.v1.DisableTwoFactorResponse"
  * Use `create(DisableTwoFactorResponseSchema)` to create a new message.
  */
 export const DisableTwoFactorResponseSchema: GenMessage<DisableTwoFactorResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 24);
+  messageDesc(file_api_v1_authenticator, 26);
 
 /**
  * @generated from message api.v1.RegenerateTwoFactorRecoveryCodesRequest
@@ -613,7 +671,7 @@ export type RegenerateTwoFactorRecoveryCodesRequest = Message<"api.v1.Regenerate
  * Use `create(RegenerateTwoFactorRecoveryCodesRequestSchema)` to create a new message.
  */
 export const RegenerateTwoFactorRecoveryCodesRequestSchema: GenMessage<RegenerateTwoFactorRecoveryCodesRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 25);
+  messageDesc(file_api_v1_authenticator, 27);
 
 /**
  * @generated from message api.v1.RegenerateTwoFactorRecoveryCodesResponse
@@ -630,7 +688,7 @@ export type RegenerateTwoFactorRecoveryCodesResponse = Message<"api.v1.Regenerat
  * Use `create(RegenerateTwoFactorRecoveryCodesResponseSchema)` to create a new message.
  */
 export const RegenerateTwoFactorRecoveryCodesResponseSchema: GenMessage<RegenerateTwoFactorRecoveryCodesResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 26);
+  messageDesc(file_api_v1_authenticator, 28);
 
 /**
  * @generated from message api.v1.RequestPasswordResetRequest
@@ -647,7 +705,7 @@ export type RequestPasswordResetRequest = Message<"api.v1.RequestPasswordResetRe
  * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
  */
 export const RequestPasswordResetRequestSchema: GenMessage<RequestPasswordResetRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 27);
+  messageDesc(file_api_v1_authenticator, 29);
 
 /**
  * @generated from message api.v1.RequestPasswordResetResponse
@@ -664,7 +722,7 @@ export type RequestPasswordResetResponse = Message<"api.v1.RequestPasswordResetR
  * Use `create(RequestPasswordResetResponseSchema)` to create a new message.
  */
 export const RequestPasswordResetResponseSchema: GenMessage<RequestPasswordResetResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 28);
+  messageDesc(file_api_v1_authenticator, 30);
 
 /**
  * @generated from message api.v1.ConfirmPasswordResetRequest
@@ -686,7 +744,7 @@ export type ConfirmPasswordResetRequest = Message<"api.v1.ConfirmPasswordResetRe
  * Use `create(ConfirmPasswordResetRequestSchema)` to create a new message.
  */
 export const ConfirmPasswordResetRequestSchema: GenMessage<ConfirmPasswordResetRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 29);
+  messageDesc(file_api_v1_authenticator, 31);
 
 /**
  * @generated from message api.v1.ConfirmPasswordResetResponse
@@ -703,7 +761,7 @@ export type ConfirmPasswordResetResponse = Message<"api.v1.ConfirmPasswordResetR
  * Use `create(ConfirmPasswordResetResponseSchema)` to create a new message.
  */
 export const ConfirmPasswordResetResponseSchema: GenMessage<ConfirmPasswordResetResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 30);
+  messageDesc(file_api_v1_authenticator, 32);
 
 /**
  * @generated from message api.v1.RequestEmailVerificationRequest
@@ -720,7 +778,7 @@ export type RequestEmailVerificationRequest = Message<"api.v1.RequestEmailVerifi
  * Use `create(RequestEmailVerificationRequestSchema)` to create a new message.
  */
 export const RequestEmailVerificationRequestSchema: GenMessage<RequestEmailVerificationRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 31);
+  messageDesc(file_api_v1_authenticator, 33);
 
 /**
  * @generated from message api.v1.RequestEmailVerificationResponse
@@ -737,7 +795,7 @@ export type RequestEmailVerificationResponse = Message<"api.v1.RequestEmailVerif
  * Use `create(RequestEmailVerificationResponseSchema)` to create a new message.
  */
 export const RequestEmailVerificationResponseSchema: GenMessage<RequestEmailVerificationResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 32);
+  messageDesc(file_api_v1_authenticator, 34);
 
 /**
  * @generated from message api.v1.ConfirmEmailVerificationRequest
@@ -754,7 +812,7 @@ export type ConfirmEmailVerificationRequest = Message<"api.v1.ConfirmEmailVerifi
  * Use `create(ConfirmEmailVerificationRequestSchema)` to create a new message.
  */
 export const ConfirmEmailVerificationRequestSchema: GenMessage<ConfirmEmailVerificationRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 33);
+  messageDesc(file_api_v1_authenticator, 35);
 
 /**
  * @generated from message api.v1.ConfirmEmailVerificationResponse
@@ -771,7 +829,33 @@ export type ConfirmEmailVerificationResponse = Message<"api.v1.ConfirmEmailVerif
  * Use `create(ConfirmEmailVerificationResponseSchema)` to create a new message.
  */
 export const ConfirmEmailVerificationResponseSchema: GenMessage<ConfirmEmailVerificationResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_authenticator, 34);
+  messageDesc(file_api_v1_authenticator, 36);
+
+/**
+ * @generated from enum api.v1.TokenTransport
+ */
+export enum TokenTransport {
+  /**
+   * @generated from enum value: TOKEN_TRANSPORT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TOKEN_TRANSPORT_TOKEN = 1;
+   */
+  TOKEN = 1,
+
+  /**
+   * @generated from enum value: TOKEN_TRANSPORT_COOKIE = 2;
+   */
+  COOKIE = 2,
+}
+
+/**
+ * Describes the enum api.v1.TokenTransport.
+ */
+export const TokenTransportSchema: GenEnum<TokenTransport> = /*@__PURE__*/
+  enumDesc(file_api_v1_authenticator, 0);
 
 /**
  * AuthenticatorService manages public authentication and session lifecycle operations.
@@ -828,6 +912,17 @@ export const AuthenticatorService: GenService<{
     methodKind: "unary";
     input: typeof LogoutRequestSchema;
     output: typeof LogoutResponseSchema;
+  },
+  /**
+   * CreateGatewayTicket creates a short-lived, single-use browser credential
+   * for Gateway IDENTIFY or RESUME.
+   *
+   * @generated from rpc api.v1.AuthenticatorService.CreateGatewayTicket
+   */
+  createGatewayTicket: {
+    methodKind: "unary";
+    input: typeof CreateGatewayTicketRequestSchema;
+    output: typeof CreateGatewayTicketResponseSchema;
   },
   /**
    * RequestPasswordReset starts the email-based recovery flow. It always
