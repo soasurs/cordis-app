@@ -18,6 +18,7 @@ export function AppProviders({ children }: PropsWithChildren) {
 
 function AuthenticationBootstrap({ children }: PropsWithChildren) {
   const sessionQuery = useQuery(authSessionQueryOptions)
+  const userId = sessionQuery.data?.profile.userId.toString()
 
   useEffect(() => subscribeToAuthenticationExpired(() => setAuthSession(queryClient, null)), [])
 
@@ -47,7 +48,11 @@ function AuthenticationBootstrap({ children }: PropsWithChildren) {
   }
 
   return (
-    <GatewayProvider enabled={Boolean(sessionQuery.data)}>
+    <GatewayProvider
+      enabled={Boolean(sessionQuery.data)}
+      key={userId ?? 'anonymous'}
+      userId={userId}
+    >
       <Tooltip.Provider delayDuration={250}>{children}</Tooltip.Provider>
     </GatewayProvider>
   )

@@ -1,4 +1,5 @@
 import { GuildIcon } from '@/features/guilds/components/guild-icon'
+import { PresenceStatusSelect } from '@/features/presence/components/presence-status-select'
 
 import type { AppGuildSummary } from '@/components/layout/app-shell-types'
 import { RailButton } from '@/components/layout/rail-button'
@@ -61,6 +62,7 @@ export function SpaceRail({
       >
         <span className="text-lg font-normal">+</span>
       </RailButton>
+      <PresenceStatusSelect />
       <RailButton disabled label="Settings">
         <span className="text-xs">S</span>
       </RailButton>

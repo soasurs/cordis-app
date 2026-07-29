@@ -7,8 +7,10 @@ import {
   type GatewayDispatch,
   type GatewayEnvelope,
   type GatewayErrorData,
+  type GatewayClientState,
   type GatewayIdentifyData,
   type GatewayPresenceData,
+  type GatewayPresenceStatus,
   type GatewayResumeData,
 } from '@/gateway/protocol'
 
@@ -24,8 +26,8 @@ export interface GatewaySession {
 
 export interface GatewayIdentifyOptions {
   deviceType?: string
-  status?: string
-  clientState?: string
+  status?: GatewayPresenceStatus
+  clientState?: GatewayClientState
 }
 
 export interface GatewayReconnectOptions {
@@ -94,6 +96,7 @@ export class GatewayClient {
   private socket: GatewaySocket | null = null
   private stateValue: GatewayConnectionState = 'idle'
   private sessionValue: GatewaySession | null = null
+  private pendingPresence: GatewayPresenceData | null = null
 
   constructor(options: GatewayClientOptions) {
     this.getGatewayTicket = options.getGatewayTicket
@@ -153,8 +156,15 @@ export class GatewayClient {
   }
 
   updatePresence(presence: GatewayPresenceData): void {
+    if (presence.status !== undefined) {
+      this.identify.status = presence.status
+    }
+    if (presence.client_state !== undefined) {
+      this.identify.clientState = presence.client_state
+    }
     if (this.stateValue !== 'ready') {
-      throw new Error('gateway is not ready')
+      this.pendingPresence = { ...this.pendingPresence, ...presence }
+      return
     }
     this.send({ op: GatewayOpcode.Presence, d: presence })
   }
@@ -332,6 +342,7 @@ export class GatewayClient {
       status: this.identify.status,
       client_state: this.identify.clientState,
     }
+    this.pendingPresence = null
     this.sendOnSocket(socket, {
       op: GatewayOpcode.Identify,
       t: GatewayEventType.Identify,
@@ -381,6 +392,11 @@ export class GatewayClient {
     this.reconnectAttempt = 0
     this.setState('ready')
     this.startHeartbeat()
+    const pendingPresence = this.pendingPresence
+    this.pendingPresence = null
+    if (pendingPresence) {
+      this.send({ op: GatewayOpcode.Presence, d: pendingPresence })
+    }
   }
 
   private startHeartbeat(): void {

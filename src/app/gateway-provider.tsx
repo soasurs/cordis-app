@@ -1,16 +1,25 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 
 import { createGatewayTicket } from '@/api/authenticator'
+import { readPresenceStatus, writePresenceStatus } from '@/features/presence/presence-preference'
 import {
   GatewayClient,
+  type GatewayClientState,
+  type GatewayPresenceData,
+  type GatewayPresenceStatus,
   type GatewayClientError,
   type GatewayConnectionState,
   type GatewayDispatch,
   type GatewayStateChange,
 } from '@/gateway'
 
-import { GatewayStatusContext, idleGatewayStatus, type GatewayStatus } from '@/app/gateway-context'
+import {
+  GatewayPresencePreferenceContext,
+  GatewayStatusContext,
+  idleGatewayStatus,
+  type GatewayStatus,
+} from '@/app/gateway-context'
 import { clearGatewayQueries, syncGatewayDispatch } from '@/app/gateway-query-sync'
 
 interface GatewayConnection {
@@ -20,32 +29,44 @@ interface GatewayConnection {
   onDispatch(listener: (dispatch: GatewayDispatch) => void): () => void
   onError(listener: (error: GatewayClientError) => void): () => void
   onStateChange(listener: (change: GatewayStateChange) => void): () => void
-  updatePresence(presence: { client_state: string }): void
+  updatePresence(presence: GatewayPresenceData): void
 }
 
 interface GatewayProviderProps extends PropsWithChildren {
-  clientFactory?: () => GatewayConnection
+  clientFactory?: (initialStatus: GatewayPresenceStatus) => GatewayConnection
   enabled: boolean
+  userId?: string
 }
 
 export function GatewayProvider({
   children,
   clientFactory = createGatewayConnection,
   enabled,
+  userId,
 }: GatewayProviderProps) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<GatewayStatus>(idleGatewayStatus)
+  const [presenceStatus, setPresenceStatusValue] = useState<GatewayPresenceStatus>(() =>
+    readPresenceStatus(userId),
+  )
+  const setPresenceStatus = useCallback(
+    (nextStatus: GatewayPresenceStatus) => {
+      writePresenceStatus(userId, nextStatus)
+      setPresenceStatusValue(nextStatus)
+    },
+    [userId],
+  )
   const connectionResult = useMemo(() => {
     if (!enabled) {
       return { client: null, errorCode: null }
     }
 
     try {
-      return { client: clientFactory(), errorCode: null }
+      return { client: clientFactory(readPresenceStatus(userId)), errorCode: null }
     } catch {
       return { client: null, errorCode: 'configuration_error' }
     }
-  }, [clientFactory, enabled])
+  }, [clientFactory, enabled, userId])
 
   useEffect(() => {
     const client = connectionResult.client
@@ -115,26 +136,36 @@ export function GatewayProvider({
     }
   }, [connectionResult.client, queryClient])
 
+  useEffect(() => {
+    connectionResult.client?.updatePresence({ status: presenceStatus })
+  }, [connectionResult.client, presenceStatus])
+
   const value = enabled
     ? connectionResult.errorCode
       ? { errorCode: connectionResult.errorCode, state: 'idle' as const }
       : status
     : idleGatewayStatus
 
-  return <GatewayStatusContext value={value}>{children}</GatewayStatusContext>
+  return (
+    <GatewayPresencePreferenceContext
+      value={{ setStatus: setPresenceStatus, status: presenceStatus }}
+    >
+      <GatewayStatusContext value={value}>{children}</GatewayStatusContext>
+    </GatewayPresencePreferenceContext>
+  )
 }
 
-function createGatewayConnection() {
+function createGatewayConnection(initialStatus: GatewayPresenceStatus) {
   return new GatewayClient({
     getGatewayTicket: createGatewayTicket,
     identify: {
       clientState: getDocumentClientState(),
       deviceType: 'web',
-      status: 'online',
+      status: initialStatus,
     },
   })
 }
 
-function getDocumentClientState() {
+function getDocumentClientState(): GatewayClientState {
   return document.visibilityState === 'visible' ? 'foreground' : 'background'
 }
