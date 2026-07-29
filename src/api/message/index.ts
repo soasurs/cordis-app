@@ -24,8 +24,4 @@ export {
   toChannelMessage,
   updateMessage,
 } from '@/api/message/messages'
-export {
-  ackMessage,
-  getReadStatesForGuild,
-  toChannelReadState,
-} from '@/api/message/read-states'
+export { ackMessage, getReadStatesForGuild, toChannelReadState } from '@/api/message/read-states'

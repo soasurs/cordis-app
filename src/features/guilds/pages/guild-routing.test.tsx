@@ -168,9 +168,7 @@ describe('guild routing', () => {
 
     fireEvent.click((await screen.findAllByRole('button', { name: 'Open channel settings' }))[0]!)
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe(
-        '/guilds/42/channels/43/settings/overview',
-      ),
+      expect(router.state.location.pathname).toBe('/guilds/42/channels/43/settings/overview'),
     )
     expect(await screen.findByRole('heading', { name: 'Channel overview' })).toBeInTheDocument()
 
@@ -196,9 +194,7 @@ describe('guild routing', () => {
 
     fireEvent.click((await screen.findAllByRole('button', { name: 'Open category settings' }))[0]!)
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe(
-        '/guilds/42/channels/45/settings/overview',
-      ),
+      expect(router.state.location.pathname).toBe('/guilds/42/channels/45/settings/overview'),
     )
     expect(await screen.findByRole('heading', { name: 'Category overview' })).toBeInTheDocument()
 
@@ -213,9 +209,7 @@ describe('guild routing', () => {
     const router = await renderRoute('/guilds/42/channels/43/settings/unknown', queryClient)
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe(
-        '/guilds/42/channels/43/settings/overview',
-      ),
+      expect(router.state.location.pathname).toBe('/guilds/42/channels/43/settings/overview'),
     )
   })
 

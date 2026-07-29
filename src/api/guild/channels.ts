@@ -1,7 +1,4 @@
-import {
-  GuildChannelType,
-  GuildPermissionOverwriteType,
-} from '@/gen/api/v1/guild_pb'
+import { GuildChannelType, GuildPermissionOverwriteType } from '@/gen/api/v1/guild_pb'
 
 import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
@@ -57,11 +54,7 @@ export async function updateGuildChannel(
 ): Promise<GuildChannel> {
   assertIdentifier(channelId, 'channel')
   if (details.parentId) assertIdentifier(details.parentId, 'parent channel')
-  if (
-    details.name === undefined &&
-    details.topic === undefined &&
-    details.parentId === undefined
-  ) {
+  if (details.name === undefined && details.topic === undefined && details.parentId === undefined) {
     throw new Error('at least one channel field is required')
   }
 
@@ -228,7 +221,5 @@ function toOverwriteAppliesTo(
 }
 
 function toProtoOverwriteAppliesTo(value: GuildChannelPermissionOverwriteAppliesTo) {
-  return value === 'role'
-    ? GuildPermissionOverwriteType.ROLE
-    : GuildPermissionOverwriteType.MEMBER
+  return value === 'role' ? GuildPermissionOverwriteType.ROLE : GuildPermissionOverwriteType.MEMBER
 }

@@ -13,13 +13,10 @@ import {
   guildsQueryOptions,
 } from '@/features/guilds/guild-queries'
 
-export type GuildOwnershipState =
-  | { status: 'pending' }
-  | { isOwner: boolean; status: 'ready' }
+export type GuildOwnershipState = { status: 'pending' } | { isOwner: boolean; status: 'ready' }
 
 export type GuildPermissionsState =
-  | { status: 'pending' }
-  | ({ status: 'ready' } & EffectiveGuildPermissions)
+  { status: 'pending' } | ({ status: 'ready' } & EffectiveGuildPermissions)
 
 /** Resolves whether the current user owns the guild (session + guild list only). */
 export function useGuildOwnership(guildId: string): GuildOwnershipState {
@@ -66,10 +63,7 @@ export function useGuildPermissions(guildId: string): GuildPermissionsState {
   }
 }
 
-function capabilityFromState(
-  permissions: GuildPermissionsState,
-  capability: GuildCapability,
-) {
+function capabilityFromState(permissions: GuildPermissionsState, capability: GuildCapability) {
   if (permissions.status !== 'ready') return false
   return canGuildCapability(permissions, capability)
 }

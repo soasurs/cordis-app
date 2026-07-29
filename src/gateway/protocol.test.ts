@@ -83,6 +83,7 @@ describe('gateway protocol', () => {
             user_id: '6',
             name: 'Alice',
             avatar_asset_id: '7',
+            bio: '',
             created_at: 100,
             updated_at: 100,
             username: 'alice',
@@ -91,6 +92,7 @@ describe('gateway protocol', () => {
         },
       ],
       read_states: [],
+      presences: [],
     } satisfies GatewayReadyData
 
     expect(GatewayEventType).toMatchObject({

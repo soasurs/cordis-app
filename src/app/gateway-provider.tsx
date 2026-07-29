@@ -20,6 +20,7 @@ interface GatewayConnection {
   onDispatch(listener: (dispatch: GatewayDispatch) => void): () => void
   onError(listener: (error: GatewayClientError) => void): () => void
   onStateChange(listener: (change: GatewayStateChange) => void): () => void
+  updatePresence(presence: { client_state: string }): void
 }
 
 interface GatewayProviderProps extends PropsWithChildren {
@@ -52,11 +53,44 @@ export function GatewayProvider({
       return
     }
 
+    let connectionState: GatewayConnectionState = client.state
+    let clientState = getDocumentClientState()
+    let sentClientState = clientState
+    let clientStateTimer: ReturnType<typeof setTimeout> | null = null
+
+    const sendClientState = () => {
+      if (clientStateTimer) {
+        clearTimeout(clientStateTimer)
+      }
+      clientStateTimer = null
+      if (connectionState === 'ready' && clientState !== sentClientState) {
+        client.updatePresence({ client_state: clientState })
+        sentClientState = clientState
+      }
+    }
+    const scheduleClientState = () => {
+      clientState = getDocumentClientState()
+      if (clientState === sentClientState) {
+        if (clientStateTimer) {
+          clearTimeout(clientStateTimer)
+          clientStateTimer = null
+        }
+        return
+      }
+      if (clientStateTimer) {
+        return
+      }
+      clientStateTimer = setTimeout(sendClientState, 150)
+    }
     const unsubscribeState = client.onStateChange(({ current }) => {
+      connectionState = current
       setStatus((currentStatus) => ({
         errorCode: current === 'ready' ? null : currentStatus.errorCode,
         state: current,
       }))
+      if (current === 'ready') {
+        sendClientState()
+      }
     })
     const unsubscribeError = client.onError((error) => {
       setStatus((currentStatus) => ({ ...currentStatus, errorCode: error.code }))
@@ -66,8 +100,13 @@ export function GatewayProvider({
     })
 
     client.connect()
+    document.addEventListener('visibilitychange', scheduleClientState)
 
     return () => {
+      document.removeEventListener('visibilitychange', scheduleClientState)
+      if (clientStateTimer) {
+        clearTimeout(clientStateTimer)
+      }
       unsubscribeDispatch()
       unsubscribeError()
       unsubscribeState()
@@ -89,9 +128,13 @@ function createGatewayConnection() {
   return new GatewayClient({
     getGatewayTicket: createGatewayTicket,
     identify: {
-      clientState: document.visibilityState === 'visible' ? 'foreground' : 'background',
+      clientState: getDocumentClientState(),
       deviceType: 'web',
       status: 'online',
     },
   })
+}
+
+function getDocumentClientState() {
+  return document.visibilityState === 'visible' ? 'foreground' : 'background'
 }

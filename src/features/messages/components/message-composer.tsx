@@ -248,7 +248,10 @@ export function MessageComposer({
   }
 
   return (
-    <form className="border-t border-line px-3 pt-2 pb-3 sm:px-4 sm:pt-2.5 sm:pb-4" onSubmit={submit}>
+    <form
+      className="border-t border-line px-3 pt-2 pb-3 sm:px-4 sm:pt-2.5 sm:pb-4"
+      onSubmit={submit}
+    >
       <div className="rounded-control border border-line bg-surface-raised focus-within:border-brand">
         {replyTo ? (
           <div className="flex items-center gap-2 border-b border-line px-3 py-2">
@@ -258,7 +261,9 @@ export function MessageComposer({
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[0.72rem] leading-4">
-                <span className="font-semibold text-brand-text">Replying to {replyTo.authorName}</span>
+                <span className="font-semibold text-brand-text">
+                  Replying to {replyTo.authorName}
+                </span>
                 <span className="text-muted"> · {replyTo.contentPreview}</span>
               </p>
             </div>
@@ -316,9 +321,7 @@ export function MessageComposer({
             id={`message-composer-${channelId}`}
             rows={1}
             value={draft}
-            placeholder={
-              replyTo ? `Reply to ${replyTo.authorName}` : `Message #${channelName}`
-            }
+            placeholder={replyTo ? `Reply to ${replyTo.authorName}` : `Message #${channelName}`}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKeyDown}
             className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"

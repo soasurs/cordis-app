@@ -130,7 +130,10 @@ export function GuildRoleMemberPickerDialog({
                   const alreadyAssigned = assignedUserIds.has(member.userId)
                   const selected = alreadyAssigned || selectedUserIds.has(member.userId)
                   return (
-                    <li className="border-b border-line px-4 py-3 last:border-b-0" key={member.userId}>
+                    <li
+                      className="border-b border-line px-4 py-3 last:border-b-0"
+                      key={member.userId}
+                    >
                       <label
                         className={`flex items-center gap-4 ${
                           alreadyAssigned ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
@@ -177,7 +180,12 @@ export function GuildRoleMemberPickerDialog({
           ) : null}
 
           <div className="mt-5 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end">
-            <Button disabled={addMutation.isPending} type="button" variant="ghost" onClick={closeDialog}>
+            <Button
+              disabled={addMutation.isPending}
+              type="button"
+              variant="ghost"
+              onClick={closeDialog}
+            >
               Cancel
             </Button>
             <Button

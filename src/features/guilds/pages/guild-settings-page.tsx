@@ -9,9 +9,7 @@ import {
   GuildSettingsLayout,
   GuildSettingsMessage,
 } from '@/features/guilds/components/guild-settings-layout'
-import {
-  canAccessGuildSettingsSection,
-} from '@/features/guilds/guild-capabilities'
+import { canAccessGuildSettingsSection } from '@/features/guilds/guild-capabilities'
 import { guildsQueryOptions } from '@/features/guilds/guild-queries'
 import {
   guildSettingsSections,

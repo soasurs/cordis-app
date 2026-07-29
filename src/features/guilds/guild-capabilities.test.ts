@@ -51,28 +51,20 @@ describe('canGuildCapability', () => {
   })
 
   it('maps manageChannels to the permission bit or Administrator', () => {
-    expect(
-      canGuildCapability({ isOwner: false, permissions: '32' }, 'manageChannels'),
-    ).toBe(false)
-    expect(
-      canGuildCapability({ isOwner: false, permissions: '160' }, 'manageChannels'),
-    ).toBe(true)
+    expect(canGuildCapability({ isOwner: false, permissions: '32' }, 'manageChannels')).toBe(false)
+    expect(canGuildCapability({ isOwner: false, permissions: '160' }, 'manageChannels')).toBe(true)
     expect(canGuildCapability({ isOwner: false, permissions: '1' }, 'manageChannels')).toBe(true)
   })
 
   it('opens settings for Manage community or other settings-section permissions', () => {
-    expect(
-      canGuildCapability({ isOwner: false, permissions: '2' }, 'openGuildSettings'),
-    ).toBe(true)
-    expect(
-      canGuildCapability({ isOwner: false, permissions: '4' }, 'openGuildSettings'),
-    ).toBe(true)
-    expect(
-      canGuildCapability({ isOwner: false, permissions: '1024' }, 'openGuildSettings'),
-    ).toBe(true)
-    expect(
-      canGuildCapability({ isOwner: false, permissions: '32' }, 'openGuildSettings'),
-    ).toBe(false)
+    expect(canGuildCapability({ isOwner: false, permissions: '2' }, 'openGuildSettings')).toBe(true)
+    expect(canGuildCapability({ isOwner: false, permissions: '4' }, 'openGuildSettings')).toBe(true)
+    expect(canGuildCapability({ isOwner: false, permissions: '1024' }, 'openGuildSettings')).toBe(
+      true,
+    )
+    expect(canGuildCapability({ isOwner: false, permissions: '32' }, 'openGuildSettings')).toBe(
+      false,
+    )
   })
 
   it('gates settings sections by their specific permissions', () => {

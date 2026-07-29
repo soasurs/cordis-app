@@ -18,6 +18,7 @@ import {
   type GuildRoleSummary,
   type GuildSummary,
 } from '@/features/guilds/guild-queries'
+import { presenceQueryKey, type PresenceCache } from '@/features/presence/presence-queries'
 
 import { gatewayReadyQueryKey, useGatewayStatus } from '@/app/gateway-context'
 import { GatewayProvider } from '@/app/gateway-provider'
@@ -30,6 +31,7 @@ class FakeGatewayConnection {
 
   connect = vi.fn(() => this.setState('connecting'))
   disconnect = vi.fn(() => this.setState('idle'))
+  updatePresence = vi.fn()
 
   onDispatch(listener: (dispatch: GatewayDispatch) => void) {
     this.dispatchListeners.add(listener)
@@ -118,6 +120,14 @@ const readyData = {
     },
   ],
   read_states: [],
+  presences: [
+    {
+      last_seen_at: 1_000,
+      status: 2,
+      user_id: '7',
+      version: '9007199254740993',
+    },
+  ],
   session_id: 'gateway-session',
   session_node_id: 'node-1',
   user_id: '7',
@@ -149,6 +159,10 @@ describe('GatewayProvider', () => {
       }),
     )
     expect(queryClient.getQueryData(gatewayReadyQueryKey)).toEqual(readyData)
+    expect(queryClient.getQueryData<PresenceCache>(presenceQueryKey)?.get('7')).toMatchObject({
+      status: 'online',
+      version: 9_007_199_254_740_993n,
+    })
     expect(queryClient.getQueryData<GuildSummary[]>(guildsQueryKey)?.[0]).toMatchObject({
       description: 'A community for thoughtful tools.',
       name: 'Cordis Studio',
@@ -401,6 +415,7 @@ describe('GatewayProvider', () => {
     expect(connection.disconnect).toHaveBeenCalledOnce()
     expect(queryClient.getQueryData(gatewayReadyQueryKey)).toBeUndefined()
     expect(queryClient.getQueryData(guildsQueryKey)).toBeUndefined()
+    expect(queryClient.getQueryData(presenceQueryKey)).toBeUndefined()
   })
 
   it('publishes connection errors and clears them after reconnecting', () => {
@@ -419,6 +434,41 @@ describe('GatewayProvider', () => {
 
     act(() => connection.setState('ready'))
     expect(screen.getByText('ready:none')).toBeInTheDocument()
+  })
+
+  it('publishes debounced client-state changes while ready', () => {
+    vi.useFakeTimers()
+    const visibilityDescriptor = Object.getOwnPropertyDescriptor(document, 'visibilityState')
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' })
+    const queryClient = new QueryClient()
+    const connection = new FakeGatewayConnection()
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <GatewayProvider enabled clientFactory={() => connection}>
+          <GatewayStatusProbe />
+        </GatewayProvider>
+      </QueryClientProvider>,
+    )
+
+    act(() => connection.setState('ready'))
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    act(() => vi.advanceTimersByTime(149))
+    expect(connection.updatePresence).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(1))
+    expect(connection.updatePresence).toHaveBeenCalledWith({ client_state: 'background' })
+
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    act(() => vi.advanceTimersByTime(150))
+    expect(connection.updatePresence).toHaveBeenCalledOnce()
+
+    view.unmount()
+    if (visibilityDescriptor) {
+      Object.defineProperty(document, 'visibilityState', visibilityDescriptor)
+    } else {
+      Reflect.deleteProperty(document, 'visibilityState')
+    }
+    vi.useRealTimers()
   })
 
   it('reports an invalid Gateway configuration without crashing the application', () => {

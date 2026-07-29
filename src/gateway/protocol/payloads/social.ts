@@ -26,6 +26,7 @@ export interface PresenceUpdatedPayload {
   user_id: string
   status: number
   changed_at: number
+  version: string
   guild_ids: string[]
 }
 

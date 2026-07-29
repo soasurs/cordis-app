@@ -20,6 +20,7 @@ describe('user API', () => {
     userClient.getUserProfile.mockResolvedValue({
       profile: {
         avatarAssetId: 9n,
+        bio: 'Building thoughtful tools.',
         createdAt: 1_000n,
         name: 'Alex Chen',
         updatedAt: 2_000n,
@@ -30,6 +31,7 @@ describe('user API', () => {
 
     await expect(getUserProfile('7')).resolves.toEqual({
       avatarAssetId: '9',
+      bio: 'Building thoughtful tools.',
       createdAt: 1_000,
       name: 'Alex Chen',
       updatedAt: 2_000,
