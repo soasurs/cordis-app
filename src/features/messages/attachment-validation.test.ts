@@ -13,14 +13,10 @@ import {
 describe('validateMessageAttachmentFile', () => {
   it('accepts any canonical MIME type within the Media size limit', () => {
     expect(
-      validateMessageAttachmentFile(
-        new File(['x'], 'shot.png', { type: 'image/png' }),
-      ),
+      validateMessageAttachmentFile(new File(['x'], 'shot.png', { type: 'image/png' })),
     ).toBeUndefined()
     expect(
-      validateMessageAttachmentFile(
-        new File(['x'], 'notes.pdf', { type: 'application/pdf' }),
-      ),
+      validateMessageAttachmentFile(new File(['x'], 'notes.pdf', { type: 'application/pdf' })),
     ).toBeUndefined()
     expect(
       validateMessageAttachmentFile(
@@ -28,9 +24,7 @@ describe('validateMessageAttachmentFile', () => {
       ),
     ).toBeUndefined()
     expect(
-      validateMessageAttachmentFile(
-        new File(['x'], 'anim.gif', { type: 'image/gif' }),
-      ),
+      validateMessageAttachmentFile(new File(['x'], 'anim.gif', { type: 'image/gif' })),
     ).toBeUndefined()
   })
 
@@ -52,9 +46,7 @@ describe('validateMessageAttachmentFile', () => {
     Object.defineProperty(oversized, 'size', { value: MESSAGE_ATTACHMENT_MAX_BYTES + 1 })
     expect(validateMessageAttachmentFile(oversized)).toBe(messageAttachmentValidationMessage.size)
     expect(
-      validateMessageAttachmentFile(
-        new File(['x'], '../secret.pdf', { type: 'application/pdf' }),
-      ),
+      validateMessageAttachmentFile(new File(['x'], '../secret.pdf', { type: 'application/pdf' })),
     ).toBe(messageAttachmentValidationMessage.filename)
   })
 })

@@ -7,7 +7,11 @@ import {
 import { ChannelSettingsPage } from '@/features/guilds/pages/channel-settings-page'
 
 export function ChannelSettingsRoutePage() {
-  const { channelId, guildId, tab: tabParam } = useParams({
+  const {
+    channelId,
+    guildId,
+    tab: tabParam,
+  } = useParams({
     from: '/_app/guilds/$guildId/channels/$channelId/settings/$tab',
   })
   const navigate = useNavigate()

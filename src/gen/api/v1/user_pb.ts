@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/user.proto.
  */
 export const file_api_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChFhcGkvdjEvdXNlci5wcm90bxIGYXBpLnYxImkKBFVzZXISDwoHdXNlcl9pZBgBIAEoAxINCgVlbWFpbBgCIAEoCRISCgpjcmVhdGVkX2F0GAMgASgDEhIKCnVwZGF0ZWRfYXQYBCABKAMSGQoRZW1haWxfdmVyaWZpZWRfYXQYBSABKAMifwoLVXNlclByb2ZpbGUSDwoHdXNlcl9pZBgBIAEoAxIMCgRuYW1lGAIgASgJEhcKD2F2YXRhcl9hc3NldF9pZBgDIAEoAxISCgpjcmVhdGVkX2F0GAQgASgDEhIKCnVwZGF0ZWRfYXQYBSABKAMSEAoIdXNlcm5hbWUYBiABKAkiFwoVR2V0Q3VycmVudFVzZXJSZXF1ZXN0IloKFkdldEN1cnJlbnRVc2VyUmVzcG9uc2USGgoEdXNlchgBIAEoCzIMLmFwaS52MS5Vc2VyEiQKB3Byb2ZpbGUYAiABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUiKAoVR2V0VXNlclByb2ZpbGVSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAMiPgoWR2V0VXNlclByb2ZpbGVSZXNwb25zZRIkCgdwcm9maWxlGAEgASgLMhMuYXBpLnYxLlVzZXJQcm9maWxlIi4KHUNoZWNrRW1haWxBdmFpbGFiaWxpdHlSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIjMKHkNoZWNrRW1haWxBdmFpbGFiaWxpdHlSZXNwb25zZRIRCglhdmFpbGFibGUYASABKAgiIwoSVXBkYXRlRW1haWxSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIjEKE1VwZGF0ZUVtYWlsUmVzcG9uc2USGgoEdXNlchgBIAEoCzIMLmFwaS52MS5Vc2VyIigKGFVwZGF0ZVVzZXJQcm9maWxlUmVxdWVzdBIMCgRuYW1lGAEgASgJIkEKGVVwZGF0ZVVzZXJQcm9maWxlUmVzcG9uc2USJAoHcHJvZmlsZRgBIAEoCzITLmFwaS52MS5Vc2VyUHJvZmlsZSJIChlDcmVhdGVBdmF0YXJVcGxvYWRSZXF1ZXN0EhUKDWV4cGVjdGVkX3NpemUYASABKAMSFAoMY29udGVudF90eXBlGAIgASgJIuIBChpDcmVhdGVBdmF0YXJVcGxvYWRSZXNwb25zZRIRCgl1cGxvYWRfaWQYASABKAMSFQoNcHJlc2lnbmVkX3VybBgCIAEoCRISCgpleHBpcmVzX2F0GAMgASgDEk8KD3JlcXVlc3RfaGVhZGVycxgEIAMoCzI2LmFwaS52MS5DcmVhdGVBdmF0YXJVcGxvYWRSZXNwb25zZS5SZXF1ZXN0SGVhZGVyc0VudHJ5GjUKE1JlcXVlc3RIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIwChtDb21wbGV0ZUF2YXRhclVwbG9hZFJlcXVlc3QSEQoJdXBsb2FkX2lkGAEgASgDIkQKHENvbXBsZXRlQXZhdGFyVXBsb2FkUmVzcG9uc2USJAoHcHJvZmlsZRgBIAEoCzITLmFwaS52MS5Vc2VyUHJvZmlsZSItChhBYm9ydEF2YXRhclVwbG9hZFJlcXVlc3QSEQoJdXBsb2FkX2lkGAEgASgDIhsKGUFib3J0QXZhdGFyVXBsb2FkUmVzcG9uc2UiQwoVQ2hhbmdlUGFzc3dvcmRSZXF1ZXN0EhQKDG9sZF9wYXNzd29yZBgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiJAoWQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRIKCgJvaxgBIAEoCCKXAQoMUmVsYXRpb25zaGlwEhEKCXRhcmdldF9pZBgBIAEoAxImCgR0eXBlGAIgASgOMhguYXBpLnYxLlJlbGF0aW9uc2hpcFR5cGUSEgoKY3JlYXRlZF9hdBgDIAEoAxISCgp1cGRhdGVkX2F0GAQgASgDEiQKB3Byb2ZpbGUYBSABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUiJQoRTG9va3VwVXNlclJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkiOgoSTG9va3VwVXNlclJlc3BvbnNlEiQKB3Byb2ZpbGUYASABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUiLQoYU2VuZEZyaWVuZFJlcXVlc3RSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyJHChlTZW5kRnJpZW5kUmVxdWVzdFJlc3BvbnNlEioKDHJlbGF0aW9uc2hpcBgBIAEoCzIULmFwaS52MS5SZWxhdGlvbnNoaXAiLwoaQWNjZXB0RnJpZW5kUmVxdWVzdFJlcXVlc3QSEQoJdGFyZ2V0X2lkGAEgASgDIkkKG0FjY2VwdEZyaWVuZFJlcXVlc3RSZXNwb25zZRIqCgxyZWxhdGlvbnNoaXAYASABKAsyFC5hcGkudjEuUmVsYXRpb25zaGlwIjAKG0RlY2xpbmVGcmllbmRSZXF1ZXN0UmVxdWVzdBIRCgl0YXJnZXRfaWQYASABKAMiKgocRGVjbGluZUZyaWVuZFJlcXVlc3RSZXNwb25zZRIKCgJvaxgBIAEoCCIoChNSZW1vdmVGcmllbmRSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyIiChRSZW1vdmVGcmllbmRSZXNwb25zZRIKCgJvaxgBIAEoCCIlChBCbG9ja1VzZXJSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyI/ChFCbG9ja1VzZXJSZXNwb25zZRIqCgxyZWxhdGlvbnNoaXAYASABKAsyFC5hcGkudjEuUmVsYXRpb25zaGlwIicKElVuYmxvY2tVc2VyUmVxdWVzdBIRCgl0YXJnZXRfaWQYASABKAMiIQoTVW5ibG9ja1VzZXJSZXNwb25zZRIKCgJvaxgBIAEoCCJhChhMaXN0UmVsYXRpb25zaGlwc1JlcXVlc3QSJgoEdHlwZRgBIAEoDjIYLmFwaS52MS5SZWxhdGlvbnNoaXBUeXBlEg4KBmN1cnNvchgCIAEoCRINCgVsaW1pdBgDIAEoBSJdChlMaXN0UmVsYXRpb25zaGlwc1Jlc3BvbnNlEisKDXJlbGF0aW9uc2hpcHMYASADKAsyFC5hcGkudjEuUmVsYXRpb25zaGlwEhMKC25leHRfY3Vyc29yGAIgASgJIikKFVVwZGF0ZVVzZXJuYW1lUmVxdWVzdBIQCgh1c2VybmFtZRgBIAEoCSI+ChZVcGRhdGVVc2VybmFtZVJlc3BvbnNlEiQKB3Byb2ZpbGUYASABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUqsgEKEFJlbGF0aW9uc2hpcFR5cGUSIQodUkVMQVRJT05TSElQX1RZUEVfVU5TUEVDSUZJRUQQABIeChpSRUxBVElPTlNISVBfVFlQRV9PVVRHT0lORxABEh4KGlJFTEFUSU9OU0hJUF9UWVBFX0lOQ09NSU5HEAISHAoYUkVMQVRJT05TSElQX1RZUEVfRlJJRU5EEAMSHQoZUkVMQVRJT05TSElQX1RZUEVfQkxPQ0tFRBAEMocMCgtVc2VyU2VydmljZRJPCg5HZXRDdXJyZW50VXNlchIdLmFwaS52MS5HZXRDdXJyZW50VXNlclJlcXVlc3QaHi5hcGkudjEuR2V0Q3VycmVudFVzZXJSZXNwb25zZRJPCg5HZXRVc2VyUHJvZmlsZRIdLmFwaS52MS5HZXRVc2VyUHJvZmlsZVJlcXVlc3QaHi5hcGkudjEuR2V0VXNlclByb2ZpbGVSZXNwb25zZRJnChZDaGVja0VtYWlsQXZhaWxhYmlsaXR5EiUuYXBpLnYxLkNoZWNrRW1haWxBdmFpbGFiaWxpdHlSZXF1ZXN0GiYuYXBpLnYxLkNoZWNrRW1haWxBdmFpbGFiaWxpdHlSZXNwb25zZRJGCgtVcGRhdGVFbWFpbBIaLmFwaS52MS5VcGRhdGVFbWFpbFJlcXVlc3QaGy5hcGkudjEuVXBkYXRlRW1haWxSZXNwb25zZRJYChFVcGRhdGVVc2VyUHJvZmlsZRIgLmFwaS52MS5VcGRhdGVVc2VyUHJvZmlsZVJlcXVlc3QaIS5hcGkudjEuVXBkYXRlVXNlclByb2ZpbGVSZXNwb25zZRJbChJDcmVhdGVBdmF0YXJVcGxvYWQSIS5hcGkudjEuQ3JlYXRlQXZhdGFyVXBsb2FkUmVxdWVzdBoiLmFwaS52MS5DcmVhdGVBdmF0YXJVcGxvYWRSZXNwb25zZRJhChRDb21wbGV0ZUF2YXRhclVwbG9hZBIjLmFwaS52MS5Db21wbGV0ZUF2YXRhclVwbG9hZFJlcXVlc3QaJC5hcGkudjEuQ29tcGxldGVBdmF0YXJVcGxvYWRSZXNwb25zZRJYChFBYm9ydEF2YXRhclVwbG9hZBIgLmFwaS52MS5BYm9ydEF2YXRhclVwbG9hZFJlcXVlc3QaIS5hcGkudjEuQWJvcnRBdmF0YXJVcGxvYWRSZXNwb25zZRJPCg5DaGFuZ2VQYXNzd29yZBIdLmFwaS52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaHi5hcGkudjEuQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRJDCgpMb29rdXBVc2VyEhkuYXBpLnYxLkxvb2t1cFVzZXJSZXF1ZXN0GhouYXBpLnYxLkxvb2t1cFVzZXJSZXNwb25zZRJPCg5VcGRhdGVVc2VybmFtZRIdLmFwaS52MS5VcGRhdGVVc2VybmFtZVJlcXVlc3QaHi5hcGkudjEuVXBkYXRlVXNlcm5hbWVSZXNwb25zZRJYChFTZW5kRnJpZW5kUmVxdWVzdBIgLmFwaS52MS5TZW5kRnJpZW5kUmVxdWVzdFJlcXVlc3QaIS5hcGkudjEuU2VuZEZyaWVuZFJlcXVlc3RSZXNwb25zZRJeChNBY2NlcHRGcmllbmRSZXF1ZXN0EiIuYXBpLnYxLkFjY2VwdEZyaWVuZFJlcXVlc3RSZXF1ZXN0GiMuYXBpLnYxLkFjY2VwdEZyaWVuZFJlcXVlc3RSZXNwb25zZRJhChREZWNsaW5lRnJpZW5kUmVxdWVzdBIjLmFwaS52MS5EZWNsaW5lRnJpZW5kUmVxdWVzdFJlcXVlc3QaJC5hcGkudjEuRGVjbGluZUZyaWVuZFJlcXVlc3RSZXNwb25zZRJJCgxSZW1vdmVGcmllbmQSGy5hcGkudjEuUmVtb3ZlRnJpZW5kUmVxdWVzdBocLmFwaS52MS5SZW1vdmVGcmllbmRSZXNwb25zZRJACglCbG9ja1VzZXISGC5hcGkudjEuQmxvY2tVc2VyUmVxdWVzdBoZLmFwaS52MS5CbG9ja1VzZXJSZXNwb25zZRJGCgtVbmJsb2NrVXNlchIaLmFwaS52MS5VbmJsb2NrVXNlclJlcXVlc3QaGy5hcGkudjEuVW5ibG9ja1VzZXJSZXNwb25zZRJYChFMaXN0UmVsYXRpb25zaGlwcxIgLmFwaS52MS5MaXN0UmVsYXRpb25zaGlwc1JlcXVlc3QaIS5hcGkudjEuTGlzdFJlbGF0aW9uc2hpcHNSZXNwb25zZWIIZWRpdGlvbnNw6Ac");
+  fileDesc("ChFhcGkvdjEvdXNlci5wcm90bxIGYXBpLnYxImkKBFVzZXISDwoHdXNlcl9pZBgBIAEoAxINCgVlbWFpbBgCIAEoCRISCgpjcmVhdGVkX2F0GAMgASgDEhIKCnVwZGF0ZWRfYXQYBCABKAMSGQoRZW1haWxfdmVyaWZpZWRfYXQYBSABKAMijAEKC1VzZXJQcm9maWxlEg8KB3VzZXJfaWQYASABKAMSDAoEbmFtZRgCIAEoCRIXCg9hdmF0YXJfYXNzZXRfaWQYAyABKAMSEgoKY3JlYXRlZF9hdBgEIAEoAxISCgp1cGRhdGVkX2F0GAUgASgDEhAKCHVzZXJuYW1lGAYgASgJEgsKA2JpbxgHIAEoCSIXChVHZXRDdXJyZW50VXNlclJlcXVlc3QiWgoWR2V0Q3VycmVudFVzZXJSZXNwb25zZRIaCgR1c2VyGAEgASgLMgwuYXBpLnYxLlVzZXISJAoHcHJvZmlsZRgCIAEoCzITLmFwaS52MS5Vc2VyUHJvZmlsZSIoChVHZXRVc2VyUHJvZmlsZVJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoAyI+ChZHZXRVc2VyUHJvZmlsZVJlc3BvbnNlEiQKB3Byb2ZpbGUYASABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUiLgodQ2hlY2tFbWFpbEF2YWlsYWJpbGl0eVJlcXVlc3QSDQoFZW1haWwYASABKAkiMwoeQ2hlY2tFbWFpbEF2YWlsYWJpbGl0eVJlc3BvbnNlEhEKCWF2YWlsYWJsZRgBIAEoCCI0CiBDaGVja1VzZXJuYW1lQXZhaWxhYmlsaXR5UmVxdWVzdBIQCgh1c2VybmFtZRgBIAEoCSI2CiFDaGVja1VzZXJuYW1lQXZhaWxhYmlsaXR5UmVzcG9uc2USEQoJYXZhaWxhYmxlGAEgASgIIiMKIUdldEF2YXRhclVwbG9hZENvbnN0cmFpbnRzUmVxdWVzdCKQAQoXQXZhdGFyVXBsb2FkQ29uc3RyYWludHMSGwoTbWF4X2ZpbGVfc2l6ZV9ieXRlcxgBIAEoAxIRCgltYXhfd2lkdGgYAiABKAUSEgoKbWF4X2hlaWdodBgDIAEoBRISCgptYXhfcGl4ZWxzGAQgASgDEh0KFWFsbG93ZWRfY29udGVudF90eXBlcxgFIAMoCSJaCiJHZXRBdmF0YXJVcGxvYWRDb25zdHJhaW50c1Jlc3BvbnNlEjQKC2NvbnN0cmFpbnRzGAEgASgLMh8uYXBpLnYxLkF2YXRhclVwbG9hZENvbnN0cmFpbnRzIiMKElVwZGF0ZUVtYWlsUmVxdWVzdBINCgVlbWFpbBgBIAEoCSIxChNVcGRhdGVFbWFpbFJlc3BvbnNlEhoKBHVzZXIYASABKAsyDC5hcGkudjEuVXNlciJOChhVcGRhdGVVc2VyUHJvZmlsZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRILCgNiaW8YAiABKAkSFwoPYXZhdGFyX2Fzc2V0X2lkGAMgASgDIkEKGVVwZGF0ZVVzZXJQcm9maWxlUmVzcG9uc2USJAoHcHJvZmlsZRgBIAEoCzITLmFwaS52MS5Vc2VyUHJvZmlsZSJIChlDcmVhdGVBdmF0YXJVcGxvYWRSZXF1ZXN0EhUKDWV4cGVjdGVkX3NpemUYASABKAMSFAoMY29udGVudF90eXBlGAIgASgJIuIBChpDcmVhdGVBdmF0YXJVcGxvYWRSZXNwb25zZRIRCgl1cGxvYWRfaWQYASABKAMSFQoNcHJlc2lnbmVkX3VybBgCIAEoCRISCgpleHBpcmVzX2F0GAMgASgDEk8KD3JlcXVlc3RfaGVhZGVycxgEIAMoCzI2LmFwaS52MS5DcmVhdGVBdmF0YXJVcGxvYWRSZXNwb25zZS5SZXF1ZXN0SGVhZGVyc0VudHJ5GjUKE1JlcXVlc3RIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIwChtDb21wbGV0ZUF2YXRhclVwbG9hZFJlcXVlc3QSEQoJdXBsb2FkX2lkGAEgASgDIkQKHENvbXBsZXRlQXZhdGFyVXBsb2FkUmVzcG9uc2USJAoHcHJvZmlsZRgBIAEoCzITLmFwaS52MS5Vc2VyUHJvZmlsZSItChhBYm9ydEF2YXRhclVwbG9hZFJlcXVlc3QSEQoJdXBsb2FkX2lkGAEgASgDIhsKGUFib3J0QXZhdGFyVXBsb2FkUmVzcG9uc2UiQwoVQ2hhbmdlUGFzc3dvcmRSZXF1ZXN0EhQKDG9sZF9wYXNzd29yZBgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiJAoWQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRIKCgJvaxgBIAEoCCKXAQoMUmVsYXRpb25zaGlwEhEKCXRhcmdldF9pZBgBIAEoAxImCgR0eXBlGAIgASgOMhguYXBpLnYxLlJlbGF0aW9uc2hpcFR5cGUSEgoKY3JlYXRlZF9hdBgDIAEoAxISCgp1cGRhdGVkX2F0GAQgASgDEiQKB3Byb2ZpbGUYBSABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUiJQoRTG9va3VwVXNlclJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkiOgoSTG9va3VwVXNlclJlc3BvbnNlEiQKB3Byb2ZpbGUYASABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUiLQoYU2VuZEZyaWVuZFJlcXVlc3RSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyJHChlTZW5kRnJpZW5kUmVxdWVzdFJlc3BvbnNlEioKDHJlbGF0aW9uc2hpcBgBIAEoCzIULmFwaS52MS5SZWxhdGlvbnNoaXAiLwoaQWNjZXB0RnJpZW5kUmVxdWVzdFJlcXVlc3QSEQoJdGFyZ2V0X2lkGAEgASgDIkkKG0FjY2VwdEZyaWVuZFJlcXVlc3RSZXNwb25zZRIqCgxyZWxhdGlvbnNoaXAYASABKAsyFC5hcGkudjEuUmVsYXRpb25zaGlwIjAKG0RlY2xpbmVGcmllbmRSZXF1ZXN0UmVxdWVzdBIRCgl0YXJnZXRfaWQYASABKAMiKgocRGVjbGluZUZyaWVuZFJlcXVlc3RSZXNwb25zZRIKCgJvaxgBIAEoCCIoChNSZW1vdmVGcmllbmRSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyIiChRSZW1vdmVGcmllbmRSZXNwb25zZRIKCgJvaxgBIAEoCCIlChBCbG9ja1VzZXJSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyI/ChFCbG9ja1VzZXJSZXNwb25zZRIqCgxyZWxhdGlvbnNoaXAYASABKAsyFC5hcGkudjEuUmVsYXRpb25zaGlwIicKElVuYmxvY2tVc2VyUmVxdWVzdBIRCgl0YXJnZXRfaWQYASABKAMiIQoTVW5ibG9ja1VzZXJSZXNwb25zZRIKCgJvaxgBIAEoCCJhChhMaXN0UmVsYXRpb25zaGlwc1JlcXVlc3QSJgoEdHlwZRgBIAEoDjIYLmFwaS52MS5SZWxhdGlvbnNoaXBUeXBlEg4KBmN1cnNvchgCIAEoCRINCgVsaW1pdBgDIAEoBSJdChlMaXN0UmVsYXRpb25zaGlwc1Jlc3BvbnNlEisKDXJlbGF0aW9uc2hpcHMYASADKAsyFC5hcGkudjEuUmVsYXRpb25zaGlwEhMKC25leHRfY3Vyc29yGAIgASgJIikKFVVwZGF0ZVVzZXJuYW1lUmVxdWVzdBIQCgh1c2VybmFtZRgBIAEoCSI+ChZVcGRhdGVVc2VybmFtZVJlc3BvbnNlEiQKB3Byb2ZpbGUYASABKAsyEy5hcGkudjEuVXNlclByb2ZpbGUqsgEKEFJlbGF0aW9uc2hpcFR5cGUSIQodUkVMQVRJT05TSElQX1RZUEVfVU5TUEVDSUZJRUQQABIeChpSRUxBVElPTlNISVBfVFlQRV9PVVRHT0lORxABEh4KGlJFTEFUSU9OU0hJUF9UWVBFX0lOQ09NSU5HEAISHAoYUkVMQVRJT05TSElQX1RZUEVfRlJJRU5EEAMSHQoZUkVMQVRJT05TSElQX1RZUEVfQkxPQ0tFRBAEMu4NCgtVc2VyU2VydmljZRJPCg5HZXRDdXJyZW50VXNlchIdLmFwaS52MS5HZXRDdXJyZW50VXNlclJlcXVlc3QaHi5hcGkudjEuR2V0Q3VycmVudFVzZXJSZXNwb25zZRJPCg5HZXRVc2VyUHJvZmlsZRIdLmFwaS52MS5HZXRVc2VyUHJvZmlsZVJlcXVlc3QaHi5hcGkudjEuR2V0VXNlclByb2ZpbGVSZXNwb25zZRJnChZDaGVja0VtYWlsQXZhaWxhYmlsaXR5EiUuYXBpLnYxLkNoZWNrRW1haWxBdmFpbGFiaWxpdHlSZXF1ZXN0GiYuYXBpLnYxLkNoZWNrRW1haWxBdmFpbGFiaWxpdHlSZXNwb25zZRJwChlDaGVja1VzZXJuYW1lQXZhaWxhYmlsaXR5EiguYXBpLnYxLkNoZWNrVXNlcm5hbWVBdmFpbGFiaWxpdHlSZXF1ZXN0GikuYXBpLnYxLkNoZWNrVXNlcm5hbWVBdmFpbGFiaWxpdHlSZXNwb25zZRJzChpHZXRBdmF0YXJVcGxvYWRDb25zdHJhaW50cxIpLmFwaS52MS5HZXRBdmF0YXJVcGxvYWRDb25zdHJhaW50c1JlcXVlc3QaKi5hcGkudjEuR2V0QXZhdGFyVXBsb2FkQ29uc3RyYWludHNSZXNwb25zZRJGCgtVcGRhdGVFbWFpbBIaLmFwaS52MS5VcGRhdGVFbWFpbFJlcXVlc3QaGy5hcGkudjEuVXBkYXRlRW1haWxSZXNwb25zZRJYChFVcGRhdGVVc2VyUHJvZmlsZRIgLmFwaS52MS5VcGRhdGVVc2VyUHJvZmlsZVJlcXVlc3QaIS5hcGkudjEuVXBkYXRlVXNlclByb2ZpbGVSZXNwb25zZRJbChJDcmVhdGVBdmF0YXJVcGxvYWQSIS5hcGkudjEuQ3JlYXRlQXZhdGFyVXBsb2FkUmVxdWVzdBoiLmFwaS52MS5DcmVhdGVBdmF0YXJVcGxvYWRSZXNwb25zZRJhChRDb21wbGV0ZUF2YXRhclVwbG9hZBIjLmFwaS52MS5Db21wbGV0ZUF2YXRhclVwbG9hZFJlcXVlc3QaJC5hcGkudjEuQ29tcGxldGVBdmF0YXJVcGxvYWRSZXNwb25zZRJYChFBYm9ydEF2YXRhclVwbG9hZBIgLmFwaS52MS5BYm9ydEF2YXRhclVwbG9hZFJlcXVlc3QaIS5hcGkudjEuQWJvcnRBdmF0YXJVcGxvYWRSZXNwb25zZRJPCg5DaGFuZ2VQYXNzd29yZBIdLmFwaS52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaHi5hcGkudjEuQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRJDCgpMb29rdXBVc2VyEhkuYXBpLnYxLkxvb2t1cFVzZXJSZXF1ZXN0GhouYXBpLnYxLkxvb2t1cFVzZXJSZXNwb25zZRJPCg5VcGRhdGVVc2VybmFtZRIdLmFwaS52MS5VcGRhdGVVc2VybmFtZVJlcXVlc3QaHi5hcGkudjEuVXBkYXRlVXNlcm5hbWVSZXNwb25zZRJYChFTZW5kRnJpZW5kUmVxdWVzdBIgLmFwaS52MS5TZW5kRnJpZW5kUmVxdWVzdFJlcXVlc3QaIS5hcGkudjEuU2VuZEZyaWVuZFJlcXVlc3RSZXNwb25zZRJeChNBY2NlcHRGcmllbmRSZXF1ZXN0EiIuYXBpLnYxLkFjY2VwdEZyaWVuZFJlcXVlc3RSZXF1ZXN0GiMuYXBpLnYxLkFjY2VwdEZyaWVuZFJlcXVlc3RSZXNwb25zZRJhChREZWNsaW5lRnJpZW5kUmVxdWVzdBIjLmFwaS52MS5EZWNsaW5lRnJpZW5kUmVxdWVzdFJlcXVlc3QaJC5hcGkudjEuRGVjbGluZUZyaWVuZFJlcXVlc3RSZXNwb25zZRJJCgxSZW1vdmVGcmllbmQSGy5hcGkudjEuUmVtb3ZlRnJpZW5kUmVxdWVzdBocLmFwaS52MS5SZW1vdmVGcmllbmRSZXNwb25zZRJACglCbG9ja1VzZXISGC5hcGkudjEuQmxvY2tVc2VyUmVxdWVzdBoZLmFwaS52MS5CbG9ja1VzZXJSZXNwb25zZRJGCgtVbmJsb2NrVXNlchIaLmFwaS52MS5VbmJsb2NrVXNlclJlcXVlc3QaGy5hcGkudjEuVW5ibG9ja1VzZXJSZXNwb25zZRJYChFMaXN0UmVsYXRpb25zaGlwcxIgLmFwaS52MS5MaXN0UmVsYXRpb25zaGlwc1JlcXVlc3QaIS5hcGkudjEuTGlzdFJlbGF0aW9uc2hpcHNSZXNwb25zZWIIZWRpdGlvbnNw6Ac");
 
 /**
  * User contains private account fields and is only returned to the account owner.
@@ -95,6 +95,14 @@ export type UserProfile = Message<"api.v1.UserProfile"> & {
    * @generated from field: string username = 6;
    */
   username: string;
+
+  /**
+   * Public about text. Empty means the user has no bio. Limited to 190 Unicode
+   * code points.
+   *
+   * @generated from field: string bio = 7;
+   */
+  bio: string;
 };
 
 /**
@@ -210,6 +218,117 @@ export const CheckEmailAvailabilityResponseSchema: GenMessage<CheckEmailAvailabi
   messageDesc(file_api_v1_user, 7);
 
 /**
+ * @generated from message api.v1.CheckUsernameAvailabilityRequest
+ */
+export type CheckUsernameAvailabilityRequest = Message<"api.v1.CheckUsernameAvailabilityRequest"> & {
+  /**
+   * @generated from field: string username = 1;
+   */
+  username: string;
+};
+
+/**
+ * Describes the message api.v1.CheckUsernameAvailabilityRequest.
+ * Use `create(CheckUsernameAvailabilityRequestSchema)` to create a new message.
+ */
+export const CheckUsernameAvailabilityRequestSchema: GenMessage<CheckUsernameAvailabilityRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 8);
+
+/**
+ * @generated from message api.v1.CheckUsernameAvailabilityResponse
+ */
+export type CheckUsernameAvailabilityResponse = Message<"api.v1.CheckUsernameAvailabilityResponse"> & {
+  /**
+   * @generated from field: bool available = 1;
+   */
+  available: boolean;
+};
+
+/**
+ * Describes the message api.v1.CheckUsernameAvailabilityResponse.
+ * Use `create(CheckUsernameAvailabilityResponseSchema)` to create a new message.
+ */
+export const CheckUsernameAvailabilityResponseSchema: GenMessage<CheckUsernameAvailabilityResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 9);
+
+/**
+ * @generated from message api.v1.GetAvatarUploadConstraintsRequest
+ */
+export type GetAvatarUploadConstraintsRequest = Message<"api.v1.GetAvatarUploadConstraintsRequest"> & {
+};
+
+/**
+ * Describes the message api.v1.GetAvatarUploadConstraintsRequest.
+ * Use `create(GetAvatarUploadConstraintsRequestSchema)` to create a new message.
+ */
+export const GetAvatarUploadConstraintsRequestSchema: GenMessage<GetAvatarUploadConstraintsRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 10);
+
+/**
+ * @generated from message api.v1.AvatarUploadConstraints
+ */
+export type AvatarUploadConstraints = Message<"api.v1.AvatarUploadConstraints"> & {
+  /**
+   * Maximum accepted avatar file size in bytes.
+   *
+   * @generated from field: int64 max_file_size_bytes = 1;
+   */
+  maxFileSizeBytes: bigint;
+
+  /**
+   * Maximum accepted width in pixels.
+   *
+   * @generated from field: int32 max_width = 2;
+   */
+  maxWidth: number;
+
+  /**
+   * Maximum accepted height in pixels.
+   *
+   * @generated from field: int32 max_height = 3;
+   */
+  maxHeight: number;
+
+  /**
+   * Maximum accepted width * height product.
+   *
+   * @generated from field: int64 max_pixels = 4;
+   */
+  maxPixels: bigint;
+
+  /**
+   * Canonical lowercase MIME types accepted for avatar uploads.
+   *
+   * @generated from field: repeated string allowed_content_types = 5;
+   */
+  allowedContentTypes: string[];
+};
+
+/**
+ * Describes the message api.v1.AvatarUploadConstraints.
+ * Use `create(AvatarUploadConstraintsSchema)` to create a new message.
+ */
+export const AvatarUploadConstraintsSchema: GenMessage<AvatarUploadConstraints> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 11);
+
+/**
+ * @generated from message api.v1.GetAvatarUploadConstraintsResponse
+ */
+export type GetAvatarUploadConstraintsResponse = Message<"api.v1.GetAvatarUploadConstraintsResponse"> & {
+  /**
+   * @generated from field: api.v1.AvatarUploadConstraints constraints = 1;
+   */
+  constraints?: AvatarUploadConstraints | undefined;
+};
+
+/**
+ * Describes the message api.v1.GetAvatarUploadConstraintsResponse.
+ * Use `create(GetAvatarUploadConstraintsResponseSchema)` to create a new message.
+ */
+export const GetAvatarUploadConstraintsResponseSchema: GenMessage<GetAvatarUploadConstraintsResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 12);
+
+/**
  * @generated from message api.v1.UpdateEmailRequest
  */
 export type UpdateEmailRequest = Message<"api.v1.UpdateEmailRequest"> & {
@@ -224,7 +343,7 @@ export type UpdateEmailRequest = Message<"api.v1.UpdateEmailRequest"> & {
  * Use `create(UpdateEmailRequestSchema)` to create a new message.
  */
 export const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 8);
+  messageDesc(file_api_v1_user, 13);
 
 /**
  * @generated from message api.v1.UpdateEmailResponse
@@ -241,18 +360,32 @@ export type UpdateEmailResponse = Message<"api.v1.UpdateEmailResponse"> & {
  * Use `create(UpdateEmailResponseSchema)` to create a new message.
  */
 export const UpdateEmailResponseSchema: GenMessage<UpdateEmailResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 9);
+  messageDesc(file_api_v1_user, 14);
 
 /**
  * @generated from message api.v1.UpdateUserProfileRequest
  */
 export type UpdateUserProfileRequest = Message<"api.v1.UpdateUserProfileRequest"> & {
   /**
-   * Optional replacement field. When absent, the current name is preserved.
+   * Optional replacement fields. Omitted fields keep their stored values.
+   * An explicitly present empty bio clears the bio. An explicitly present
+   * avatar_asset_id of 0 clears the avatar; a non-zero value mounts an owned
+   * user-avatar Media asset (completing the upload when still unpublished).
+   * At least one mutable field must be present.
    *
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * @generated from field: string bio = 2;
+   */
+  bio: string;
+
+  /**
+   * @generated from field: int64 avatar_asset_id = 3;
+   */
+  avatarAssetId: bigint;
 };
 
 /**
@@ -260,7 +393,7 @@ export type UpdateUserProfileRequest = Message<"api.v1.UpdateUserProfileRequest"
  * Use `create(UpdateUserProfileRequestSchema)` to create a new message.
  */
 export const UpdateUserProfileRequestSchema: GenMessage<UpdateUserProfileRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 10);
+  messageDesc(file_api_v1_user, 15);
 
 /**
  * @generated from message api.v1.UpdateUserProfileResponse
@@ -277,7 +410,7 @@ export type UpdateUserProfileResponse = Message<"api.v1.UpdateUserProfileRespons
  * Use `create(UpdateUserProfileResponseSchema)` to create a new message.
  */
 export const UpdateUserProfileResponseSchema: GenMessage<UpdateUserProfileResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 11);
+  messageDesc(file_api_v1_user, 16);
 
 /**
  * CreateAvatarUploadRequest declares the exact image the client will upload.
@@ -306,7 +439,7 @@ export type CreateAvatarUploadRequest = Message<"api.v1.CreateAvatarUploadReques
  * Use `create(CreateAvatarUploadRequestSchema)` to create a new message.
  */
 export const CreateAvatarUploadRequestSchema: GenMessage<CreateAvatarUploadRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 12);
+  messageDesc(file_api_v1_user, 17);
 
 /**
  * CreateAvatarUploadResponse contains a one-shot direct-upload contract.
@@ -315,7 +448,8 @@ export const CreateAvatarUploadRequestSchema: GenMessage<CreateAvatarUploadReque
  */
 export type CreateAvatarUploadResponse = Message<"api.v1.CreateAvatarUploadResponse"> & {
   /**
-   * Opaque upload identifier used by CompleteAvatarUpload or AbortAvatarUpload.
+   * Opaque upload identifier used by CompleteAvatarUpload, AbortAvatarUpload,
+   * or UpdateUserProfile.avatar_asset_id.
    *
    * @generated from field: int64 upload_id = 1;
    */
@@ -349,7 +483,7 @@ export type CreateAvatarUploadResponse = Message<"api.v1.CreateAvatarUploadRespo
  * Use `create(CreateAvatarUploadResponseSchema)` to create a new message.
  */
 export const CreateAvatarUploadResponseSchema: GenMessage<CreateAvatarUploadResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 13);
+  messageDesc(file_api_v1_user, 18);
 
 /**
  * CompleteAvatarUploadRequest selects a previously created avatar upload.
@@ -368,7 +502,7 @@ export type CompleteAvatarUploadRequest = Message<"api.v1.CompleteAvatarUploadRe
  * Use `create(CompleteAvatarUploadRequestSchema)` to create a new message.
  */
 export const CompleteAvatarUploadRequestSchema: GenMessage<CompleteAvatarUploadRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 14);
+  messageDesc(file_api_v1_user, 19);
 
 /**
  * CompleteAvatarUploadResponse returns the profile after its avatar reference
@@ -388,7 +522,7 @@ export type CompleteAvatarUploadResponse = Message<"api.v1.CompleteAvatarUploadR
  * Use `create(CompleteAvatarUploadResponseSchema)` to create a new message.
  */
 export const CompleteAvatarUploadResponseSchema: GenMessage<CompleteAvatarUploadResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 15);
+  messageDesc(file_api_v1_user, 20);
 
 /**
  * AbortAvatarUploadRequest selects an unpublished avatar upload to cancel.
@@ -407,7 +541,7 @@ export type AbortAvatarUploadRequest = Message<"api.v1.AbortAvatarUploadRequest"
  * Use `create(AbortAvatarUploadRequestSchema)` to create a new message.
  */
 export const AbortAvatarUploadRequestSchema: GenMessage<AbortAvatarUploadRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 16);
+  messageDesc(file_api_v1_user, 21);
 
 /**
  * AbortAvatarUploadResponse is empty because abort has no mutable result.
@@ -422,7 +556,7 @@ export type AbortAvatarUploadResponse = Message<"api.v1.AbortAvatarUploadRespons
  * Use `create(AbortAvatarUploadResponseSchema)` to create a new message.
  */
 export const AbortAvatarUploadResponseSchema: GenMessage<AbortAvatarUploadResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 17);
+  messageDesc(file_api_v1_user, 22);
 
 /**
  * @generated from message api.v1.ChangePasswordRequest
@@ -444,7 +578,7 @@ export type ChangePasswordRequest = Message<"api.v1.ChangePasswordRequest"> & {
  * Use `create(ChangePasswordRequestSchema)` to create a new message.
  */
 export const ChangePasswordRequestSchema: GenMessage<ChangePasswordRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 18);
+  messageDesc(file_api_v1_user, 23);
 
 /**
  * @generated from message api.v1.ChangePasswordResponse
@@ -461,7 +595,7 @@ export type ChangePasswordResponse = Message<"api.v1.ChangePasswordResponse"> & 
  * Use `create(ChangePasswordResponseSchema)` to create a new message.
  */
 export const ChangePasswordResponseSchema: GenMessage<ChangePasswordResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 19);
+  messageDesc(file_api_v1_user, 24);
 
 /**
  * Relationship is the caller's view of their link to another user.
@@ -503,7 +637,7 @@ export type Relationship = Message<"api.v1.Relationship"> & {
  * Use `create(RelationshipSchema)` to create a new message.
  */
 export const RelationshipSchema: GenMessage<Relationship> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 20);
+  messageDesc(file_api_v1_user, 25);
 
 /**
  * @generated from message api.v1.LookupUserRequest
@@ -520,7 +654,7 @@ export type LookupUserRequest = Message<"api.v1.LookupUserRequest"> & {
  * Use `create(LookupUserRequestSchema)` to create a new message.
  */
 export const LookupUserRequestSchema: GenMessage<LookupUserRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 21);
+  messageDesc(file_api_v1_user, 26);
 
 /**
  * @generated from message api.v1.LookupUserResponse
@@ -537,7 +671,7 @@ export type LookupUserResponse = Message<"api.v1.LookupUserResponse"> & {
  * Use `create(LookupUserResponseSchema)` to create a new message.
  */
 export const LookupUserResponseSchema: GenMessage<LookupUserResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 22);
+  messageDesc(file_api_v1_user, 27);
 
 /**
  * @generated from message api.v1.SendFriendRequestRequest
@@ -554,7 +688,7 @@ export type SendFriendRequestRequest = Message<"api.v1.SendFriendRequestRequest"
  * Use `create(SendFriendRequestRequestSchema)` to create a new message.
  */
 export const SendFriendRequestRequestSchema: GenMessage<SendFriendRequestRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 23);
+  messageDesc(file_api_v1_user, 28);
 
 /**
  * @generated from message api.v1.SendFriendRequestResponse
@@ -574,7 +708,7 @@ export type SendFriendRequestResponse = Message<"api.v1.SendFriendRequestRespons
  * Use `create(SendFriendRequestResponseSchema)` to create a new message.
  */
 export const SendFriendRequestResponseSchema: GenMessage<SendFriendRequestResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 24);
+  messageDesc(file_api_v1_user, 29);
 
 /**
  * @generated from message api.v1.AcceptFriendRequestRequest
@@ -591,7 +725,7 @@ export type AcceptFriendRequestRequest = Message<"api.v1.AcceptFriendRequestRequ
  * Use `create(AcceptFriendRequestRequestSchema)` to create a new message.
  */
 export const AcceptFriendRequestRequestSchema: GenMessage<AcceptFriendRequestRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 25);
+  messageDesc(file_api_v1_user, 30);
 
 /**
  * @generated from message api.v1.AcceptFriendRequestResponse
@@ -608,7 +742,7 @@ export type AcceptFriendRequestResponse = Message<"api.v1.AcceptFriendRequestRes
  * Use `create(AcceptFriendRequestResponseSchema)` to create a new message.
  */
 export const AcceptFriendRequestResponseSchema: GenMessage<AcceptFriendRequestResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 26);
+  messageDesc(file_api_v1_user, 31);
 
 /**
  * @generated from message api.v1.DeclineFriendRequestRequest
@@ -625,7 +759,7 @@ export type DeclineFriendRequestRequest = Message<"api.v1.DeclineFriendRequestRe
  * Use `create(DeclineFriendRequestRequestSchema)` to create a new message.
  */
 export const DeclineFriendRequestRequestSchema: GenMessage<DeclineFriendRequestRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 27);
+  messageDesc(file_api_v1_user, 32);
 
 /**
  * @generated from message api.v1.DeclineFriendRequestResponse
@@ -642,7 +776,7 @@ export type DeclineFriendRequestResponse = Message<"api.v1.DeclineFriendRequestR
  * Use `create(DeclineFriendRequestResponseSchema)` to create a new message.
  */
 export const DeclineFriendRequestResponseSchema: GenMessage<DeclineFriendRequestResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 28);
+  messageDesc(file_api_v1_user, 33);
 
 /**
  * @generated from message api.v1.RemoveFriendRequest
@@ -659,7 +793,7 @@ export type RemoveFriendRequest = Message<"api.v1.RemoveFriendRequest"> & {
  * Use `create(RemoveFriendRequestSchema)` to create a new message.
  */
 export const RemoveFriendRequestSchema: GenMessage<RemoveFriendRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 29);
+  messageDesc(file_api_v1_user, 34);
 
 /**
  * @generated from message api.v1.RemoveFriendResponse
@@ -676,7 +810,7 @@ export type RemoveFriendResponse = Message<"api.v1.RemoveFriendResponse"> & {
  * Use `create(RemoveFriendResponseSchema)` to create a new message.
  */
 export const RemoveFriendResponseSchema: GenMessage<RemoveFriendResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 30);
+  messageDesc(file_api_v1_user, 35);
 
 /**
  * @generated from message api.v1.BlockUserRequest
@@ -693,7 +827,7 @@ export type BlockUserRequest = Message<"api.v1.BlockUserRequest"> & {
  * Use `create(BlockUserRequestSchema)` to create a new message.
  */
 export const BlockUserRequestSchema: GenMessage<BlockUserRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 31);
+  messageDesc(file_api_v1_user, 36);
 
 /**
  * @generated from message api.v1.BlockUserResponse
@@ -710,7 +844,7 @@ export type BlockUserResponse = Message<"api.v1.BlockUserResponse"> & {
  * Use `create(BlockUserResponseSchema)` to create a new message.
  */
 export const BlockUserResponseSchema: GenMessage<BlockUserResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 32);
+  messageDesc(file_api_v1_user, 37);
 
 /**
  * @generated from message api.v1.UnblockUserRequest
@@ -727,7 +861,7 @@ export type UnblockUserRequest = Message<"api.v1.UnblockUserRequest"> & {
  * Use `create(UnblockUserRequestSchema)` to create a new message.
  */
 export const UnblockUserRequestSchema: GenMessage<UnblockUserRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 33);
+  messageDesc(file_api_v1_user, 38);
 
 /**
  * @generated from message api.v1.UnblockUserResponse
@@ -744,7 +878,7 @@ export type UnblockUserResponse = Message<"api.v1.UnblockUserResponse"> & {
  * Use `create(UnblockUserResponseSchema)` to create a new message.
  */
 export const UnblockUserResponseSchema: GenMessage<UnblockUserResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 34);
+  messageDesc(file_api_v1_user, 39);
 
 /**
  * @generated from message api.v1.ListRelationshipsRequest
@@ -777,7 +911,7 @@ export type ListRelationshipsRequest = Message<"api.v1.ListRelationshipsRequest"
  * Use `create(ListRelationshipsRequestSchema)` to create a new message.
  */
 export const ListRelationshipsRequestSchema: GenMessage<ListRelationshipsRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 35);
+  messageDesc(file_api_v1_user, 40);
 
 /**
  * @generated from message api.v1.ListRelationshipsResponse
@@ -804,7 +938,7 @@ export type ListRelationshipsResponse = Message<"api.v1.ListRelationshipsRespons
  * Use `create(ListRelationshipsResponseSchema)` to create a new message.
  */
 export const ListRelationshipsResponseSchema: GenMessage<ListRelationshipsResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 36);
+  messageDesc(file_api_v1_user, 41);
 
 /**
  * @generated from message api.v1.UpdateUsernameRequest
@@ -821,7 +955,7 @@ export type UpdateUsernameRequest = Message<"api.v1.UpdateUsernameRequest"> & {
  * Use `create(UpdateUsernameRequestSchema)` to create a new message.
  */
 export const UpdateUsernameRequestSchema: GenMessage<UpdateUsernameRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 37);
+  messageDesc(file_api_v1_user, 42);
 
 /**
  * @generated from message api.v1.UpdateUsernameResponse
@@ -838,7 +972,7 @@ export type UpdateUsernameResponse = Message<"api.v1.UpdateUsernameResponse"> & 
  * Use `create(UpdateUsernameResponseSchema)` to create a new message.
  */
 export const UpdateUsernameResponseSchema: GenMessage<UpdateUsernameResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user, 38);
+  messageDesc(file_api_v1_user, 43);
 
 /**
  * RelationshipType mirrors user.v1.RelationshipType.
@@ -917,6 +1051,29 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof CheckEmailAvailabilityRequestSchema;
     output: typeof CheckEmailAvailabilityResponseSchema;
+  },
+  /**
+   * CheckUsernameAvailability supports registration and profile flows without
+   * requiring authentication. Invalid usernames are rejected; taken handles
+   * return available=false.
+   *
+   * @generated from rpc api.v1.UserService.CheckUsernameAvailability
+   */
+  checkUsernameAvailability: {
+    methodKind: "unary";
+    input: typeof CheckUsernameAvailabilityRequestSchema;
+    output: typeof CheckUsernameAvailabilityResponseSchema;
+  },
+  /**
+   * GetAvatarUploadConstraints returns the current avatar direct-upload limits
+   * without requiring authentication.
+   *
+   * @generated from rpc api.v1.UserService.GetAvatarUploadConstraints
+   */
+  getAvatarUploadConstraints: {
+    methodKind: "unary";
+    input: typeof GetAvatarUploadConstraintsRequestSchema;
+    output: typeof GetAvatarUploadConstraintsResponseSchema;
   },
   /**
    * UpdateEmail changes the bearer token owner's email address.

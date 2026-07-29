@@ -130,7 +130,9 @@ describe('syncGatewayDispatch read states', () => {
       },
     })
 
-    expect(queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']).toEqual({
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43'],
+    ).toEqual({
       channelId: '43',
       lastMessageId: '200',
       lastReadMessageId: '100',

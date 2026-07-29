@@ -2,11 +2,7 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getApiErrorMessage } from '@/api/errors'
-import {
-  GuildChannelType,
-  updateGuildChannel,
-  type UpdateGuildChannelDetails,
-} from '@/api/guild'
+import { GuildChannelType, updateGuildChannel, type UpdateGuildChannelDetails } from '@/api/guild'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { TextInput } from '@/components/ui/text-input'
@@ -168,13 +164,14 @@ export function ChannelOverviewSettings({ channel }: { channel: GuildChannelSumm
               Reset
             </Button>
             <form.Subscribe
-              selector={(state) => [state.isSubmitting, state.values.name, state.values.topic] as const}
+              selector={(state) =>
+                [state.isSubmitting, state.values.name, state.values.topic] as const
+              }
             >
               {([isSubmitting, name, topic]) => (
                 <Button
                   disabled={
-                    name.trim() === channel.name &&
-                    (isCategory || topic.trim() === channel.topic)
+                    name.trim() === channel.name && (isCategory || topic.trim() === channel.topic)
                   }
                   loading={updateMutation.isPending || isSubmitting}
                   type="submit"

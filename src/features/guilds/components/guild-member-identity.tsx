@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { Badge } from '@/components/ui/badge'
+import { PresenceIndicator } from '@/features/presence/components/presence-indicator'
+import { useUserPresence } from '@/features/presence/presence-queries'
 import { userProfileQueryOptions } from '@/features/users/user-queries'
 
 import type { GuildMemberSummary } from '@/features/guilds/guild-queries'
@@ -16,6 +18,7 @@ export function GuildMemberIdentity({ guildOwnerId, member }: GuildMemberIdentit
     enabled: !member.profile,
   })
   const profile = member.profile ?? profileQuery.data
+  const presence = useUserPresence(member.userId)
   const displayName =
     member.nickname || profile?.name || profile?.username || `User ${member.userId}`
   const profileLabel = profile
@@ -28,11 +31,14 @@ export function GuildMemberIdentity({ guildOwnerId, member }: GuildMemberIdentit
 
   return (
     <>
-      <span
-        aria-hidden="true"
-        className="grid size-10 shrink-0 place-items-center rounded-control bg-surface-hover text-xs font-bold text-muted"
-      >
-        {getInitials(displayName)}
+      <span className="relative shrink-0">
+        <span
+          aria-hidden="true"
+          className="grid size-10 place-items-center rounded-control bg-surface-hover text-xs font-bold text-muted"
+        >
+          {getInitials(displayName)}
+        </span>
+        {presence ? <PresenceIndicator status={presence.status} /> : null}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">

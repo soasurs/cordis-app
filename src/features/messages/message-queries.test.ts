@@ -35,6 +35,7 @@ const older: ChannelMessageSummary = {
   attachments: [],
   author: {
     avatarAssetId: '0',
+    bio: '',
     createdAt: 1_000,
     name: 'Maya',
     updatedAt: 1_000,
@@ -56,6 +57,7 @@ const newer: ChannelMessageSummary = {
   attachments: [],
   author: {
     avatarAssetId: '0',
+    bio: '',
     createdAt: 1_000,
     name: 'Alex',
     updatedAt: 1_000,
@@ -163,9 +165,7 @@ describe('message query helpers', () => {
       updatedAt: 4_000,
     })
 
-    expect(getMessages(queryClient).find((item) => item.id === '102')?.content).toBe(
-      'Hello edited',
-    )
+    expect(getMessages(queryClient).find((item) => item.id === '102')?.content).toBe('Hello edited')
 
     upsertChannelMessageFromApi(queryClient, {
       ...newer,
@@ -173,9 +173,7 @@ describe('message query helpers', () => {
       revision: 1,
     })
 
-    expect(getMessages(queryClient).find((item) => item.id === '102')?.content).toBe(
-      'Hello edited',
-    )
+    expect(getMessages(queryClient).find((item) => item.id === '102')?.content).toBe('Hello edited')
   })
 
   it('removes messages from the infinite cache', () => {
@@ -194,6 +192,7 @@ describe('message query helpers', () => {
       attachments: [],
       author: {
         avatar_asset_id: '0',
+        bio: '',
         created_at: 1_000,
         name: 'Alex',
         updated_at: 1_000,
@@ -223,6 +222,7 @@ describe('message query helpers', () => {
       attachments: [],
       author: {
         avatar_asset_id: '0',
+        bio: '',
         created_at: 1_000,
         name: 'Alex',
         updated_at: 1_000,
@@ -263,6 +263,7 @@ describe('message query helpers', () => {
       attachments: [],
       author: {
         avatar_asset_id: '0',
+        bio: '',
         created_at: 1_000,
         name: 'Alex',
         updated_at: 1_000,
@@ -303,6 +304,7 @@ describe('message query helpers', () => {
       ],
       author: {
         avatar_asset_id: '0',
+        bio: '',
         created_at: 1_000,
         name: 'Alex',
         updated_at: 1_000,

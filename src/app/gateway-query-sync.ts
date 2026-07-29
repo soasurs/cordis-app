@@ -29,6 +29,11 @@ import {
   setChannelLastMessageId,
   upsertChannelReadStateFromGateway,
 } from '@/features/messages/read-state-queries'
+import {
+  applyPresenceFromGateway,
+  clearPresences,
+  replacePresencesFromReady,
+} from '@/features/presence/presence-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
@@ -38,6 +43,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
     queryClient.setQueryData<GatewayReadyData>(gatewayReadyQueryKey, dispatch.data)
     replaceGuildsFromReady(queryClient, dispatch.data)
     replaceChannelReadStatesFromReady(queryClient, dispatch.data.read_states)
+    replacePresencesFromReady(queryClient, dispatch.data.presences ?? [])
     return
   }
 
@@ -141,6 +147,11 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'message.read.updated')) {
     upsertChannelReadStateFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'presence.updated')) {
+    applyPresenceFromGateway(queryClient, dispatch.data)
   }
 }
 
@@ -149,4 +160,5 @@ export function clearGatewayQueries(queryClient: QueryClient) {
   queryClient.removeQueries({ queryKey: guildsQueryKey })
   clearChannelMessageQueries(queryClient)
   clearChannelReadStateQueries(queryClient)
+  clearPresences(queryClient)
 }

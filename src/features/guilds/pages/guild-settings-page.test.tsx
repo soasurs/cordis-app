@@ -81,6 +81,12 @@ const userApi = vi.hoisted(() => ({
 
 vi.mock('@/api/user', () => userApi)
 
+const presenceApi = vi.hoisted(() => ({
+  resolveUsersPresence: vi.fn(),
+}))
+
+vi.mock('@/api/presence', () => presenceApi)
+
 const guild: GuildSummary = {
   createdAt: 1_000,
   description: 'A community for thoughtful tools.',
@@ -102,11 +108,21 @@ beforeEach(() => {
   guildApi.listGuildRoles.mockResolvedValue([])
   userApi.getUserProfile.mockImplementation(async (userId: string) => ({
     avatarAssetId: '0',
+    bio: '',
     createdAt: 500,
     name: userId === '7' ? 'Alex Chen' : 'Sam Rivera',
     updatedAt: 1_000,
     userId,
     username: userId === '7' ? 'alex_chen' : 'sam_rivera',
+  }))
+  presenceApi.resolveUsersPresence.mockImplementation(async (userIds: string[]) => ({
+    presences: userIds.map((userId) => ({
+      lastSeenAt: 1_000,
+      status: 'online',
+      userId,
+      version: 1n,
+    })),
+    requestedUserIds: userIds,
   }))
 })
 
@@ -508,6 +524,7 @@ describe('GuildSettingsPage', () => {
           nickname: '',
           profile: {
             avatarAssetId: '0',
+            bio: '',
             createdAt: 500,
             name: 'Alex Chen',
             updatedAt: 1_000,
@@ -525,6 +542,8 @@ describe('GuildSettingsPage', () => {
     expect(await screen.findByText('Alex Chen')).toBeInTheDocument()
     expect(screen.getByText('@alex_chen')).toBeInTheDocument()
     expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: 'online presence' })).toBeInTheDocument()
+    expect(presenceApi.resolveUsersPresence).toHaveBeenCalledWith(['7'])
     expect(userApi.getUserProfile).not.toHaveBeenCalled()
   })
 
@@ -590,9 +609,7 @@ describe('GuildSettingsPage', () => {
     expect(await within(editor).findByText('Sam Rivera')).toBeInTheDocument()
     expect(guildApi.listGuildRoleMembers).toHaveBeenCalledTimes(1)
 
-    await user.click(
-      within(editor).getByRole('button', { name: 'Remove Moderators from user 8' }),
-    )
+    await user.click(within(editor).getByRole('button', { name: 'Remove Moderators from user 8' }))
     await waitFor(() =>
       expect(guildApi.removeGuildRoleMembers).toHaveBeenCalledWith('42', '52', ['8']),
     )

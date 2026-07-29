@@ -1,7 +1,9 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
 import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
+import { useResolvePresenceBatches } from '@/features/presence/presence-queries'
 
 import {
   guildMembersInfiniteQueryOptions,
@@ -18,6 +20,11 @@ import {
 export function GuildMembersSettings({ guild }: { guild: GuildSummary }) {
   const membersQuery = useInfiniteQuery(guildMembersInfiniteQueryOptions(guild.id))
   const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? []
+  const presenceBatches = useMemo(
+    () => membersQuery.data?.pages.map((page) => page.members.map((member) => member.userId)) ?? [],
+    [membersQuery.data?.pages],
+  )
+  useResolvePresenceBatches(presenceBatches)
 
   return (
     <>

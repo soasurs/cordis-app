@@ -33,6 +33,7 @@ const sampleMessage: ChannelMessageSummary = {
   attachments: [],
   author: {
     avatarAssetId: '0',
+    bio: '',
     createdAt: 1_000,
     name: 'Alex Chen',
     updatedAt: 1_000,
@@ -176,7 +177,10 @@ describe('MessageComposer', () => {
 
     const input = container.querySelector('input[type="file"]')
     expect(input).toBeTruthy()
-    await user.upload(input as HTMLInputElement, new File(['abcd'], 'shot.png', { type: 'image/png' }))
+    await user.upload(
+      input as HTMLInputElement,
+      new File(['abcd'], 'shot.png', { type: 'image/png' }),
+    )
 
     expect(await screen.findByRole('img', { name: 'shot.png' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Send' }))
@@ -553,7 +557,10 @@ describe('MessageItem', () => {
 
     const input = container.querySelector('input[type="file"]')
     expect(input).toBeTruthy()
-    await user.upload(input as HTMLInputElement, new File(['pdf'], 'new.pdf', { type: 'application/pdf' }))
+    await user.upload(
+      input as HTMLInputElement,
+      new File(['pdf'], 'new.pdf', { type: 'application/pdf' }),
+    )
     await screen.findByText('new.pdf')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 

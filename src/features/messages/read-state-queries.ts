@@ -1,9 +1,6 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 
-import {
-  getReadStatesForGuild,
-  type ChannelReadStateSummary,
-} from '@/api/message'
+import { getReadStatesForGuild, type ChannelReadStateSummary } from '@/api/message'
 import type { MessageReadUpdatedPayload } from '@/gateway/protocol/payloads/message'
 import type { ReadyReadState } from '@/gateway/protocol/payloads/ready'
 
@@ -49,10 +46,7 @@ export function mergeChannelReadStates(
   })
 }
 
-export function upsertChannelReadState(
-  queryClient: QueryClient,
-  state: ChannelReadStateSummary,
-) {
+export function upsertChannelReadState(queryClient: QueryClient, state: ChannelReadStateSummary) {
   queryClient.setQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey(), (current = {}) => ({
     ...current,
     [state.channelId]: state,

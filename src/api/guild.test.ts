@@ -888,19 +888,19 @@ describe('guild API', () => {
       limit: 50,
     })
 
-    await expect(
-      createGuildInvite('42', { expiresInMs: 86_400_000, maxUses: 5 }),
-    ).resolves.toEqual({
-      code: 'cordis-new',
-      createdAt: 2_000,
-      creator: undefined,
-      creatorUserId: '7',
-      expiresAt: 3_000,
-      guildId: '42',
-      id: '91',
-      maxUses: 5,
-      uses: 0,
-    })
+    await expect(createGuildInvite('42', { expiresInMs: 86_400_000, maxUses: 5 })).resolves.toEqual(
+      {
+        code: 'cordis-new',
+        createdAt: 2_000,
+        creator: undefined,
+        creatorUserId: '7',
+        expiresAt: 3_000,
+        guildId: '42',
+        id: '91',
+        maxUses: 5,
+        uses: 0,
+      },
+    )
     expect(guildClient.createGuildInvite).toHaveBeenCalledWith({
       expiresInMs: 86_400_000n,
       guildId: 42n,

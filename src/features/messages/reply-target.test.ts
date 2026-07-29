@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  toMessageContentPreview,
-  toMessageReplyTarget,
-} from '@/features/messages/reply-target'
+import { toMessageContentPreview, toMessageReplyTarget } from '@/features/messages/reply-target'
 
 describe('reply target helpers', () => {
   it('builds a reply target from a message', () => {

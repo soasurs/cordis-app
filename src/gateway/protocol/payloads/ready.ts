@@ -69,6 +69,13 @@ export interface ReadyReadState {
   mention_count: number
 }
 
+export interface ReadyPresence {
+  user_id: string
+  status: number
+  last_seen_at: number
+  version: string
+}
+
 export interface GatewayReadyData {
   user_id: string
   auth_session_id: string
@@ -78,6 +85,7 @@ export interface GatewayReadyData {
   guilds: ReadyGuild[]
   dm_channels: ReadyDmChannel[]
   read_states: ReadyReadState[]
+  presences: ReadyPresence[]
 }
 
 export interface GatewayResumedData {

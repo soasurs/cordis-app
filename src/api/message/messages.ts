@@ -52,9 +52,7 @@ export async function listMessages(
   }
 }
 
-export async function createMessage(
-  details: CreateChannelMessageDetails,
-): Promise<ChannelMessage> {
+export async function createMessage(details: CreateChannelMessageDetails): Promise<ChannelMessage> {
   assertIdentifier(details.channelId, 'channel')
   const content = details.content.trim()
   const attachmentAssetIds = details.attachmentAssetIds ?? []

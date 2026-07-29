@@ -19,7 +19,10 @@ import { GuildRoleDeleteAction } from '@/features/guilds/components/guild-role-d
 import { GuildRoleMembers } from '@/features/guilds/components/guild-role-members'
 import { GuildRolePermissions } from '@/features/guilds/components/guild-role-permissions'
 
-function buildGuildRoleUpdate(role: GuildRoleSummary, values: GuildRoleFormValues): GuildRoleDetails {
+function buildGuildRoleUpdate(
+  role: GuildRoleSummary,
+  values: GuildRoleFormValues,
+): GuildRoleDetails {
   const patch: GuildRoleDetails = {}
   if (!role.isDefault && values.name !== role.name) {
     patch.name = values.name

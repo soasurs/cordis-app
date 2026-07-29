@@ -13,6 +13,7 @@ export interface CurrentUser {
 
 export interface PublicUserProfile {
   avatarAssetId: string
+  bio: string
   createdAt: number
   name: string
   updatedAt: number
@@ -50,6 +51,7 @@ export async function getUserProfile(userId: string): Promise<PublicUserProfile>
 export function toPublicUserProfile(profile: UserProfile): PublicUserProfile {
   return {
     avatarAssetId: profile.avatarAssetId.toString(),
+    bio: profile.bio,
     createdAt: Number(profile.createdAt),
     name: profile.name,
     updatedAt: Number(profile.updatedAt),

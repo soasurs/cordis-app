@@ -11,10 +11,7 @@ import {
   type ChannelMessage,
   type ChannelMessagePage,
 } from '@/api/message'
-import type {
-  MessageDeletedPayload,
-  MessagePayload,
-} from '@/gateway/protocol/payloads/message'
+import type { MessageDeletedPayload, MessagePayload } from '@/gateway/protocol/payloads/message'
 import type { MessageAuthorPayload } from '@/gateway/protocol/payloads/user'
 
 export type ChannelMessageSummary = ChannelMessage
@@ -171,10 +168,7 @@ export function removeChannelMessageFromApi(
   )
 }
 
-export function upsertChannelMessageFromGateway(
-  queryClient: QueryClient,
-  payload: MessagePayload,
-) {
+export function upsertChannelMessageFromGateway(queryClient: QueryClient, payload: MessagePayload) {
   const message = toMessageSummaryFromGateway(payload)
   const key = channelMessagesQueryKey(message.channelId)
   const current = queryClient.getQueryData<InfiniteData<ChannelMessagePage>>(key)
@@ -186,10 +180,7 @@ export function upsertChannelMessageFromGateway(
 }
 
 /** Apply an edit only when the message is already in the loaded cache. */
-export function patchChannelMessageFromGateway(
-  queryClient: QueryClient,
-  payload: MessagePayload,
-) {
+export function patchChannelMessageFromGateway(queryClient: QueryClient, payload: MessagePayload) {
   const message = toMessageSummaryFromGateway(payload)
   const key = channelMessagesQueryKey(message.channelId)
   const current = queryClient.getQueryData<InfiniteData<ChannelMessagePage>>(key)
@@ -245,6 +236,7 @@ export function toMessageSummaryFromGateway(payload: MessagePayload): ChannelMes
 function toAuthorProfile(author: MessageAuthorPayload) {
   return {
     avatarAssetId: author.avatar_asset_id,
+    bio: author.bio,
     createdAt: author.created_at,
     name: author.name,
     updatedAt: author.updated_at,
@@ -309,10 +301,7 @@ function upsertMessagePages(
   }
 
   const [firstPage, ...rest] = nextPages
-  const messages = [
-    message,
-    ...firstPage!.messages.filter((item) => item.id !== message.id),
-  ]
+  const messages = [message, ...firstPage!.messages.filter((item) => item.id !== message.id)]
   return [
     {
       ...firstPage!,

@@ -25,10 +25,7 @@ import {
   upsertChannelReadState,
   type ChannelReadStatesMap,
 } from '@/features/messages/read-state-queries'
-import {
-  toMessageReplyTarget,
-  type MessageReplyTarget,
-} from '@/features/messages/reply-target'
+import { toMessageReplyTarget, type MessageReplyTarget } from '@/features/messages/reply-target'
 
 const NEAR_BOTTOM_PX = 80
 const ACK_DEBOUNCE_MS = 800
@@ -398,12 +395,13 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
             {messagesReady && !hasOlderMessages ? <ChannelHistoryStart channel={channel} /> : null}
           </div>
 
-          {messagesQuery.isPending ? (
-            <p className="text-sm text-muted">Loading messages…</p>
-          ) : null}
+          {messagesQuery.isPending ? <p className="text-sm text-muted">Loading messages…</p> : null}
 
           {messagesQuery.isError ? (
-            <div role="alert" className="rounded-control border border-negative/25 bg-negative/10 p-3">
+            <div
+              role="alert"
+              className="rounded-control border border-negative/25 bg-negative/10 p-3"
+            >
               <p className="text-xs leading-5 text-negative">
                 {getApiErrorMessage(
                   messagesQuery.error,

@@ -22,6 +22,7 @@ export type {
   ReadyDmChannel,
   ReadyGuild,
   ReadyPermissionOverwrite,
+  ReadyPresence,
   ReadyReadState,
   ReadyRole,
 } from '@/gateway/protocol/payloads/ready'

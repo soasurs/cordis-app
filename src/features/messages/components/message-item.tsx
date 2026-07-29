@@ -82,8 +82,7 @@ export function MessageItem({
     message.author?.name || message.author?.username || `User ${message.author?.userId ?? ''}`
   const username = message.author?.username ?? ''
   const avatarUrl =
-    message.author &&
-    resolveAvatarUrl(message.author.userId, message.author.avatarAssetId)
+    message.author && resolveAvatarUrl(message.author.userId, message.author.avatarAssetId)
   const initials = getInitials(displayName, username)
 
   const updateMutation = useMutation({
@@ -350,11 +349,7 @@ export function MessageItem({
           aria-hidden="true"
           className="mt-0.5 grid size-10 shrink-0 place-items-center overflow-hidden rounded-control bg-surface-hover text-xs font-bold text-muted"
         >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="size-full object-cover" />
-          ) : (
-            initials
-          )}
+          {avatarUrl ? <img src={avatarUrl} alt="" className="size-full object-cover" /> : initials}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
@@ -621,8 +616,7 @@ function MessageReplyReference({
     `User ${referenced.author?.userId ?? ''}`
   const preview = toMessageContentPreview(referenced)
   const avatarUrl =
-    referenced.author &&
-    resolveAvatarUrl(referenced.author.userId, referenced.author.avatarAssetId)
+    referenced.author && resolveAvatarUrl(referenced.author.userId, referenced.author.avatarAssetId)
   const initials = getInitials(authorName, referenced.author?.username ?? '')
 
   const body = (

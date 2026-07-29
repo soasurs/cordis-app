@@ -57,10 +57,7 @@ export function ChannelRoleOverwritePickerDialog({
     if (!createMutation.isPending) onClose()
   }
   const error = createMutation.error
-    ? getApiErrorMessage(
-        createMutation.error,
-        'Unable to add role overwrites. Please try again.',
-      )
+    ? getApiErrorMessage(createMutation.error, 'Unable to add role overwrites. Please try again.')
     : undefined
   const selectableCount = roles.filter((role) => !existingRoleIds.has(role.id)).length
 

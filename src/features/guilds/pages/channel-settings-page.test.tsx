@@ -156,7 +156,9 @@ describe('ChannelSettingsPage', () => {
     expect(overwriteButtons[0]).toHaveAccessibleName(/Alex Chen|Loading member/i)
     expect(overwriteButtons[1]).toHaveAccessibleName(/@everyone/i)
 
-    expect(await screen.findByRole('heading', { name: /Alex Chen|Loading member/i })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: /Alex Chen|Loading member/i }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('radiogroup', { name: 'Manage channels' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Manage channels deny' })).toHaveAttribute(
       'aria-checked',
@@ -376,7 +378,9 @@ describe('ChannelSettingsPage', () => {
     queryClient.setQueryData(guildsQueryKey, [{ ...guild, ownerId: '99' }])
     renderChannelSettings(queryClient)
 
-    expect(await screen.findByRole('heading', { name: 'You don’t have permission' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'You don’t have permission' }),
+    ).toBeInTheDocument()
     expect(screen.queryByDisplayValue('general')).not.toBeInTheDocument()
   })
 })
