@@ -7,6 +7,7 @@ import {
   type RelationshipSummary,
   type RelationshipType,
 } from '@/api/relationship'
+import { resolveUsersPresence } from '@/api/presence'
 import { FriendsPage } from '@/features/friends/pages/friends-page'
 
 vi.mock('@/api/relationship', async (importOriginal) => {
@@ -16,9 +17,25 @@ vi.mock('@/api/relationship', async (importOriginal) => {
     listRelationships: vi.fn(),
   }
 })
+vi.mock('@/api/presence', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/api/presence')>()
+  return {
+    ...original,
+    resolveUsersPresence: vi.fn(),
+  }
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(resolveUsersPresence).mockImplementation(async (userIds) => ({
+    presences: userIds.map((userId) => ({
+      lastSeenAt: 2_000,
+      status: 'online',
+      userId,
+      version: 1n,
+    })),
+    requestedUserIds: userIds,
+  }))
 })
 
 describe('FriendsPage', () => {
@@ -30,9 +47,11 @@ describe('FriendsPage', () => {
     renderFriendsPage('all')
 
     expect(await screen.findByText('Alex Chen')).toBeInTheDocument()
-    expect(screen.getByText('@alex')).toBeInTheDocument()
+    expect(await screen.findByText('@alex · Online')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'online presence' })).toBeInTheDocument()
     expect(screen.getByText('Friend')).toBeInTheDocument()
     expect(listRelationships).toHaveBeenCalledWith('friend', undefined)
+    expect(resolveUsersPresence).toHaveBeenCalledWith(['8'])
   })
 
   it('separates incoming and sent requests', async () => {

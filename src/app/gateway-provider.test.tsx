@@ -18,6 +18,7 @@ import {
   type GuildRoleSummary,
   type GuildSummary,
 } from '@/features/guilds/guild-queries'
+import { relationshipListQueryKey } from '@/features/friends/relationship-queries'
 import { presenceQueryKey, type PresenceCache } from '@/features/presence/presence-queries'
 
 import {
@@ -432,11 +433,17 @@ describe('GatewayProvider', () => {
     expect(queryClient.getQueryData(guildRolesQueryKey('42'))).toBeUndefined()
     expect(queryClient.getQueryData(guildMembersQueryKey('42'))).toBeUndefined()
 
+    queryClient.setQueryData(relationshipListQueryKey('friend'), {
+      pageParams: [undefined],
+      pages: [{ relationships: [] }],
+    })
+
     view.unmount()
     expect(connection.disconnect).toHaveBeenCalledOnce()
     expect(queryClient.getQueryData(gatewayReadyQueryKey)).toBeUndefined()
     expect(queryClient.getQueryData(guildsQueryKey)).toBeUndefined()
     expect(queryClient.getQueryData(presenceQueryKey)).toBeUndefined()
+    expect(queryClient.getQueryData(relationshipListQueryKey('friend'))).toBeUndefined()
   })
 
   it('publishes connection errors and clears them after reconnecting', () => {

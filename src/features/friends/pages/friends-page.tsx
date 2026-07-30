@@ -3,7 +3,7 @@ import {
   type InfiniteData,
   type UseInfiniteQueryResult,
 } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { RelationshipPage, RelationshipSummary, RelationshipType } from '@/api/relationship'
 import { getApiErrorMessage } from '@/api/errors'
@@ -15,6 +15,7 @@ import {
   relationshipListInfiniteQueryOptions,
 } from '@/features/friends/relationship-queries'
 import { friendsTabs, type FriendsTab } from '@/features/friends/friends-types'
+import { useResolvePresenceBatches } from '@/features/presence/presence-queries'
 
 type RelationshipListQuery = UseInfiniteQueryResult<InfiniteData<RelationshipPage>, Error>
 
@@ -30,6 +31,14 @@ export function FriendsPage({
   const outgoingQuery = useRelationshipList('outgoing', tab === 'pending')
   const blockedQuery = useRelationshipList('blocked', tab === 'blocked')
   const [addingFriend, setAddingFriend] = useState(false)
+  const friendPresenceBatches = useMemo(
+    () =>
+      tab === 'all'
+        ? [flattenRelationships(friendsQuery.data).map((relationship) => relationship.targetId)]
+        : [],
+    [friendsQuery.data, tab],
+  )
+  useResolvePresenceBatches(friendPresenceBatches)
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-surface">

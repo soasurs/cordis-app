@@ -10,6 +10,8 @@ import { apiTransport } from '@/api/client'
 
 const presenceClient = createClient(PresenceService, apiTransport)
 
+export const presenceResolutionLimit = 100
+
 export type UserPresenceStatus = 'offline' | 'online' | 'idle' | 'dnd'
 
 export interface UserPresence {
@@ -48,8 +50,8 @@ export function normalizePresenceUserIds(userIds: string[]): string[] {
     }
     uniqueUserIds.add(userId)
   }
-  if (uniqueUserIds.size > 100) {
-    throw new Error('at most 100 unique presence user ids are allowed')
+  if (uniqueUserIds.size > presenceResolutionLimit) {
+    throw new Error(`at most ${presenceResolutionLimit} unique presence user ids are allowed`)
   }
   return [...uniqueUserIds]
 }

@@ -9,6 +9,7 @@ import {
 import { useEffect, useMemo } from 'react'
 
 import {
+  presenceResolutionLimit,
   resolveUsersPresence,
   type PresenceResolution,
   type UserPresence,
@@ -37,10 +38,7 @@ export function useUserPresence(userId: string): UserPresence | undefined {
 export function useResolvePresenceBatches(userIdBatches: string[][]): void {
   const queryClient = useQueryClient()
   const normalizedBatches = useMemo(
-    () =>
-      userIdBatches
-        .map((userIds) => [...new Set(userIds)].sort(compareIdentifier))
-        .filter((userIds) => userIds.length > 0),
+    () => createPresenceUserIdBatches(userIdBatches),
     [userIdBatches],
   )
   const resolutions = useQueries({
@@ -58,6 +56,15 @@ export function useResolvePresenceBatches(userIdBatches: string[][]): void {
       }
     }
   }, [queryClient, resolutions])
+}
+
+export function createPresenceUserIdBatches(userIdGroups: string[][]): string[][] {
+  const userIds = [...new Set(userIdGroups.flat())].sort(compareIdentifier)
+  const batches: string[][] = []
+  for (let index = 0; index < userIds.length; index += presenceResolutionLimit) {
+    batches.push(userIds.slice(index, index + presenceResolutionLimit))
+  }
+  return batches
 }
 
 export function replacePresencesFromReady(

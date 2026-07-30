@@ -1,6 +1,13 @@
 import type { QueryClient } from '@tanstack/react-query'
 
 import {
+  clearRelationshipQueries,
+  patchRelationshipProfileFromGateway,
+  refreshRelationshipsFromReady,
+  removeRelationshipFromGateway,
+  upsertRelationshipFromGateway,
+} from '@/features/friends/relationship-queries'
+import {
   guildsQueryKey,
   invalidateGuildChannelOverwritesFromGateway,
   invalidateGuildChannelsFromGateway,
@@ -39,6 +46,7 @@ import {
   clearPresencePreferences,
   replacePresencePreferenceFromReady,
 } from '@/features/presence/presence-preference-queries'
+import { patchUserProfileFromGateway } from '@/features/users/user-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
@@ -54,6 +62,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
       dispatch.data.user_id,
       dispatch.data.presence_preference,
     )
+    refreshRelationshipsFromReady(queryClient)
     return
   }
 
@@ -160,6 +169,22 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
     return
   }
 
+  if (isGatewayDispatch(dispatch, 'relationship.updated')) {
+    upsertRelationshipFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'relationship.removed')) {
+    removeRelationshipFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'user.profile.updated')) {
+    patchRelationshipProfileFromGateway(queryClient, dispatch.data)
+    patchUserProfileFromGateway(queryClient, dispatch.data)
+    return
+  }
+
   if (isGatewayDispatch(dispatch, 'presence.updated')) {
     applyPresenceFromGateway(queryClient, dispatch.data)
     return
@@ -177,4 +202,5 @@ export function clearGatewayQueries(queryClient: QueryClient) {
   clearChannelReadStateQueries(queryClient)
   clearPresences(queryClient)
   clearPresencePreferences(queryClient)
+  clearRelationshipQueries(queryClient)
 }
