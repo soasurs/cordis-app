@@ -3,11 +3,13 @@ import {
   type InfiniteData,
   type UseInfiniteQueryResult,
 } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import type { RelationshipPage, RelationshipSummary, RelationshipType } from '@/api/relationship'
 import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
-import { FriendIdentity } from '@/features/friends/components/friend-identity'
+import { AddFriendDialog } from '@/features/friends/components/add-friend-dialog'
+import { FriendRelationshipRow } from '@/features/friends/components/friend-relationship-row'
 import {
   flattenRelationships,
   relationshipListInfiniteQueryOptions,
@@ -27,6 +29,7 @@ export function FriendsPage({
   const incomingQuery = useRelationshipList('incoming', tab === 'pending')
   const outgoingQuery = useRelationshipList('outgoing', tab === 'pending')
   const blockedQuery = useRelationshipList('blocked', tab === 'blocked')
+  const [addingFriend, setAddingFriend] = useState(false)
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-surface">
@@ -35,7 +38,12 @@ export function FriendsPage({
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-brand-text">
             Personal space
           </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-[-0.025em] text-ink">Friends</h1>
+          <div className="mt-1 flex items-center justify-between gap-4">
+            <h1 className="text-xl font-semibold tracking-[-0.025em] text-ink">Friends</h1>
+            <Button size="small" onClick={() => setAddingFriend(true)}>
+              Add friend
+            </Button>
+          </div>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Keep track of your friends, requests, and blocked users.
           </p>
@@ -83,6 +91,7 @@ export function FriendsPage({
           ) : null}
         </div>
       </div>
+      {addingFriend ? <AddFriendDialog onClose={() => setAddingFriend(false)} /> : null}
     </main>
   )
 }
@@ -217,12 +226,7 @@ function RelationshipRows({ relationships }: { relationships: RelationshipSummar
   return (
     <ul className="overflow-hidden rounded-panel border border-line bg-surface-raised shadow-panel">
       {relationships.map((relationship) => (
-        <li
-          key={relationship.targetId}
-          className="flex items-center gap-3 border-b border-line px-4 py-3.5 last:border-b-0"
-        >
-          <FriendIdentity relationship={relationship} />
-        </li>
+        <FriendRelationshipRow key={relationship.targetId} relationship={relationship} />
       ))}
     </ul>
   )
