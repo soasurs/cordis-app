@@ -239,6 +239,29 @@ describe('MessageComposer', () => {
 })
 
 describe('MessageItem', () => {
+  it('requests retention while local message actions are active', async () => {
+    const user = userEvent.setup()
+    const onKeepMountedChange = vi.fn()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={sampleMessage}
+          onKeepMountedChange={onKeepMountedChange}
+        />
+      </QueryClientProvider>,
+    )
+
+    expect(onKeepMountedChange).toHaveBeenLastCalledWith('102', false)
+    fireEvent.contextMenu(screen.getByRole('article'))
+    expect(onKeepMountedChange).toHaveBeenLastCalledWith('102', true)
+
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onKeepMountedChange).toHaveBeenLastCalledWith('102', false)
+  })
+
   it('edits and deletes the current user message', async () => {
     const user = userEvent.setup()
     messageApi.updateMessage.mockResolvedValue({
