@@ -7,6 +7,7 @@ import {
   parseGatewayEnvelope,
   parseHelloData,
   type GatewayReadyData,
+  type KnownGatewayDispatch,
 } from '@/gateway/protocol'
 
 describe('gateway protocol', () => {
@@ -49,6 +50,25 @@ describe('gateway protocol', () => {
 
     expect(isGatewayDispatch(dispatch, 'message.created')).toBe(true)
     expect(isGatewayDispatch(dispatch, 'presence.updated')).toBe(false)
+  })
+
+  it('describes full user profile update dispatches', () => {
+    const dispatch = {
+      data: {
+        avatar_asset_id: '9',
+        bio: 'Updated bio',
+        created_at: 100,
+        name: 'Alice Updated',
+        updated_at: 200,
+        user_id: '7',
+        username: 'alice',
+      },
+      sequence: 13,
+      type: 'user.profile.updated',
+    } satisfies KnownGatewayDispatch<'user.profile.updated'>
+
+    expect(isGatewayDispatch(dispatch, 'user.profile.updated')).toBe(true)
+    expect(dispatch.data.name).toBe('Alice Updated')
   })
 
   it('describes v0.4 lifecycle event types and embedded ready profiles', () => {

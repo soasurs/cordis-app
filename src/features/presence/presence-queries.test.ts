@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyPresenceFromGateway,
+  createPresenceUserIdBatches,
   presenceQueryKey,
   reconcilePresenceResolution,
   replacePresencesFromReady,
@@ -83,6 +84,17 @@ describe('presence query cache', () => {
     })
 
     expect(getPresence(queryClient, '7')).toMatchObject({ status: 'idle', version: 12n })
+  })
+})
+
+describe('createPresenceUserIdBatches', () => {
+  it('deduplicates, numerically sorts, and respects the public batch limit', () => {
+    const userIds = [...Array.from({ length: 205 }, (_, index) => String(205 - index)), '8', '100']
+
+    const batches = createPresenceUserIdBatches([userIds.slice(0, 80), userIds.slice(80)])
+
+    expect(batches.map((batch) => batch.length)).toEqual([100, 100, 5])
+    expect(batches.flat()).toEqual(Array.from({ length: 205 }, (_, index) => String(index + 1)))
   })
 })
 

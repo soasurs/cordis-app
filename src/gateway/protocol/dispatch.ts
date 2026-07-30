@@ -27,6 +27,7 @@ import type {
   RelationshipRemovedPayload,
   SessionReconcilePayload,
 } from '@/gateway/protocol/payloads/social'
+import type { UserProfilePayload } from '@/gateway/protocol/payloads/user'
 
 /** Maps dispatch `type` strings to payload shapes for typed narrowing. */
 export interface GatewayDispatchDataMap {
@@ -55,6 +56,7 @@ export interface GatewayDispatchDataMap {
   'message.read.updated': MessageReadUpdatedPayload
   'relationship.updated': RelationshipPayload
   'relationship.removed': RelationshipRemovedPayload
+  'user.profile.updated': UserProfilePayload
   'dm.channel.created': DmChannelCreatedPayload
   'presence.preference.updated': PresencePreferenceUpdatedPayload
   'presence.updated': PresenceUpdatedPayload

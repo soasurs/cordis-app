@@ -82,6 +82,7 @@ const userApi = vi.hoisted(() => ({
 vi.mock('@/api/user', () => userApi)
 
 const presenceApi = vi.hoisted(() => ({
+  presenceResolutionLimit: 100,
   resolveUsersPresence: vi.fn(),
 }))
 
