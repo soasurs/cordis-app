@@ -40,6 +40,7 @@ const guildApi = vi.hoisted(() => ({
 }))
 
 const messageApi = vi.hoisted(() => ({
+  ackMessage: vi.fn(),
   createMessage: vi.fn(),
   deleteMessage: vi.fn(),
   getReadStatesForGuild: vi.fn(),
@@ -118,6 +119,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   guildApi.listGuildRoles.mockResolvedValue([everyoneRole])
   guildApi.listGuildMemberRoles.mockResolvedValue([])
+  messageApi.ackMessage.mockResolvedValue({
+    channelId: '43',
+    lastMessageId: '200',
+    lastReadMessageId: '200',
+    mentionCount: 0,
+  })
   messageApi.getReadStatesForGuild.mockResolvedValue([])
   messageApi.listMessages.mockResolvedValue({ messages: [] })
 })
@@ -151,6 +158,114 @@ describe('GuildPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Welcome to #general' })).toBeInTheDocument()
     expect(guildApi.listGuildChannels).not.toHaveBeenCalled()
+  })
+
+  it('renders loaded channel messages through the virtual timeline', async () => {
+    const offsetHeight = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(600)
+    const offsetWidth = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(1_000)
+    messageApi.listMessages.mockResolvedValue({
+      messages: [
+        {
+          attachments: [],
+          author: {
+            avatarAssetId: '0',
+            bio: '',
+            createdAt: 1_000,
+            name: 'Alex Chen',
+            updatedAt: 1_000,
+            userId: '7',
+            username: 'alex_chen',
+          },
+          channelId: '43',
+          content: 'Newest virtual message',
+          createdAt: 3_000,
+          editedAt: 0,
+          flags: 0,
+          id: '103',
+          revision: 1,
+          type: 1,
+          updatedAt: 3_000,
+        },
+        {
+          attachments: [],
+          author: {
+            avatarAssetId: '0',
+            bio: '',
+            createdAt: 1_000,
+            name: 'Alex Chen',
+            updatedAt: 1_000,
+            userId: '7',
+            username: 'alex_chen',
+          },
+          channelId: '43',
+          content: 'Older virtual message',
+          createdAt: 2_000,
+          editedAt: 0,
+          flags: 0,
+          id: '102',
+          revision: 1,
+          type: 1,
+          updatedAt: 2_000,
+        },
+      ],
+    })
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+
+    try {
+      renderGuildPage(queryClient, { channelId: '43' })
+
+      expect(await screen.findByText('Older virtual message')).toBeInTheDocument()
+      expect(screen.getByText('Newest virtual message')).toBeInTheDocument()
+      expect(screen.getByLabelText('Messages in #general')).toHaveClass('relative')
+    } finally {
+      offsetHeight.mockRestore()
+      offsetWidth.mockRestore()
+    }
+  })
+
+  it('mounts only a window of a long channel timeline', async () => {
+    const offsetHeight = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(600)
+    const offsetWidth = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(1_000)
+    messageApi.listMessages.mockResolvedValue({
+      messages: Array.from({ length: 100 }, (_, index) => ({
+        attachments: [],
+        author: {
+          avatarAssetId: '0',
+          bio: '',
+          createdAt: 1_000,
+          name: 'Alex Chen',
+          updatedAt: 1_000,
+          userId: '7',
+          username: 'alex_chen',
+        },
+        channelId: '43',
+        content: `Virtual message ${100 - index}`,
+        createdAt: 10_000 - index,
+        editedAt: 0,
+        flags: 0,
+        id: `${200 - index}`,
+        revision: 1,
+        type: 1,
+        updatedAt: 10_000 - index,
+      })),
+    })
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+
+    try {
+      renderGuildPage(queryClient, { channelId: '43' })
+
+      await screen.findByText('Virtual message 1')
+      await waitFor(() => {
+        const mountedMessages = screen.getAllByRole('article')
+        expect(mountedMessages.length).toBeGreaterThan(0)
+        expect(mountedMessages.length).toBeLessThan(100)
+      })
+    } finally {
+      offsetHeight.mockRestore()
+      offsetWidth.mockRestore()
+    }
   })
 
   it('renders channels without a parent directly instead of adding type groups', async () => {

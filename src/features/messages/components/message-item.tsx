@@ -44,6 +44,7 @@ interface MessageItemProps {
   currentUserId?: string
   message: ChannelMessageSummary
   onJumpToMessage?: (messageId: string) => void
+  onKeepMountedChange?: (messageId: string, keepMounted: boolean) => void
   onReply?: (message: ChannelMessageSummary) => void
 }
 
@@ -59,6 +60,7 @@ export function MessageItem({
   currentUserId,
   message,
   onJumpToMessage,
+  onKeepMountedChange,
   onReply,
 }: MessageItemProps) {
   const queryClient = useQueryClient()
@@ -113,6 +115,18 @@ export function MessageItem({
       setError(getApiErrorMessage(deleteError, 'Unable to delete message. Please try again.'))
     },
   })
+  const keepMounted =
+    editing ||
+    pending.length > 0 ||
+    menu !== null ||
+    confirmDelete ||
+    updateMutation.isPending ||
+    deleteMutation.isPending
+
+  useEffect(() => {
+    onKeepMountedChange?.(message.id, keepMounted)
+    return () => onKeepMountedChange?.(message.id, false)
+  }, [keepMounted, message.id, onKeepMountedChange])
 
   useEffect(() => {
     pendingRef.current = pending
