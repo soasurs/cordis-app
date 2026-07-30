@@ -1,4 +1,5 @@
 import type { UserProfilePayload } from '@/gateway/protocol/payloads/user'
+import type { GatewayPresenceStatus } from '@/gateway/protocol/wire'
 
 // READY snapshot types use snake_case to mirror gateway JSON without remapping.
 export interface ReadyRole {
@@ -76,6 +77,11 @@ export interface ReadyPresence {
   version: string
 }
 
+export interface ReadyPresencePreference {
+  status: GatewayPresenceStatus
+  version: string
+}
+
 export interface GatewayReadyData {
   user_id: string
   auth_session_id: string
@@ -86,6 +92,7 @@ export interface GatewayReadyData {
   dm_channels: ReadyDmChannel[]
   read_states: ReadyReadState[]
   presences: ReadyPresence[]
+  presence_preference: ReadyPresencePreference
 }
 
 export interface GatewayResumedData {

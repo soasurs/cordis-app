@@ -1,4 +1,5 @@
 import type { UserProfilePayload } from '@/gateway/protocol/payloads/user'
+import type { GatewayPresenceStatus } from '@/gateway/protocol/wire'
 
 export interface RelationshipPayload {
   user_id: string
@@ -28,6 +29,12 @@ export interface PresenceUpdatedPayload {
   changed_at: number
   version: string
   guild_ids: string[]
+}
+
+export interface PresencePreferenceUpdatedPayload {
+  user_id: string
+  status: GatewayPresenceStatus
+  version: string
 }
 
 export interface SessionReconcilePayload {

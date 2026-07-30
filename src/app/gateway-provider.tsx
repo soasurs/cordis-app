@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } fro
 import { createGatewayTicket } from '@/api/authenticator'
 import { readPresenceStatus, writePresenceStatus } from '@/features/presence/presence-preference'
 import {
+  setPresencePreferenceStatus,
+  usePresencePreference,
+} from '@/features/presence/presence-preference-queries'
+import {
   GatewayClient,
   type GatewayClientState,
   type GatewayPresenceData,
@@ -46,16 +50,8 @@ export function GatewayProvider({
 }: GatewayProviderProps) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<GatewayStatus>(idleGatewayStatus)
-  const [presenceStatus, setPresenceStatusValue] = useState<GatewayPresenceStatus>(() =>
-    readPresenceStatus(userId),
-  )
-  const setPresenceStatus = useCallback(
-    (nextStatus: GatewayPresenceStatus) => {
-      writePresenceStatus(userId, nextStatus)
-      setPresenceStatusValue(nextStatus)
-    },
-    [userId],
-  )
+  const presencePreference = usePresencePreference(userId)
+  const presenceStatus = presencePreference.pendingStatus ?? presencePreference.status
   const connectionResult = useMemo(() => {
     if (!enabled) {
       return { client: null, errorCode: null }
@@ -67,6 +63,13 @@ export function GatewayProvider({
       return { client: null, errorCode: 'configuration_error' }
     }
   }, [clientFactory, enabled, userId])
+  const setPresenceStatus = useCallback(
+    (nextStatus: GatewayPresenceStatus) => {
+      setPresencePreferenceStatus(queryClient, userId, nextStatus)
+      connectionResult.client?.updatePresence({ status: nextStatus })
+    },
+    [connectionResult.client, queryClient, userId],
+  )
 
   useEffect(() => {
     const client = connectionResult.client
@@ -137,8 +140,8 @@ export function GatewayProvider({
   }, [connectionResult.client, queryClient])
 
   useEffect(() => {
-    connectionResult.client?.updatePresence({ status: presenceStatus })
-  }, [connectionResult.client, presenceStatus])
+    writePresenceStatus(userId, presenceStatus)
+  }, [presenceStatus, userId])
 
   const value = enabled
     ? connectionResult.errorCode

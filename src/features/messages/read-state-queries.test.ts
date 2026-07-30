@@ -81,6 +81,11 @@ describe('syncGatewayDispatch read states', () => {
         auth_session_id: 'auth',
         dm_channels: [],
         guilds: [],
+        presence_preference: {
+          status: 'online',
+          version: '1',
+        },
+        presences: [],
         read_states: [
           {
             channel_id: '43',

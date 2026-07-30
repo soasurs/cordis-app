@@ -91,6 +91,10 @@ describe('gateway protocol', () => {
           created_at: 100,
         },
       ],
+      presence_preference: {
+        status: 'dnd',
+        version: '10',
+      },
       read_states: [],
       presences: [],
     } satisfies GatewayReadyData
@@ -104,5 +108,6 @@ describe('gateway protocol', () => {
     })
     expect(ready.guilds[0].description).toBe('Community description')
     expect(ready.dm_channels[0].recipient.username).toBe('alice')
+    expect(ready.presence_preference.status).toBe('dnd')
   })
 })

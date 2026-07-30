@@ -34,6 +34,11 @@ import {
   clearPresences,
   replacePresencesFromReady,
 } from '@/features/presence/presence-queries'
+import {
+  applyPresencePreferenceFromGateway,
+  clearPresencePreferences,
+  replacePresencePreferenceFromReady,
+} from '@/features/presence/presence-preference-queries'
 import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
 
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
@@ -44,6 +49,11 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
     replaceGuildsFromReady(queryClient, dispatch.data)
     replaceChannelReadStatesFromReady(queryClient, dispatch.data.read_states)
     replacePresencesFromReady(queryClient, dispatch.data.presences ?? [])
+    replacePresencePreferenceFromReady(
+      queryClient,
+      dispatch.data.user_id,
+      dispatch.data.presence_preference,
+    )
     return
   }
 
@@ -152,6 +162,11 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'presence.updated')) {
     applyPresenceFromGateway(queryClient, dispatch.data)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'presence.preference.updated')) {
+    applyPresencePreferenceFromGateway(queryClient, dispatch.data)
   }
 }
 
@@ -161,4 +176,5 @@ export function clearGatewayQueries(queryClient: QueryClient) {
   clearChannelMessageQueries(queryClient)
   clearChannelReadStateQueries(queryClient)
   clearPresences(queryClient)
+  clearPresencePreferences(queryClient)
 }
