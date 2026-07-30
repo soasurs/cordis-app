@@ -59,6 +59,6 @@ function presenceStatusStorageKey(userId: string): string {
   return `cordis.presenceStatus.${userId}`
 }
 
-function isGatewayPresenceStatus(value: string | null): value is GatewayPresenceStatus {
+export function isGatewayPresenceStatus(value: unknown): value is GatewayPresenceStatus {
   return presenceStatusOptions.some((option) => option.status === value)
 }

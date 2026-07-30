@@ -21,6 +21,7 @@ import type {
 import type { GatewayReadyData, GatewayResumedData } from '@/gateway/protocol/payloads/ready'
 import type {
   DmChannelCreatedPayload,
+  PresencePreferenceUpdatedPayload,
   PresenceUpdatedPayload,
   RelationshipPayload,
   RelationshipRemovedPayload,
@@ -55,6 +56,7 @@ export interface GatewayDispatchDataMap {
   'relationship.updated': RelationshipPayload
   'relationship.removed': RelationshipRemovedPayload
   'dm.channel.created': DmChannelCreatedPayload
+  'presence.preference.updated': PresencePreferenceUpdatedPayload
   'presence.updated': PresenceUpdatedPayload
   'session.reconcile': SessionReconcilePayload
 }

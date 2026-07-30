@@ -139,7 +139,7 @@ describe('GatewayClient', () => {
     client.disconnect()
   })
 
-  it('uses the latest queued status for IDENTIFY', async () => {
+  it('uses the latest queued status for IDENTIFY and applies it after READY', async () => {
     const { client, sockets } = createHarness()
 
     client.connect()
@@ -149,6 +149,18 @@ describe('GatewayClient', () => {
     expect(sockets[0].sent[0]).toMatchObject({
       d: { status: 'dnd' },
       op: GatewayOpcode.Identify,
+    })
+
+    sockets[0].receive({
+      d: { session_id: 'session-1' },
+      op: GatewayOpcode.Dispatch,
+      s: 1,
+      t: GatewayEventType.Ready,
+    })
+
+    expect(sockets[0].sent.at(-1)).toEqual({
+      d: { status: 'dnd' },
+      op: GatewayOpcode.Presence,
     })
   })
 

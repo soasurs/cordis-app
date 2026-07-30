@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -136,6 +136,10 @@ const readyData = {
       updated_at: 1_000,
     },
   ],
+  presence_preference: {
+    status: 'online' as const,
+    version: '9007199254740994',
+  },
   read_states: [],
   presences: [
     {
@@ -489,7 +493,7 @@ describe('GatewayProvider', () => {
     vi.useRealTimers()
   })
 
-  it('restores and persists the per-user status preference', () => {
+  it('restores and persists the per-user status preference', async () => {
     window.localStorage.setItem('cordis.presenceStatus.7', 'dnd')
     const queryClient = new QueryClient()
     const connection = new FakeGatewayConnection()
@@ -508,8 +512,107 @@ describe('GatewayProvider', () => {
     act(() => connection.setState('ready'))
     act(() => screen.getByRole('button', { name: 'dnd' }).click())
 
-    expect(window.localStorage.getItem('cordis.presenceStatus.7')).toBe('invisible')
+    await waitFor(() =>
+      expect(window.localStorage.getItem('cordis.presenceStatus.7')).toBe('invisible'),
+    )
     expect(connection.updatePresence).toHaveBeenCalledWith({ status: 'invisible' })
+  })
+
+  it('synchronizes the server preference without echoing it back to Gateway', async () => {
+    window.localStorage.setItem('cordis.presenceStatus.7', 'dnd')
+    const queryClient = new QueryClient()
+    const connection = new FakeGatewayConnection()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GatewayProvider enabled clientFactory={() => connection} userId="7">
+          <GatewayPresencePreferenceProbe />
+        </GatewayProvider>
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByRole('button', { name: 'dnd' })).toBeInTheDocument()
+    expect(connection.updatePresence).not.toHaveBeenCalled()
+
+    act(() =>
+      connection.dispatch({
+        data: readyData,
+        sequence: 1,
+        type: 'ready',
+      }),
+    )
+    expect(await screen.findByRole('button', { name: 'online' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(window.localStorage.getItem('cordis.presenceStatus.7')).toBe('online'),
+    )
+    expect(connection.updatePresence).not.toHaveBeenCalled()
+
+    act(() =>
+      connection.dispatch({
+        data: {
+          status: 'idle',
+          user_id: '7',
+          version: '9007199254740995',
+        },
+        sequence: 2,
+        type: 'presence.preference.updated',
+      }),
+    )
+    expect(await screen.findByRole('button', { name: 'idle' })).toBeInTheDocument()
+    await waitFor(() => expect(window.localStorage.getItem('cordis.presenceStatus.7')).toBe('idle'))
+    expect(connection.updatePresence).not.toHaveBeenCalled()
+
+    act(() =>
+      connection.dispatch({
+        data: {
+          status: 'invisible',
+          user_id: '7',
+          version: '9007199254740994',
+        },
+        sequence: 3,
+        type: 'presence.preference.updated',
+      }),
+    )
+    expect(screen.getByRole('button', { name: 'idle' })).toBeInTheDocument()
+    expect(connection.updatePresence).not.toHaveBeenCalled()
+  })
+
+  it('rolls back an unconfirmed selection when the ready connection fails or disconnects', async () => {
+    const queryClient = new QueryClient()
+    const connection = new FakeGatewayConnection()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GatewayProvider enabled clientFactory={() => connection} userId="7">
+          <GatewayPresencePreferenceProbe />
+        </GatewayProvider>
+      </QueryClientProvider>,
+    )
+
+    act(() => connection.setState('ready'))
+    act(() =>
+      connection.dispatch({
+        data: readyData,
+        sequence: 1,
+        type: 'ready',
+      }),
+    )
+    expect(await screen.findByRole('button', { name: 'online' })).toBeInTheDocument()
+
+    act(() => screen.getByRole('button', { name: 'online' }).click())
+    expect(await screen.findByRole('button', { name: 'invisible' })).toBeInTheDocument()
+
+    act(() => connection.fail('rate_limited'))
+
+    expect(await screen.findByRole('button', { name: 'online' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(window.localStorage.getItem('cordis.presenceStatus.7')).toBe('online'),
+    )
+
+    act(() => screen.getByRole('button', { name: 'online' }).click())
+    expect(await screen.findByRole('button', { name: 'invisible' })).toBeInTheDocument()
+
+    act(() => connection.setState('reconnecting'))
+
+    expect(await screen.findByRole('button', { name: 'online' })).toBeInTheDocument()
   })
 
   it('reports an invalid Gateway configuration without crashing the application', () => {

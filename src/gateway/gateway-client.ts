@@ -342,7 +342,6 @@ export class GatewayClient {
       status: this.identify.status,
       client_state: this.identify.clientState,
     }
-    this.pendingPresence = null
     this.sendOnSocket(socket, {
       op: GatewayOpcode.Identify,
       t: GatewayEventType.Identify,

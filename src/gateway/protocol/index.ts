@@ -25,6 +25,7 @@ export type {
   ReadyGuild,
   ReadyPermissionOverwrite,
   ReadyPresence,
+  ReadyPresencePreference,
   ReadyReadState,
   ReadyRole,
 } from '@/gateway/protocol/payloads/ready'
@@ -51,6 +52,7 @@ export type {
 } from '@/gateway/protocol/payloads/message'
 export type {
   DmChannelCreatedPayload,
+  PresencePreferenceUpdatedPayload,
   PresenceUpdatedPayload,
   RelationshipPayload,
   RelationshipRemovedPayload,
