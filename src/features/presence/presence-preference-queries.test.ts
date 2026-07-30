@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyPresencePreferenceFromGateway,
+  discardPendingPresencePreference,
   presencePreferenceQueryKey,
   replacePresencePreferenceFromReady,
   setPresencePreferenceStatus,
@@ -84,6 +85,46 @@ describe('presence preference queries', () => {
     ).toEqual({
       status: 'idle',
       version: 11n,
+    })
+  })
+
+  it('accepts a newer authoritative status over a pending selection', () => {
+    const queryClient = new QueryClient()
+    replacePresencePreferenceFromReady(queryClient, '7', {
+      status: 'online',
+      version: '10',
+    })
+    setPresencePreferenceStatus(queryClient, '7', 'idle')
+
+    applyPresencePreferenceFromGateway(queryClient, {
+      status: 'dnd',
+      user_id: '7',
+      version: '11',
+    })
+
+    expect(
+      queryClient.getQueryData<UserPresencePreference>(presencePreferenceQueryKey('7')),
+    ).toEqual({
+      status: 'dnd',
+      version: 11n,
+    })
+  })
+
+  it('discards an unconfirmed selection after a delivery failure', () => {
+    const queryClient = new QueryClient()
+    replacePresencePreferenceFromReady(queryClient, '7', {
+      status: 'online',
+      version: '10',
+    })
+    setPresencePreferenceStatus(queryClient, '7', 'idle')
+
+    discardPendingPresencePreference(queryClient, '7')
+
+    expect(
+      queryClient.getQueryData<UserPresencePreference>(presencePreferenceQueryKey('7')),
+    ).toEqual({
+      status: 'online',
+      version: 10n,
     })
   })
 

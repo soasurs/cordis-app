@@ -58,6 +58,20 @@ export function setPresencePreferenceStatus(
   )
 }
 
+export function discardPendingPresencePreference(
+  queryClient: QueryClient,
+  userId: string | undefined,
+): void {
+  queryClient.setQueryData<UserPresencePreference>(presencePreferenceQueryKey(userId), (current) =>
+    current?.pendingStatus
+      ? {
+          status: current.status,
+          version: current.version,
+        }
+      : current,
+  )
+}
+
 export function replacePresencePreferenceFromReady(
   queryClient: QueryClient,
   userId: string,
@@ -76,10 +90,7 @@ export function applyPresencePreferenceFromGateway(
   const incoming = toPresencePreference(preference)
   queryClient.setQueryData<UserPresencePreference>(
     presencePreferenceQueryKey(preference.user_id),
-    (current) =>
-      !current || incoming.version > current.version
-        ? preservePendingStatus(incoming, current?.pendingStatus)
-        : current,
+    (current) => (!current || incoming.version > current.version ? incoming : current),
   )
 }
 

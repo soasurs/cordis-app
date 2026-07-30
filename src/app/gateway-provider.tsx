@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } fro
 import { createGatewayTicket } from '@/api/authenticator'
 import { readPresenceStatus, writePresenceStatus } from '@/features/presence/presence-preference'
 import {
+  discardPendingPresencePreference,
   setPresencePreferenceStatus,
   usePresencePreference,
 } from '@/features/presence/presence-preference-queries'
@@ -107,6 +108,9 @@ export function GatewayProvider({
       clientStateTimer = setTimeout(sendClientState, 150)
     }
     const unsubscribeState = client.onStateChange(({ current }) => {
+      if (connectionState === 'ready' && current !== 'ready') {
+        discardPendingPresencePreference(queryClient, userId)
+      }
       connectionState = current
       setStatus((currentStatus) => ({
         errorCode: current === 'ready' ? null : currentStatus.errorCode,
@@ -117,6 +121,9 @@ export function GatewayProvider({
       }
     })
     const unsubscribeError = client.onError((error) => {
+      if (connectionState === 'ready') {
+        discardPendingPresencePreference(queryClient, userId)
+      }
       setStatus((currentStatus) => ({ ...currentStatus, errorCode: error.code }))
     })
     const unsubscribeDispatch = client.onDispatch((dispatch) => {
@@ -137,7 +144,7 @@ export function GatewayProvider({
       client.disconnect()
       clearGatewayQueries(queryClient)
     }
-  }, [connectionResult.client, queryClient])
+  }, [connectionResult.client, queryClient, userId])
 
   useEffect(() => {
     writePresenceStatus(userId, presenceStatus)
