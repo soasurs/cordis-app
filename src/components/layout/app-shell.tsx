@@ -1,17 +1,20 @@
 import type { AppShellProps } from '@/components/layout/app-shell-types'
 import { HomeSidebar } from '@/components/layout/home-sidebar'
 import { MobileHeader } from '@/components/layout/mobile-header'
+import { PersonalNavigation } from '@/components/layout/personal-navigation'
 import { SpaceRail } from '@/components/layout/space-rail'
 
 export type { AppGuildSummary, AppUserSummary } from '@/components/layout/app-shell-types'
 
 export function AppShell({
   activeGuildId,
+  activePersonalSection = 'home',
   children,
   gatewayStatus = { errorCode: null, state: 'idle' },
   guilds = [],
   onCreateCommunity,
   onOpenUserSettings,
+  onSelectFriends,
   onSelectGuild,
   onSelectHome,
   userSettingsOpen = false,
@@ -32,18 +35,36 @@ export function AppShell({
       />
       {!activeGuildId && !userSettingsOpen ? (
         <HomeSidebar
+          activeSection={activePersonalSection}
           gatewayStatus={gatewayStatus}
-          user={user}
           onOpenUserSettings={onOpenUserSettings}
+          onSelectFriends={onSelectFriends}
+          onSelectHome={onSelectHome}
+          user={user}
         />
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col">
         {!userSettingsOpen ? (
           <MobileHeader
-            contextName={activeGuild?.name ?? (activeGuildId ? 'Community' : 'Home')}
+            contextName={
+              activeGuild?.name ??
+              (activeGuildId
+                ? 'Community'
+                : activePersonalSection === 'friends'
+                  ? 'Friends'
+                  : 'Home')
+            }
             gatewayStatus={gatewayStatus}
             user={user}
             onOpenUserSettings={onOpenUserSettings}
+          />
+        ) : null}
+        {!activeGuildId && !userSettingsOpen ? (
+          <PersonalNavigation
+            compact
+            activeSection={activePersonalSection}
+            onSelectFriends={onSelectFriends}
+            onSelectHome={onSelectHome}
           />
         ) : null}
         {children}

@@ -28,7 +28,7 @@ export function MobileHeader({
       </span>
       <div className="min-w-0">
         <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-brand-text">
-          {contextName === 'Home' ? 'Personal space' : 'Community'}
+          {contextName === 'Home' || contextName === 'Friends' ? 'Personal space' : 'Community'}
         </p>
         <p className="truncate text-sm font-semibold text-ink">{contextName}</p>
       </div>

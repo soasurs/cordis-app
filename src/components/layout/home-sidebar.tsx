@@ -3,21 +3,21 @@ import * as ScrollArea from '@radix-ui/react-scroll-area'
 import type { GatewayStatus } from '@/app/gateway-context'
 import type { AppUserSummary } from '@/components/layout/app-shell-types'
 import { CurrentUserPanel } from '@/components/layout/current-user-panel'
-
-// Placeholder entries; only Home is interactive until personal-space routes ship.
-const homeNavigation = [
-  { label: 'Home', icon: '⌂', active: true },
-  { label: 'Friends', icon: '◎' },
-  { label: 'Message requests', icon: '↗' },
-]
+import { PersonalNavigation } from '@/components/layout/personal-navigation'
 
 export function HomeSidebar({
+  activeSection,
   gatewayStatus,
   onOpenUserSettings,
+  onSelectFriends,
+  onSelectHome,
   user,
 }: {
+  activeSection: 'friends' | 'home'
   gatewayStatus: GatewayStatus
   onOpenUserSettings?: () => void
+  onSelectFriends?: () => void
+  onSelectHome?: () => void
   user: AppUserSummary
 }) {
   return (
@@ -33,26 +33,11 @@ export function HomeSidebar({
 
       <ScrollArea.Root className="min-h-0 flex-1 overflow-hidden">
         <ScrollArea.Viewport className="size-full px-3 py-4">
-          <nav aria-label="Home navigation" className="grid gap-1">
-            {homeNavigation.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                aria-current={item.active ? 'page' : undefined}
-                disabled={!item.active}
-                className={`flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-sm font-medium transition ${
-                  item.active
-                    ? 'bg-brand-soft text-brand-text'
-                    : 'text-muted hover:bg-surface-hover hover:text-ink disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted'
-                }`}
-              >
-                <span aria-hidden="true" className="w-4 text-center text-base">
-                  {item.icon}
-                </span>
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          <PersonalNavigation
+            activeSection={activeSection}
+            onSelectFriends={onSelectFriends}
+            onSelectHome={onSelectHome}
+          />
 
           <div className="mt-8 flex items-center justify-between px-3">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-subtle">

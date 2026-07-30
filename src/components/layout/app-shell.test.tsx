@@ -9,6 +9,7 @@ import { AppShell } from '@/components/layout/app-shell'
 
 describe('AppShell', () => {
   it('renders the personal home layout for the current user', () => {
+    const onSelectFriends = vi.fn()
     const onSelectGuild = vi.fn()
     render(
       <TooltipProvider>
@@ -21,6 +22,7 @@ describe('AppShell', () => {
               name: 'Cordis Studio',
             },
           ]}
+          onSelectFriends={onSelectFriends}
           onSelectGuild={onSelectGuild}
           user={{ name: 'Alex Chen', username: 'alex_chen' }}
         >
@@ -33,7 +35,10 @@ describe('AppShell', () => {
     expect(screen.getByRole('button', { name: 'Cordis Studio' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Cordis Studio' }))
     expect(onSelectGuild).toHaveBeenCalledWith('42')
-    expect(screen.getByRole('navigation', { name: 'Home navigation' })).toBeInTheDocument()
+    expect(screen.getAllByRole('navigation', { name: 'Home navigation' })).toHaveLength(2)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Friends' })[0]!)
+    expect(onSelectFriends).toHaveBeenCalledOnce()
+    expect(screen.queryByText('Message requests')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Welcome, Alex.' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Start connecting' })).toBeInTheDocument()
     expect(screen.getByText('No recent conversations')).toBeInTheDocument()

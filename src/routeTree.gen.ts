@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as DesignRouteImport } from './routes/[_]design'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppFriendsRouteImport } from './routes/_app.friends'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
@@ -46,6 +47,11 @@ const DesignRoute = DesignRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFriendsRoute = AppFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => AppRoute,
 } as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
@@ -136,6 +142,7 @@ const AppGuildsGuildIdChannelsChannelIdSettingsTabRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/_design': typeof DesignRoute
+  '/friends': typeof AppFriendsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/_design': typeof DesignRoute
+  '/friends': typeof AppFriendsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_design': typeof DesignRoute
+  '/_app/friends': typeof AppFriendsRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/_design'
+    | '/friends'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/_design'
+    | '/friends'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_design'
+    | '/_app/friends'
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/register'
@@ -291,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/friends': {
+      id: '/_app/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof AppFriendsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_auth/forgot-password': {
@@ -443,6 +462,7 @@ const AppGuildsGuildIdRouteWithChildren =
   AppGuildsGuildIdRoute._addFileChildren(AppGuildsGuildIdRouteChildren)
 
 interface AppRouteChildren {
+  AppFriendsRoute: typeof AppFriendsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppGuildsGuildIdRoute: typeof AppGuildsGuildIdRouteWithChildren
   AppInviteCodeRoute: typeof AppInviteCodeRoute
@@ -453,6 +473,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppFriendsRoute: AppFriendsRoute,
   AppIndexRoute: AppIndexRoute,
   AppGuildsGuildIdRoute: AppGuildsGuildIdRouteWithChildren,
   AppInviteCodeRoute: AppInviteCodeRoute,
