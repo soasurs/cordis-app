@@ -54,8 +54,27 @@ describe('AppShell', () => {
     )
 
     const statusControls = screen.getAllByRole('combobox', { name: 'Set presence status' })
-    fireEvent.change(statusControls[0], { target: { value: 'dnd' } })
+    fireEvent.click(statusControls[0])
+    fireEvent.click(screen.getByRole('option', { name: 'Do not disturb' }))
 
     expect(setStatus).toHaveBeenCalledWith('dnd')
+  })
+
+  it('opens the presence selector from the current user panel', () => {
+    const setStatus = vi.fn()
+    render(
+      <TooltipProvider>
+        <GatewayPresencePreferenceContext value={{ setStatus, status: 'online' }}>
+          <AppShell user={{ name: 'Alex Chen', username: 'alex_chen' }}>
+            <p>Content</p>
+          </AppShell>
+        </GatewayPresencePreferenceContext>
+      </TooltipProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'Set presence status for Alex Chen' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Idle' }))
+
+    expect(setStatus).toHaveBeenCalledWith('idle')
   })
 })
