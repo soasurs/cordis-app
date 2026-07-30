@@ -6,6 +6,8 @@ export const friendsTabs = [
 
 export type FriendsTab = (typeof friendsTabs)[number]['id']
 
-export function isFriendsTab(value: unknown): value is FriendsTab {
-  return friendsTabs.some((tab) => tab.id === value)
-}
+export const friendsTabPaths = {
+  all: '/friends',
+  blocked: '/friends/blocked',
+  pending: '/friends/pending',
+} as const satisfies Record<FriendsTab, string>

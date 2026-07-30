@@ -37,23 +37,24 @@ describe('friends routing', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Friends' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Blocked' }))
-    await waitFor(() => expect(router.state.location.search).toEqual({ tab: 'blocked' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/friends/blocked'))
+    expect(router.state.location.search).toEqual({})
     expect(
       await screen.findByRole('heading', { level: 2, name: 'No blocked users' }),
     ).toBeInTheDocument()
   })
 
-  it('restores a deep-linked friends view and normalizes an unknown view', async () => {
-    const blockedRouter = await renderRoute('/friends?tab=blocked')
-    expect(blockedRouter.state.location.search).toEqual({ tab: 'blocked' })
+  it('restores deep-linked friends views and keeps the default view at the base path', async () => {
+    const blockedRouter = await renderRoute('/friends/blocked')
+    expect(blockedRouter.state.location.pathname).toBe('/friends/blocked')
     expect(
       await screen.findByRole('heading', { level: 2, name: 'No blocked users' }),
     ).toBeInTheDocument()
 
     blockedRouter.history.destroy()
     cleanup()
-    const normalizedRouter = await renderRoute('/friends?tab=unknown')
-    expect(normalizedRouter.state.location.search).toEqual({})
+    const friendsRouter = await renderRoute('/friends')
+    expect(friendsRouter.state.location.pathname).toBe('/friends')
     expect(
       await screen.findByRole('heading', { level: 2, name: 'No friends yet' }),
     ).toBeInTheDocument()

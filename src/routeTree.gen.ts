@@ -19,6 +19,9 @@ import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth.reset-password'
 import { Route as AuthVerifyEmailRouteImport } from './routes/_auth.verify-email'
+import { Route as AppFriendsIndexRouteImport } from './routes/_app.friends.index'
+import { Route as AppFriendsBlockedRouteImport } from './routes/_app.friends.blocked'
+import { Route as AppFriendsPendingRouteImport } from './routes/_app.friends.pending'
 import { Route as AppGuildsGuildIdRouteImport } from './routes/_app.guilds.$guildId'
 import { Route as AppInviteCodeRouteImport } from './routes/_app.invite.$code'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
@@ -78,6 +81,21 @@ const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
   getParentRoute: () => AuthRoute,
+} as any)
+const AppFriendsIndexRoute = AppFriendsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppFriendsRoute,
+} as any)
+const AppFriendsBlockedRoute = AppFriendsBlockedRouteImport.update({
+  id: '/blocked',
+  path: '/blocked',
+  getParentRoute: () => AppFriendsRoute,
+} as any)
+const AppFriendsPendingRoute = AppFriendsPendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
+  getParentRoute: () => AppFriendsRoute,
 } as any)
 const AppGuildsGuildIdRoute = AppGuildsGuildIdRouteImport.update({
   id: '/guilds/$guildId',
@@ -142,17 +160,20 @@ const AppGuildsGuildIdChannelsChannelIdSettingsTabRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/_design': typeof DesignRoute
-  '/friends': typeof AppFriendsRoute
+  '/friends': typeof AppFriendsRouteWithChildren
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
+  '/friends/blocked': typeof AppFriendsBlockedRoute
+  '/friends/pending': typeof AppFriendsPendingRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
   '/invite/$code': typeof AppInviteCodeRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/friends/': typeof AppFriendsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
   '/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRouteWithChildren
@@ -163,16 +184,18 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/_design': typeof DesignRoute
-  '/friends': typeof AppFriendsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
+  '/friends/blocked': typeof AppFriendsBlockedRoute
+  '/friends/pending': typeof AppFriendsPendingRoute
   '/invite/$code': typeof AppInviteCodeRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/friends': typeof AppFriendsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdIndexRoute
   '/guilds/$guildId/settings/$section': typeof AppGuildsGuildIdSettingsSectionRoute
@@ -184,18 +207,21 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_design': typeof DesignRoute
-  '/_app/friends': typeof AppFriendsRoute
+  '/_app/friends': typeof AppFriendsRouteWithChildren
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/friends/blocked': typeof AppFriendsBlockedRoute
+  '/_app/friends/pending': typeof AppFriendsPendingRoute
   '/_app/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
   '/_app/invite/$code': typeof AppInviteCodeRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/profile': typeof AppSettingsProfileRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
+  '/_app/friends/': typeof AppFriendsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
   '/_app/guilds/$guildId/channels/$channelId': typeof AppGuildsGuildIdChannelsChannelIdRouteWithChildren
@@ -214,11 +240,14 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/friends/blocked'
+    | '/friends/pending'
     | '/guilds/$guildId'
     | '/invite/$code'
     | '/settings/account'
     | '/settings/profile'
     | '/settings/security'
+    | '/friends/'
     | '/settings/'
     | '/guilds/$guildId/'
     | '/guilds/$guildId/channels/$channelId'
@@ -229,16 +258,18 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/_design'
-    | '/friends'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/friends/blocked'
+    | '/friends/pending'
     | '/invite/$code'
     | '/settings/account'
     | '/settings/profile'
     | '/settings/security'
+    | '/friends'
     | '/settings'
     | '/guilds/$guildId'
     | '/guilds/$guildId/settings/$section'
@@ -256,11 +287,14 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/_auth/verify-email'
     | '/_app/'
+    | '/_app/friends/blocked'
+    | '/_app/friends/pending'
     | '/_app/guilds/$guildId'
     | '/_app/invite/$code'
     | '/_app/settings/account'
     | '/_app/settings/profile'
     | '/_app/settings/security'
+    | '/_app/friends/'
     | '/_app/settings/'
     | '/_app/guilds/$guildId/'
     | '/_app/guilds/$guildId/channels/$channelId'
@@ -347,6 +381,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthVerifyEmailRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_app/friends/': {
+      id: '/_app/friends/'
+      path: '/'
+      fullPath: '/friends/'
+      preLoaderRoute: typeof AppFriendsIndexRouteImport
+      parentRoute: typeof AppFriendsRoute
+    }
+    '/_app/friends/blocked': {
+      id: '/_app/friends/blocked'
+      path: '/blocked'
+      fullPath: '/friends/blocked'
+      preLoaderRoute: typeof AppFriendsBlockedRouteImport
+      parentRoute: typeof AppFriendsRoute
+    }
+    '/_app/friends/pending': {
+      id: '/_app/friends/pending'
+      path: '/pending'
+      fullPath: '/friends/pending'
+      preLoaderRoute: typeof AppFriendsPendingRouteImport
+      parentRoute: typeof AppFriendsRoute
+    }
     '/_app/guilds/$guildId': {
       id: '/_app/guilds/$guildId'
       path: '/guilds/$guildId'
@@ -427,6 +482,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppFriendsRouteChildren {
+  AppFriendsBlockedRoute: typeof AppFriendsBlockedRoute
+  AppFriendsPendingRoute: typeof AppFriendsPendingRoute
+  AppFriendsIndexRoute: typeof AppFriendsIndexRoute
+}
+
+const AppFriendsRouteChildren: AppFriendsRouteChildren = {
+  AppFriendsBlockedRoute: AppFriendsBlockedRoute,
+  AppFriendsPendingRoute: AppFriendsPendingRoute,
+  AppFriendsIndexRoute: AppFriendsIndexRoute,
+}
+
+const AppFriendsRouteWithChildren = AppFriendsRoute._addFileChildren(
+  AppFriendsRouteChildren,
+)
+
 interface AppGuildsGuildIdChannelsChannelIdRouteChildren {
   AppGuildsGuildIdChannelsChannelIdIndexRoute: typeof AppGuildsGuildIdChannelsChannelIdIndexRoute
   AppGuildsGuildIdChannelsChannelIdSettingsTabRoute: typeof AppGuildsGuildIdChannelsChannelIdSettingsTabRoute
@@ -462,7 +533,7 @@ const AppGuildsGuildIdRouteWithChildren =
   AppGuildsGuildIdRoute._addFileChildren(AppGuildsGuildIdRouteChildren)
 
 interface AppRouteChildren {
-  AppFriendsRoute: typeof AppFriendsRoute
+  AppFriendsRoute: typeof AppFriendsRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppGuildsGuildIdRoute: typeof AppGuildsGuildIdRouteWithChildren
   AppInviteCodeRoute: typeof AppInviteCodeRoute
@@ -473,7 +544,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppFriendsRoute: AppFriendsRoute,
+  AppFriendsRoute: AppFriendsRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppGuildsGuildIdRoute: AppGuildsGuildIdRouteWithChildren,
   AppInviteCodeRoute: AppInviteCodeRoute,

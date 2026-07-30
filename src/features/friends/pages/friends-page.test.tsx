@@ -118,6 +118,17 @@ describe('FriendsPage', () => {
 
     expect(onSelectTab).toHaveBeenCalledWith('pending')
   })
+
+  it('opens and closes the add friend dialog', () => {
+    vi.mocked(listRelationships).mockResolvedValue({ relationships: [] })
+
+    renderFriendsPage('all')
+    fireEvent.click(screen.getByRole('button', { name: 'Add friend' }))
+
+    expect(screen.getByRole('dialog', { name: 'Add a friend' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close add friend dialog' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })
 
 function renderFriendsPage(tab: 'all' | 'blocked' | 'pending', onSelectTab = vi.fn()) {
