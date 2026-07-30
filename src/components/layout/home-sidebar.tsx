@@ -1,12 +1,8 @@
-import * as Avatar from '@radix-ui/react-avatar'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 
-import { useGatewayPresencePreference, type GatewayStatus } from '@/app/gateway-context'
-import { getInitials, type AppUserSummary } from '@/components/layout/app-shell-types'
-import {
-  presenceStatusDotClass,
-  presenceStatusLabel,
-} from '@/features/presence/presence-preference'
+import type { GatewayStatus } from '@/app/gateway-context'
+import type { AppUserSummary } from '@/components/layout/app-shell-types'
+import { CurrentUserPanel } from '@/components/layout/current-user-panel'
 
 // Placeholder entries; only Home is interactive until personal-space routes ship.
 const homeNavigation = [
@@ -17,15 +13,13 @@ const homeNavigation = [
 
 export function HomeSidebar({
   gatewayStatus,
+  onOpenUserSettings,
   user,
 }: {
   gatewayStatus: GatewayStatus
+  onOpenUserSettings?: () => void
   user: AppUserSummary
 }) {
-  const initials = getInitials(user.name, user.username)
-  const connected = gatewayStatus.state === 'ready'
-  const { status } = useGatewayPresencePreference()
-
   return (
     <aside className="hidden w-60 shrink-0 border-r border-line bg-surface-raised lg:flex lg:flex-col">
       <header className="flex h-16 shrink-0 items-center border-b border-line px-5">
@@ -85,29 +79,11 @@ export function HomeSidebar({
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
 
-      <footer className="m-3 flex items-center gap-3 rounded-panel border border-line bg-surface p-3">
-        <Avatar.Root className="relative grid size-9 shrink-0 place-items-center rounded-control bg-brand-soft text-xs font-bold text-brand-text">
-          <Avatar.Fallback>{initials}</Avatar.Fallback>
-          <span
-            title={connected ? `Status: ${presenceStatusLabel(status)}` : 'Realtime disconnected'}
-            className={`absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface ${
-              connected ? presenceStatusDotClass(status) : 'bg-subtle'
-            }`}
-          />
-        </Avatar.Root>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-ink">{user.name || user.username}</p>
-          <p className="truncate text-xs text-subtle">@{user.username}</p>
-        </div>
-        <button
-          type="button"
-          disabled
-          aria-label="User settings"
-          className="text-base text-subtle disabled:cursor-not-allowed"
-        >
-          ···
-        </button>
-      </footer>
+      <CurrentUserPanel
+        gatewayStatus={gatewayStatus}
+        user={user}
+        onOpenUserSettings={onOpenUserSettings}
+      />
     </aside>
   )
 }

@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 
 import { GuildChannelType } from '@/api/guild'
+import { useGatewayStatus } from '@/app/gateway-context'
+import { CurrentUserPanel } from '@/components/layout/current-user-panel'
 import { Button } from '@/components/ui/button'
+import { authSessionQueryOptions } from '@/features/auth/auth-session'
 import { ChannelNavigation } from '@/features/guilds/components/channel-navigation'
 import { CreateGuildChannelDialog } from '@/features/guilds/components/create-guild-channel-dialog'
 import { GuildChannelHeader } from '@/features/guilds/components/guild-channel-header'
@@ -31,6 +34,7 @@ interface GuildPageProps {
   guildId: string
   onOpenChannelSettings?: (channel: GuildChannelSummary) => void
   onOpenSettings?: () => void
+  onOpenUserSettings?: () => void
   onSelectChannel?: (channelId: string) => void
 }
 
@@ -42,12 +46,15 @@ export function GuildPage({
   guildId,
   onOpenChannelSettings,
   onOpenSettings,
+  onOpenUserSettings,
   onSelectChannel,
 }: GuildPageProps) {
   const queryClient = useQueryClient()
+  const gatewayStatus = useGatewayStatus()
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => new Set())
   const [createChannelTarget, setCreateChannelTarget] = useState<CreateChannelTarget>()
   const { data: guilds } = useQuery(guildsQueryOptions)
+  const { data: session } = useQuery(authSessionQueryOptions)
   const channelsQuery = useQuery(guildChannelsQueryOptions(guildId))
   const readStatesQuery = useQuery(guildReadStatesQueryOptions(guildId))
   const channelReordering = useChannelReordering(guildId)
@@ -154,6 +161,20 @@ export function GuildPage({
             />
           ) : null}
         </div>
+        {session ? (
+          <div className="hidden md:block">
+            <CurrentUserPanel
+              gatewayStatus={gatewayStatus}
+              onOpenUserSettings={onOpenUserSettings}
+              user={{
+                avatarAssetId: session.profile.avatarAssetId?.toString(),
+                name: session.profile.name,
+                userId: session.profile.userId?.toString(),
+                username: session.profile.username,
+              }}
+            />
+          </div>
+        ) : null}
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col bg-surface">

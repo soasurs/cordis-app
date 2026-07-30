@@ -2,6 +2,9 @@ import { Button } from '@/components/ui/button'
 
 interface GuildIconCropConfirmStepProps {
   closeDialog: () => void
+  confirmCopy: string
+  confirmImageAlt: string
+  confirmLabel: string
   handleBackToEdit: () => void
   handleUpload: () => void
   pending: boolean
@@ -12,6 +15,9 @@ interface GuildIconCropConfirmStepProps {
 
 export function GuildIconCropConfirmStep({
   closeDialog,
+  confirmCopy,
+  confirmImageAlt,
+  confirmLabel,
   handleBackToEdit,
   handleUpload,
   pending,
@@ -24,16 +30,10 @@ export function GuildIconCropConfirmStep({
       <div className="mx-auto mt-8 grid place-items-center px-5">
         <div className="grid size-40 place-items-center overflow-hidden rounded-[2.75rem] border border-line bg-canvas shadow-panel">
           {previewUrl ? (
-            <img
-              alt="Cropped community icon preview"
-              src={previewUrl}
-              className="size-full object-cover"
-            />
+            <img alt={confirmImageAlt} src={previewUrl} className="size-full object-cover" />
           ) : null}
         </div>
-        <p className="mt-4 max-w-xs text-center text-sm leading-6 text-muted">
-          This is how the community icon will appear. Upload it, or go back to adjust the crop.
-        </p>
+        <p className="mt-4 max-w-xs text-center text-sm leading-6 text-muted">{confirmCopy}</p>
       </div>
 
       <div className="mt-8 flex items-center gap-2 border-t border-line px-5 py-4">
@@ -50,7 +50,7 @@ export function GuildIconCropConfirmStep({
             type="button"
             onClick={handleUpload}
           >
-            Upload
+            {confirmLabel}
           </Button>
         </div>
       </div>

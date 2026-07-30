@@ -5,12 +5,24 @@ import { GuildIconCropEditStep } from '@/features/guilds/components/guild-icon-c
 import { useGuildIconCrop } from '@/features/guilds/components/use-guild-icon-crop'
 
 interface GuildIconCropDialogProps {
+  confirmCopy?: string
+  confirmImageAlt?: string
+  confirmLabel?: string
+  confirmTitle?: string
   file: File
   onCancel: () => void
   onConfirm: (file: File) => void
 }
 
-export function GuildIconCropDialog({ file, onCancel, onConfirm }: GuildIconCropDialogProps) {
+export function GuildIconCropDialog({
+  confirmCopy = 'This is how the community icon will appear. Upload it, or go back to adjust the crop.',
+  confirmImageAlt = 'Cropped community icon preview',
+  confirmLabel = 'Upload',
+  confirmTitle = 'Confirm icon',
+  file,
+  onCancel,
+  onConfirm,
+}: GuildIconCropDialogProps) {
   const crop = useGuildIconCrop({ file, onCancel, onConfirm })
 
   return (
@@ -36,12 +48,12 @@ export function GuildIconCropDialog({ file, onCancel, onConfirm }: GuildIconCrop
         >
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <Dialog.Title className="text-base font-semibold tracking-[-0.02em]">
-              {crop.step === 'edit' ? 'Edit image' : 'Confirm icon'}
+              {crop.step === 'edit' ? 'Edit image' : confirmTitle}
             </Dialog.Title>
             <Dialog.Description className="sr-only">
               {crop.step === 'edit'
                 ? 'Drag to reposition, zoom to frame the icon, and rotate if needed. The cropped image keeps your original format.'
-                : 'Review the cropped community icon before uploading it.'}
+                : confirmCopy}
             </Dialog.Description>
             <button
               type="button"
@@ -83,6 +95,9 @@ export function GuildIconCropDialog({ file, onCancel, onConfirm }: GuildIconCrop
           ) : (
             <GuildIconCropConfirmStep
               closeDialog={crop.closeDialog}
+              confirmCopy={confirmCopy}
+              confirmImageAlt={confirmImageAlt}
+              confirmLabel={confirmLabel}
               handleBackToEdit={crop.handleBackToEdit}
               handleUpload={crop.handleUpload}
               pending={crop.pending}

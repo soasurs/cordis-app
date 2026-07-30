@@ -123,6 +123,17 @@ beforeEach(() => {
 })
 
 describe('GuildPage', () => {
+  it('keeps the current-user panel at the bottom of the community sidebar', async () => {
+    const queryClient = createQueryClient()
+    const onOpenUserSettings = vi.fn()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    renderGuildPage(queryClient, { channelId: '43', onOpenUserSettings })
+
+    expect(await screen.findByText('@alex_chen')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'User settings' }))
+    expect(onOpenUserSettings).toHaveBeenCalledOnce()
+  })
+
   it('loads channels from the API when the local channel list is missing', async () => {
     guildApi.listGuildChannels.mockResolvedValue(channels)
     renderGuildPage(createQueryClient(), { channelId: '43' })
@@ -479,6 +490,7 @@ function renderGuildPage(
     channelId?: string
     onOpenChannelSettings?: (channel: GuildChannelSummary) => void
     onOpenSettings?: () => void
+    onOpenUserSettings?: () => void
     onSelectChannel?: (channelId: string) => void
   } = {},
 ) {

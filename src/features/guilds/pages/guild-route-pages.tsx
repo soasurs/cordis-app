@@ -21,6 +21,9 @@ export function EmptyGuildRoutePage() {
           to: '/guilds/$guildId/settings/$section',
         })
       }}
+      onOpenUserSettings={() => {
+        void navigate({ to: '/settings/profile' })
+      }}
       onSelectChannel={(channelId) => {
         void navigate({
           params: { channelId, guildId },
@@ -52,6 +55,9 @@ export function GuildChannelRoutePage() {
           params: { guildId, section: 'overview' },
           to: '/guilds/$guildId/settings/$section',
         })
+      }}
+      onOpenUserSettings={() => {
+        void navigate({ to: '/settings/profile' })
       }}
       onSelectChannel={(nextChannelId) => {
         void navigate({
