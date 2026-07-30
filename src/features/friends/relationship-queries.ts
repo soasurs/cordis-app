@@ -23,3 +23,7 @@ export function relationshipListInfiniteQueryOptions(type: RelationshipType) {
     staleTime: 30_000,
   })
 }
+
+export function flattenRelationships(data: InfiniteData<RelationshipPage> | undefined) {
+  return data?.pages.flatMap((page) => page.relationships) ?? []
+}

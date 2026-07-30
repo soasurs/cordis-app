@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { listRelationships } from '@/api/relationship'
 import {
+  flattenRelationships,
   relationshipListInfiniteQueryOptions,
   relationshipListQueryKey,
   relationshipsQueryKey,
@@ -54,4 +55,58 @@ describe('relationshipListInfiniteQueryOptions', () => {
       expect(listRelationships).toHaveBeenCalledWith(type, 'opaque-current')
     },
   )
+})
+
+describe('flattenRelationships', () => {
+  it('preserves relationship page order', () => {
+    expect(
+      flattenRelationships({
+        pageParams: [undefined, 'next'],
+        pages: [
+          {
+            nextCursor: 'next',
+            relationships: [
+              {
+                createdAt: 2_000,
+                profile: {
+                  avatarAssetId: '0',
+                  bio: '',
+                  createdAt: 1_000,
+                  name: 'Alex',
+                  updatedAt: 1_000,
+                  userId: '8',
+                  username: 'alex',
+                },
+                targetId: '8',
+                type: 'friend',
+                updatedAt: 2_000,
+              },
+            ],
+          },
+          {
+            relationships: [
+              {
+                createdAt: 1_500,
+                profile: {
+                  avatarAssetId: '0',
+                  bio: '',
+                  createdAt: 1_000,
+                  name: 'Blair',
+                  updatedAt: 1_000,
+                  userId: '9',
+                  username: 'blair',
+                },
+                targetId: '9',
+                type: 'friend',
+                updatedAt: 1_500,
+              },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([
+      expect.objectContaining({ targetId: '8' }),
+      expect.objectContaining({ targetId: '9' }),
+    ])
+  })
 })
