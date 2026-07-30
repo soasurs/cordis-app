@@ -3,7 +3,9 @@ import type { PropsWithChildren } from 'react'
 import type { GatewayStatus } from '@/app/gateway-context'
 
 export interface AppUserSummary {
+  avatarAssetId?: string
   name: string
+  userId?: string
   username: string
 }
 
@@ -18,8 +20,10 @@ export interface AppShellProps extends PropsWithChildren {
   gatewayStatus?: GatewayStatus
   guilds?: AppGuildSummary[]
   onCreateCommunity?: () => void
+  onOpenUserSettings?: () => void
   onSelectGuild?: (guildId: string) => void
   onSelectHome?: () => void
+  userSettingsOpen?: boolean
   user: AppUserSummary
 }
 

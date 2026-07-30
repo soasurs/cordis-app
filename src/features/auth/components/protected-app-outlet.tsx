@@ -18,6 +18,7 @@ export function ProtectedAppOutlet() {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const activeGuildId = pathname.match(/^\/guilds\/([^/]+)/)?.[1]
+  const userSettingsOpen = pathname.startsWith('/settings/')
 
   if (!session) {
     return <Navigate to="/login" />
@@ -30,13 +31,22 @@ export function ProtectedAppOutlet() {
         gatewayStatus={gatewayStatus}
         guilds={guilds}
         onCreateCommunity={openCreateGuildDialog}
+        onOpenUserSettings={() => {
+          void navigate({ replace: userSettingsOpen, to: '/settings/profile' })
+        }}
         onSelectGuild={(guildId) => {
           void navigate({ params: { guildId }, to: '/guilds/$guildId' })
         }}
         onSelectHome={() => {
           void navigate({ to: '/' })
         }}
-        user={{ name: session.profile.name, username: session.profile.username }}
+        user={{
+          avatarAssetId: session.profile.avatarAssetId?.toString(),
+          name: session.profile.name,
+          userId: session.profile.userId?.toString(),
+          username: session.profile.username,
+        }}
+        userSettingsOpen={userSettingsOpen}
       >
         <Outlet />
       </AppShell>

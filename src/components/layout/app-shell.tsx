@@ -11,8 +11,10 @@ export function AppShell({
   gatewayStatus = { errorCode: null, state: 'idle' },
   guilds = [],
   onCreateCommunity,
+  onOpenUserSettings,
   onSelectGuild,
   onSelectHome,
+  userSettingsOpen = false,
   user,
 }: AppShellProps) {
   const activeGuild = guilds.find((guild) => guild.id === activeGuildId)
@@ -23,16 +25,27 @@ export function AppShell({
         activeGuildId={activeGuildId}
         guilds={guilds}
         onCreateCommunity={onCreateCommunity}
+        onOpenUserSettings={onOpenUserSettings}
         onSelectGuild={onSelectGuild}
         onSelectHome={onSelectHome}
+        userSettingsOpen={userSettingsOpen}
       />
-      {!activeGuildId ? <HomeSidebar gatewayStatus={gatewayStatus} user={user} /> : null}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader
-          contextName={activeGuild?.name ?? (activeGuildId ? 'Community' : 'Home')}
+      {!activeGuildId && !userSettingsOpen ? (
+        <HomeSidebar
           gatewayStatus={gatewayStatus}
           user={user}
+          onOpenUserSettings={onOpenUserSettings}
         />
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {!userSettingsOpen ? (
+          <MobileHeader
+            contextName={activeGuild?.name ?? (activeGuildId ? 'Community' : 'Home')}
+            gatewayStatus={gatewayStatus}
+            user={user}
+            onOpenUserSettings={onOpenUserSettings}
+          />
+        ) : null}
         {children}
       </div>
     </div>
