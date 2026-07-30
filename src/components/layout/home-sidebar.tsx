@@ -1,8 +1,12 @@
 import * as Avatar from '@radix-ui/react-avatar'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 
-import type { GatewayStatus } from '@/app/gateway-context'
+import { useGatewayPresencePreference, type GatewayStatus } from '@/app/gateway-context'
 import { getInitials, type AppUserSummary } from '@/components/layout/app-shell-types'
+import {
+  presenceStatusDotClass,
+  presenceStatusLabel,
+} from '@/features/presence/presence-preference'
 
 // Placeholder entries; only Home is interactive until personal-space routes ship.
 const homeNavigation = [
@@ -20,6 +24,7 @@ export function HomeSidebar({
 }) {
   const initials = getInitials(user.name, user.username)
   const connected = gatewayStatus.state === 'ready'
+  const { status } = useGatewayPresencePreference()
 
   return (
     <aside className="hidden w-60 shrink-0 border-r border-line bg-surface-raised lg:flex lg:flex-col">
@@ -84,8 +89,10 @@ export function HomeSidebar({
         <Avatar.Root className="relative grid size-9 shrink-0 place-items-center rounded-control bg-brand-soft text-xs font-bold text-brand-text">
           <Avatar.Fallback>{initials}</Avatar.Fallback>
           <span
-            title={connected ? 'Realtime connected' : 'Realtime disconnected'}
-            className={`absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface ${connected ? 'bg-positive' : 'bg-subtle'}`}
+            title={connected ? `Status: ${presenceStatusLabel(status)}` : 'Realtime disconnected'}
+            className={`absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface ${
+              connected ? presenceStatusDotClass(status) : 'bg-subtle'
+            }`}
           />
         </Avatar.Root>
         <div className="min-w-0 flex-1">

@@ -2,6 +2,7 @@ import * as Avatar from '@radix-ui/react-avatar'
 
 import type { GatewayStatus } from '@/app/gateway-context'
 import { getInitials, type AppUserSummary } from '@/components/layout/app-shell-types'
+import { PresenceStatusSelect } from '@/features/presence/components/presence-status-select'
 
 export function MobileHeader({
   contextName,
@@ -27,6 +28,7 @@ export function MobileHeader({
         aria-label={`Realtime status: ${gatewayStatus.state}`}
         className={`ml-auto size-2 rounded-full ${gatewayStatus.state === 'ready' ? 'bg-positive' : gatewayStatus.state === 'reconnecting' ? 'bg-warning' : 'bg-subtle'}`}
       />
+      <PresenceStatusSelect size="mobile" />
       <Avatar.Root className="grid size-9 place-items-center rounded-control bg-surface-hover text-xs font-bold text-muted">
         <Avatar.Fallback>{getInitials(user.name, user.username)}</Avatar.Fallback>
       </Avatar.Root>

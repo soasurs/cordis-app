@@ -139,6 +139,60 @@ describe('GatewayClient', () => {
     client.disconnect()
   })
 
+  it('uses the latest queued status for IDENTIFY', async () => {
+    const { client, sockets } = createHarness()
+
+    client.connect()
+    client.updatePresence({ status: 'dnd' })
+    await receiveHello(sockets[0])
+
+    expect(sockets[0].sent[0]).toMatchObject({
+      d: { status: 'dnd' },
+      op: GatewayOpcode.Identify,
+    })
+  })
+
+  it('sends a status update while ready', async () => {
+    const { client, sockets } = createHarness()
+
+    client.connect()
+    await receiveHello(sockets[0])
+    sockets[0].receive({
+      d: { session_id: 'session-1' },
+      op: GatewayOpcode.Dispatch,
+      s: 1,
+      t: GatewayEventType.Ready,
+    })
+    client.updatePresence({ status: 'invisible' })
+
+    expect(sockets[0].sent.at(-1)).toEqual({
+      d: { status: 'invisible' },
+      op: GatewayOpcode.Presence,
+    })
+  })
+
+  it('flushes a status selected after IDENTIFY when READY arrives', async () => {
+    const { client, sockets } = createHarness()
+
+    client.connect()
+    await receiveHello(sockets[0])
+    expect(sockets[0].sent).toHaveLength(1)
+
+    client.updatePresence({ status: 'idle' })
+    expect(sockets[0].sent).toHaveLength(1)
+    sockets[0].receive({
+      d: { session_id: 'session-1' },
+      op: GatewayOpcode.Dispatch,
+      s: 1,
+      t: GatewayEventType.Ready,
+    })
+
+    expect(sockets[0].sent.at(-1)).toEqual({
+      d: { status: 'idle' },
+      op: GatewayOpcode.Presence,
+    })
+  })
+
   it('retries after a temporary ticket request failure', async () => {
     vi.useFakeTimers()
     const getGatewayTicket = vi

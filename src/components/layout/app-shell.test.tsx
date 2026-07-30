@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { HomePage } from '@/features/home/pages/home-page'
 
+import { GatewayPresencePreferenceContext } from '@/app/gateway-context'
 import { AppShell } from '@/components/layout/app-shell'
 
 describe('AppShell', () => {
@@ -38,5 +39,23 @@ describe('AppShell', () => {
     expect(screen.getByText('No recent conversations')).toBeInTheDocument()
     expect(screen.getByText('@alex_chen')).toBeInTheDocument()
     expect(screen.getAllByText('Connected')).not.toHaveLength(0)
+  })
+
+  it('offers the selected status from the global layout', () => {
+    const setStatus = vi.fn()
+    render(
+      <TooltipProvider>
+        <GatewayPresencePreferenceContext value={{ setStatus, status: 'online' }}>
+          <AppShell user={{ name: 'Alex Chen', username: 'alex_chen' }}>
+            <p>Content</p>
+          </AppShell>
+        </GatewayPresencePreferenceContext>
+      </TooltipProvider>,
+    )
+
+    const statusControls = screen.getAllByRole('combobox', { name: 'Set presence status' })
+    fireEvent.change(statusControls[0], { target: { value: 'dnd' } })
+
+    expect(setStatus).toHaveBeenCalledWith('dnd')
   })
 })

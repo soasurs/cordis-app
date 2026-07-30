@@ -5,7 +5,9 @@ export type {
   GatewayErrorData,
   GatewayHelloData,
   GatewayIdentifyData,
+  GatewayClientState,
   GatewayPresenceData,
+  GatewayPresenceStatus,
   GatewayResumeData,
 } from '@/gateway/protocol/wire'
 export { isGatewayDispatch } from '@/gateway/protocol/dispatch'

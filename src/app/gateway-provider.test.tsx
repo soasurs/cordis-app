@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   GatewayClientError,
@@ -20,7 +20,11 @@ import {
 } from '@/features/guilds/guild-queries'
 import { presenceQueryKey, type PresenceCache } from '@/features/presence/presence-queries'
 
-import { gatewayReadyQueryKey, useGatewayStatus } from '@/app/gateway-context'
+import {
+  gatewayReadyQueryKey,
+  useGatewayPresencePreference,
+  useGatewayStatus,
+} from '@/app/gateway-context'
 import { GatewayProvider } from '@/app/gateway-provider'
 
 class FakeGatewayConnection {
@@ -73,6 +77,19 @@ function GatewayStatusProbe() {
   const status = useGatewayStatus()
   return <p>{`${status.state}:${status.errorCode ?? 'none'}`}</p>
 }
+
+function GatewayPresencePreferenceProbe() {
+  const { setStatus, status } = useGatewayPresencePreference()
+  return (
+    <button type="button" onClick={() => setStatus('invisible')}>
+      {status}
+    </button>
+  )
+}
+
+beforeEach(() => {
+  window.localStorage.clear()
+})
 
 const readyData = {
   access_token_expires_at: 10_000,
@@ -451,6 +468,7 @@ describe('GatewayProvider', () => {
     )
 
     act(() => connection.setState('ready'))
+    connection.updatePresence.mockClear()
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
     act(() => document.dispatchEvent(new Event('visibilitychange')))
     act(() => vi.advanceTimersByTime(149))
@@ -469,6 +487,29 @@ describe('GatewayProvider', () => {
       Reflect.deleteProperty(document, 'visibilityState')
     }
     vi.useRealTimers()
+  })
+
+  it('restores and persists the per-user status preference', () => {
+    window.localStorage.setItem('cordis.presenceStatus.7', 'dnd')
+    const queryClient = new QueryClient()
+    const connection = new FakeGatewayConnection()
+    const clientFactory = vi.fn(() => connection)
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GatewayProvider enabled clientFactory={clientFactory} userId="7">
+          <GatewayPresencePreferenceProbe />
+        </GatewayProvider>
+      </QueryClientProvider>,
+    )
+
+    expect(clientFactory).toHaveBeenCalledWith('dnd')
+    expect(screen.getByRole('button', { name: 'dnd' })).toBeInTheDocument()
+    connection.updatePresence.mockClear()
+    act(() => connection.setState('ready'))
+    act(() => screen.getByRole('button', { name: 'dnd' }).click())
+
+    expect(window.localStorage.getItem('cordis.presenceStatus.7')).toBe('invisible')
+    expect(connection.updatePresence).toHaveBeenCalledWith({ status: 'invisible' })
   })
 
   it('reports an invalid Gateway configuration without crashing the application', () => {

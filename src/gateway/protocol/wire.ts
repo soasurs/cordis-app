@@ -12,11 +12,14 @@ export interface GatewayHelloData {
   gateway_id: string
 }
 
+export type GatewayPresenceStatus = 'online' | 'idle' | 'dnd' | 'invisible'
+export type GatewayClientState = 'foreground' | 'background'
+
 export interface GatewayIdentifyData {
   gateway_ticket: string
   device_type?: string
-  status?: string
-  client_state?: string
+  status?: GatewayPresenceStatus
+  client_state?: GatewayClientState
 }
 
 export interface GatewayResumeData {
@@ -27,8 +30,8 @@ export interface GatewayResumeData {
 }
 
 export interface GatewayPresenceData {
-  status?: string
-  client_state?: string
+  status?: GatewayPresenceStatus
+  client_state?: GatewayClientState
 }
 
 export interface GatewayErrorData {
