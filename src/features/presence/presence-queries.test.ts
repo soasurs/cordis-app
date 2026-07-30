@@ -5,8 +5,10 @@ import {
   applyPresenceFromGateway,
   createPresenceUserIdBatches,
   presenceQueryKey,
+  presenceResolutionQueryKey,
   reconcilePresenceResolution,
   replacePresencesFromReady,
+  snapshotPresenceVersions,
   type PresenceCache,
 } from '@/features/presence/presence-queries'
 
@@ -55,11 +57,16 @@ describe('presence query cache', () => {
       { last_seen_at: 1_000, status: 2, user_id: '7', version: '10' },
       { last_seen_at: 1_000, status: 3, user_id: '8', version: '10' },
     ])
+    const observedVersions = snapshotPresenceVersions(queryClient, ['7', '8'])
 
-    reconcilePresenceResolution(queryClient, {
-      presences: [{ lastSeenAt: 2_000, status: 'online', userId: '7', version: 11n }],
-      requestedUserIds: ['7', '8'],
-    })
+    reconcilePresenceResolution(
+      queryClient,
+      {
+        presences: [{ lastSeenAt: 2_000, status: 'online', userId: '7', version: 11n }],
+        requestedUserIds: ['7', '8'],
+      },
+      observedVersions,
+    )
 
     expect(getPresence(queryClient, '7')?.version).toBe(11n)
     expect(getPresence(queryClient, '8')).toBeUndefined()
@@ -70,6 +77,7 @@ describe('presence query cache', () => {
     replacePresencesFromReady(queryClient, [
       { last_seen_at: 1_000, status: 2, user_id: '7', version: '10' },
     ])
+    const observedVersions = snapshotPresenceVersions(queryClient, ['7'])
     applyPresenceFromGateway(queryClient, {
       changed_at: 3_000,
       guild_ids: [],
@@ -78,12 +86,55 @@ describe('presence query cache', () => {
       version: '12',
     })
 
-    reconcilePresenceResolution(queryClient, {
-      presences: [{ lastSeenAt: 2_000, status: 'offline', userId: '7', version: 11n }],
-      requestedUserIds: ['7'],
-    })
+    reconcilePresenceResolution(
+      queryClient,
+      {
+        presences: [{ lastSeenAt: 2_000, status: 'offline', userId: '7', version: 11n }],
+        requestedUserIds: ['7'],
+      },
+      observedVersions,
+    )
 
     expect(getPresence(queryClient, '7')).toMatchObject({ status: 'idle', version: 12n })
+  })
+
+  it('does not let an omitted API response delete a newer realtime event', () => {
+    const queryClient = new QueryClient()
+    replacePresencesFromReady(queryClient, [
+      { last_seen_at: 1_000, status: 2, user_id: '7', version: '10' },
+    ])
+    const observedVersions = snapshotPresenceVersions(queryClient, ['7'])
+    applyPresenceFromGateway(queryClient, {
+      changed_at: 3_000,
+      guild_ids: [],
+      status: 3,
+      user_id: '7',
+      version: '12',
+    })
+
+    reconcilePresenceResolution(
+      queryClient,
+      { presences: [], requestedUserIds: ['7'] },
+      observedVersions,
+    )
+
+    expect(getPresence(queryClient, '7')).toMatchObject({ status: 'idle', version: 12n })
+  })
+
+  it('resets cached resolutions when READY replaces the aggregate snapshot', () => {
+    const queryClient = new QueryClient()
+    const resolutionQueryKey = [...presenceResolutionQueryKey, '7'] as const
+    queryClient.setQueryData(resolutionQueryKey, {
+      observedVersions: new Map(),
+      resolution: {
+        presences: [{ lastSeenAt: 1_000, status: 'online', userId: '7', version: 10n }],
+        requestedUserIds: ['7'],
+      },
+    })
+
+    replacePresencesFromReady(queryClient, [])
+
+    expect(queryClient.getQueryData(resolutionQueryKey)).toBeUndefined()
   })
 })
 

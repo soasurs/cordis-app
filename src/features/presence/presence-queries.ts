@@ -18,8 +18,10 @@ import {
 import type { PresenceUpdatedPayload, ReadyPresence } from '@/gateway'
 
 export type PresenceCache = ReadonlyMap<string, UserPresence>
+export type PresenceVersionSnapshot = ReadonlyMap<string, bigint | undefined>
 
 export const presenceQueryKey = ['presence'] as const
+export const presenceResolutionQueryKey = [...presenceQueryKey, 'resolve'] as const
 
 export const presenceQueryOptions = queryOptions({
   initialData: new Map<string, UserPresence>() as PresenceCache,
@@ -43,8 +45,14 @@ export function useResolvePresenceBatches(userIdBatches: string[][]): void {
   )
   const resolutions = useQueries({
     queries: normalizedBatches.map((userIds) => ({
-      queryFn: () => resolveUsersPresence(userIds),
-      queryKey: [...presenceQueryKey, 'resolve', ...userIds] as const,
+      queryFn: async () => {
+        const observedVersions = snapshotPresenceVersions(queryClient, userIds)
+        return {
+          observedVersions,
+          resolution: await resolveUsersPresence(userIds),
+        }
+      },
+      queryKey: [...presenceResolutionQueryKey, ...userIds] as const,
       staleTime: 30_000,
     })),
   })
@@ -52,7 +60,11 @@ export function useResolvePresenceBatches(userIdBatches: string[][]): void {
   useEffect(() => {
     for (const resolution of resolutions) {
       if (resolution.data) {
-        reconcilePresenceResolution(queryClient, resolution.data)
+        reconcilePresenceResolution(
+          queryClient,
+          resolution.data.resolution,
+          resolution.data.observedVersions,
+        )
       }
     }
   }, [queryClient, resolutions])
@@ -81,6 +93,7 @@ export function replacePresencesFromReady(
     })
   }
   queryClient.setQueryData(presenceQueryKey, next)
+  void queryClient.resetQueries({ queryKey: presenceResolutionQueryKey })
 }
 
 export function applyPresenceFromGateway(
@@ -98,13 +111,17 @@ export function applyPresenceFromGateway(
 export function reconcilePresenceResolution(
   queryClient: QueryClient,
   resolution: PresenceResolution,
+  observedVersions: PresenceVersionSnapshot,
 ): void {
   queryClient.setQueryData<PresenceCache>(presenceQueryKey, (current) => {
     const next = new Map(current ?? [])
     let changed = false
     const returnedUserIds = new Set(resolution.presences.map((presence) => presence.userId))
     for (const userId of resolution.requestedUserIds) {
-      if (!returnedUserIds.has(userId)) {
+      if (
+        !returnedUserIds.has(userId) &&
+        next.get(userId)?.version === observedVersions.get(userId)
+      ) {
         changed = next.delete(userId) || changed
       }
     }
@@ -113,6 +130,14 @@ export function reconcilePresenceResolution(
     }
     return changed ? next : current
   })
+}
+
+export function snapshotPresenceVersions(
+  queryClient: QueryClient,
+  userIds: string[],
+): PresenceVersionSnapshot {
+  const presences = queryClient.getQueryData<PresenceCache>(presenceQueryKey)
+  return new Map(userIds.map((userId) => [userId, presences?.get(userId)?.version]))
 }
 
 export function clearPresences(queryClient: QueryClient): void {
