@@ -319,12 +319,13 @@ export function useMentionInput(
   const [searchResults, setSearchResults] = useState<MentionCandidate[]>([])
   const hasRemoteSearch = Boolean(onSearch)
   const mentionQuery = mentionTrigger?.query
+  const hasMentionQuery = Boolean(mentionQuery?.trim())
   const isMentionSearchPending = Boolean(
-    onSearch && mentionQuery !== undefined && resolvedSearchQuery !== mentionQuery,
+    onSearch && hasMentionQuery && resolvedSearchQuery !== mentionQuery,
   )
 
   useEffect(() => {
-    if (!onSearch || mentionQuery === undefined) return
+    if (!onSearch || mentionQuery === undefined || !mentionQuery.trim()) return
 
     const query = mentionQuery
     let active = true
@@ -361,7 +362,8 @@ export function useMentionInput(
     searchResults,
     canMentionRolesAndEveryone,
   )
-  const searchHasSettled = resolvedSearchQuery === mentionQuery && !isMentionSearchPending
+  const searchHasSettled =
+    hasMentionQuery && resolvedSearchQuery === mentionQuery && !isMentionSearchPending
   const mentionSuggestions = mentionTrigger
     ? hasRemoteSearch
       ? searchHasSettled
@@ -369,8 +371,9 @@ export function useMentionInput(
         : []
       : filterMentionCandidates(selectableCandidates, mentionTrigger.query)
     : []
+  const canShowMentionSuggestions = Boolean(mentionTrigger) && (!hasRemoteSearch || hasMentionQuery)
   const showMentionSuggestions =
-    Boolean(mentionTrigger) &&
+    canShowMentionSuggestions &&
     (mentionSuggestions.length > 0 ||
       (hasRemoteSearch && (isMentionSearchPending || searchHasSettled)) ||
       Boolean(onLoadMore))

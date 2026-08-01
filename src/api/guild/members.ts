@@ -8,7 +8,7 @@ import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
 import type { GuildMember, GuildMemberPage, GuildMentionUser } from '@/api/guild/types'
 
-const GUILD_MENTION_SEARCH_LIMIT = 25
+const GUILD_MENTION_SEARCH_LIMIT = 20
 
 export async function listGuildMembers(guildId: string, cursor?: string): Promise<GuildMemberPage> {
   assertIdentifier(guildId, 'guild')

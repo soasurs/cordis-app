@@ -97,6 +97,19 @@ describe('message mentions', () => {
     expect(search).toHaveBeenCalledWith('ale')
   })
 
+  it('does not search remote mention candidates without a query', () => {
+    vi.useFakeTimers()
+    const search = vi.fn().mockResolvedValue([])
+    const { result } = renderHook(() => useMentionInputForTest(true, search))
+
+    act(() => result.current.updateDraft('@', 1))
+    act(() => vi.advanceTimersByTime(1_000))
+
+    expect(search).not.toHaveBeenCalled()
+    expect(result.current.isMentionSearchPending).toBe(false)
+    expect(result.current.showMentionSuggestions).toBe(false)
+  })
+
   it('maps server mention search results into user and role candidates', () => {
     expect(
       createMentionCandidatesFromSearch(

@@ -261,7 +261,7 @@ describe('guild API', () => {
     expect(guildClient.searchGuildMentionUsers).toHaveBeenCalledWith({
       channelId: 43n,
       guildId: 42n,
-      limit: 25,
+      limit: 20,
       query: 'ale',
     })
   })
@@ -274,7 +274,7 @@ describe('guild API', () => {
     ])
     expect(guildClient.searchGuildMentionRoles).toHaveBeenCalledWith({
       guildId: 42n,
-      limit: 25,
+      limit: 20,
       query: 'help',
     })
   })
