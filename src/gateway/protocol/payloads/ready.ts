@@ -53,6 +53,7 @@ export interface ReadyGuild {
   roles: ReadyRole[]
   member_role_ids: string[]
   channels: ReadyChannel[]
+  channel_layout_revision: number
   permission_overwrites: ReadyPermissionOverwrite[]
 }
 

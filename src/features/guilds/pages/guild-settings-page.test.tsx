@@ -52,7 +52,10 @@ const assetsApi = vi.hoisted(() => ({
   resolveGuildIconUrl: vi.fn(),
 }))
 
-vi.mock('@/api/assets', () => assetsApi)
+vi.mock('@/api/assets', async (importOriginal) => ({
+  ...(await importOriginal()),
+  ...assetsApi,
+}))
 
 vi.mock('@/features/guilds/components/guild-icon-crop-dialog', () => ({
   GuildIconCropDialog: ({
@@ -164,8 +167,10 @@ describe('GuildSettingsPage', () => {
     const queryClient = createQueryClient()
     guildApi.createGuildIconUpload.mockResolvedValue({
       expiresAt: 1_800_000,
+      idempotentReplay: false,
       presignedUrl: 'https://storage.example/upload',
       requestHeaders: { 'Content-Type': 'image/png' },
+      status: 'created',
       uploadId: '99',
     })
     assetsApi.putToPresignedUrl.mockResolvedValue(undefined)
@@ -187,11 +192,14 @@ describe('GuildSettingsPage', () => {
     expect(guildApi.createGuildIconUpload).toHaveBeenCalledWith('42', {
       contentType: 'image/png',
       expectedSize: file.size,
+      idempotencyKey: expect.any(String),
     })
     expect(assetsApi.putToPresignedUrl).toHaveBeenCalledWith(file, {
       expiresAt: 1_800_000,
+      idempotentReplay: false,
       presignedUrl: 'https://storage.example/upload',
       requestHeaders: { 'Content-Type': 'image/png' },
+      status: 'created',
       uploadId: '99',
     })
     expect(guildApi.completeGuildIconUpload).toHaveBeenCalledWith('42', '99')
@@ -201,6 +209,34 @@ describe('GuildSettingsPage', () => {
       revision: 2,
     })
     expect(await screen.findByRole('status')).toHaveTextContent('Community icon updated.')
+  })
+
+  it('completes an already-terminal icon replay without a second PUT', async () => {
+    const queryClient = createQueryClient()
+    guildApi.createGuildIconUpload.mockResolvedValue({
+      expiresAt: 1_800_000,
+      idempotentReplay: true,
+      presignedUrl: '',
+      requestHeaders: {},
+      status: 'ready',
+      uploadId: '99',
+    })
+    guildApi.completeGuildIconUpload.mockResolvedValue({
+      ...guild,
+      iconAssetId: '99',
+      revision: 2,
+      updatedAt: 2_000,
+    })
+    renderSettings(queryClient)
+    const user = userEvent.setup()
+    const file = new File(['icon-bytes'], 'icon.png', { type: 'image/png' })
+
+    await user.upload(screen.getByLabelText('Upload community icon'), file)
+    await user.click(await screen.findByRole('button', { name: 'Upload' }))
+
+    await waitFor(() => expect(guildApi.completeGuildIconUpload).toHaveBeenCalledWith('42', '99'))
+    expect(assetsApi.putToPresignedUrl).not.toHaveBeenCalled()
+    expect(guildApi.abortGuildIconUpload).not.toHaveBeenCalled()
   })
 
   it('rejects unsupported icon files before creating an upload', async () => {
@@ -232,8 +268,10 @@ describe('GuildSettingsPage', () => {
   it('aborts an upload when the direct PUT fails', async () => {
     guildApi.createGuildIconUpload.mockResolvedValue({
       expiresAt: 1_800_000,
+      idempotentReplay: false,
       presignedUrl: 'https://storage.example/upload',
       requestHeaders: { 'Content-Type': 'image/png' },
+      status: 'created',
       uploadId: '99',
     })
     assetsApi.putToPresignedUrl.mockRejectedValue(new Error('upload failed'))
@@ -255,8 +293,10 @@ describe('GuildSettingsPage', () => {
   it('aborts an upload when completion fails after a successful PUT', async () => {
     guildApi.createGuildIconUpload.mockResolvedValue({
       expiresAt: 1_800_000,
+      idempotentReplay: false,
       presignedUrl: 'https://storage.example/upload',
       requestHeaders: { 'Content-Type': 'image/png' },
+      status: 'created',
       uploadId: '99',
     })
     assetsApi.putToPresignedUrl.mockResolvedValue(undefined)
@@ -415,6 +455,7 @@ describe('GuildSettingsPage', () => {
 
     await waitFor(() =>
       expect(guildApi.createGuildRole).toHaveBeenCalledWith('42', {
+        idempotencyKey: expect.any(String),
         name: 'Helpers',
         permissions: '0',
       }),
@@ -715,6 +756,7 @@ describe('GuildSettingsPage', () => {
     await waitFor(() =>
       expect(guildApi.createGuildInvite).toHaveBeenCalledWith('42', {
         expiresInMs: 0,
+        idempotencyKey: expect.any(String),
         maxUses: 5,
       }),
     )

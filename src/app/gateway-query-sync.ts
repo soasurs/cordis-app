@@ -143,7 +143,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
   }
 
   if (isGatewayDispatch(dispatch, 'guild.channel.deleted')) {
-    removeGuildChannelFromGateway(queryClient, dispatch.data.guild_id, dispatch.data.id)
+    removeGuildChannelFromGateway(queryClient, dispatch.data)
     return
   }
 

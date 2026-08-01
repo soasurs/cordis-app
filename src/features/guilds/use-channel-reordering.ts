@@ -1,10 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { reorderGuildChannels, type GuildChannel } from '@/api/guild'
+import { isResourceConflictError } from '@/api/errors'
+import { reorderGuildChannels, type GuildChannelList } from '@/api/guild'
 
 import { getChangedChannelPositions } from '@/features/guilds/channel-ordering'
 import {
+  getGuildChannelLayoutRevision,
   guildChannelsQueryKey,
+  setGuildChannelLayoutRevision,
   type GuildChannelSummary,
   upsertGuildChannelsFromApi,
 } from '@/features/guilds/guild-queries'
@@ -22,15 +25,25 @@ export function useChannelReordering(guildId: string) {
   const queryClient = useQueryClient()
 
   return useMutation<
-    GuildChannel[],
+    GuildChannelList,
     Error,
     ReorderGuildChannelVariables,
     ReorderGuildChannelContext
   >({
+    retry: false,
     mutationFn: async ({ nextChannels, previousChannels }) => {
       const changedPositions = getChangedChannelPositions(previousChannels, nextChannels)
-      if (changedPositions.length === 0) return []
-      return reorderGuildChannels(guildId, changedPositions)
+      const expectedChannelLayoutRevision = getGuildChannelLayoutRevision(queryClient, guildId)
+      if (expectedChannelLayoutRevision === undefined) {
+        throw new Error('channel layout revision is unavailable')
+      }
+      if (changedPositions.length === 0) {
+        return {
+          channelLayoutRevision: expectedChannelLayoutRevision,
+          channels: [],
+        }
+      }
+      return reorderGuildChannels(guildId, changedPositions, expectedChannelLayoutRevision)
     },
     onMutate: async ({ nextChannels, previousChannels }) => {
       await queryClient.cancelQueries({ queryKey: guildChannelsQueryKey(guildId) })
@@ -47,10 +60,15 @@ export function useChannelReordering(guildId: string) {
       void queryClient.invalidateQueries({
         exact: true,
         queryKey: guildChannelsQueryKey(guildId),
+        refetchType: isResourceConflictError(_error) ? 'all' : 'active',
       })
     },
-    onSuccess: (channels) => {
-      upsertGuildChannelsFromApi(queryClient, guildId, channels)
+    onSuccess: (result) => {
+      if (result.channels.length > 0) {
+        upsertGuildChannelsFromApi(queryClient, guildId, result)
+      } else {
+        setGuildChannelLayoutRevision(queryClient, guildId, result.channelLayoutRevision)
+      }
     },
   })
 }

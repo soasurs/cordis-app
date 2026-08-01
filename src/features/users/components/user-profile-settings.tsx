@@ -3,8 +3,15 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
-import { putToPresignedUrl, resolveAvatarUrl } from '@/api/assets'
+import {
+  isTerminalUploadStatus,
+  isUploadIntentRetiredError,
+  putToPresignedUrl,
+  resolveAvatarUrl,
+  UploadIntentRetiredError,
+} from '@/api/assets'
 import { getApiErrorMessage } from '@/api/errors'
+import { createIdempotencyKey } from '@/api/idempotency'
 import {
   abortAvatarUpload,
   createAvatarUpload,
@@ -41,6 +48,7 @@ type AvatarSelection = AvatarFileSelection | null | undefined
 export function UserProfileSettings({ session }: { session: CurrentUser }) {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarIntentRef = useRef<{ file: File; key: string; userId: string } | undefined>(undefined)
   const [avatarSelection, setAvatarSelection] = useState<AvatarSelection>()
   const [cropFile, setCropFile] = useState<File>()
   const [selectionError, setSelectionError] = useState<string>()
@@ -64,27 +72,55 @@ export function UserProfileSettings({ session }: { session: CurrentUser }) {
     mutationFn: async ({
       avatarFile,
       details,
+      idempotencyKey,
     }: {
       avatarFile?: File
       details: UpdateUserProfileDetails
+      idempotencyKey?: string
     }) => {
       let uploadId: string | undefined
+      let shouldAbortUpload = false
+      const clearIntent = () => {
+        const currentIntent = avatarIntentRef.current
+        if (currentIntent && currentIntent.file === avatarFile && currentIntent.userId === userId) {
+          avatarIntentRef.current = undefined
+        }
+      }
       try {
         if (avatarFile) {
           const validationError = validateAvatarFile(avatarFile, constraintsQuery.data)
           if (validationError) throw new Error(validationError)
-          const upload = await createAvatarUpload(avatarFile)
+          const upload = await createAvatarUpload(avatarFile, { idempotencyKey })
           uploadId = upload.uploadId
-          await putToPresignedUrl(avatarFile, upload)
+          shouldAbortUpload = upload.status === 'created' && Boolean(upload.presignedUrl)
+          if (isTerminalUploadStatus(upload.status)) {
+            throw new UploadIntentRetiredError(upload.status)
+          }
+          if (upload.status === 'created') {
+            if (!upload.presignedUrl) {
+              throw new Error('upload response is missing a presigned URL')
+            }
+            await putToPresignedUrl(avatarFile, upload)
+          }
           details.avatarAssetId = upload.uploadId
         }
         return await updateUserProfile(details)
       } catch (error) {
-        if (uploadId) {
+        if (isUploadIntentRetiredError(error)) {
+          clearIntent()
+          throw error
+        }
+        if (uploadId && shouldAbortUpload) {
+          let abortSucceeded = false
           try {
             await abortAvatarUpload(uploadId)
+            abortSucceeded = true
           } catch {
             // Best-effort cleanup; surface the original update or upload failure.
+          }
+          if (abortSucceeded) {
+            clearIntent()
+            throw new UploadIntentRetiredError('aborted', error)
           }
         }
         throw error
@@ -104,11 +140,19 @@ export function UserProfileSettings({ session }: { session: CurrentUser }) {
       if (parsed.name !== profile.name) details.name = parsed.name
       if (parsed.bio !== profile.bio) details.bio = parsed.bio
       if (avatarSelection === null) details.avatarAssetId = '0'
+      const avatarFile = avatarSelection?.file
+      const avatarIntent = avatarFile
+        ? avatarIntentRef.current?.file === avatarFile && avatarIntentRef.current.userId === userId
+          ? avatarIntentRef.current
+          : { file: avatarFile, key: createIdempotencyKey(), userId }
+        : undefined
+      avatarIntentRef.current = avatarIntent
 
       try {
         const updatedProfile = await updateMutation.mutateAsync({
-          avatarFile: avatarSelection?.file,
+          avatarFile,
           details,
+          idempotencyKey: avatarIntent?.key,
         })
         const currentSession = queryClient.getQueryData<CurrentUser | null>(authSessionQueryKey)
         if (currentSession) {
@@ -122,6 +166,7 @@ export function UserProfileSettings({ session }: { session: CurrentUser }) {
           bio: updatedProfile.bio,
           name: updatedProfile.name,
         })
+        avatarIntentRef.current = undefined
         setAvatarSelection(undefined)
       } catch {
         // Keep the edited values available; the mutation error is rendered below.

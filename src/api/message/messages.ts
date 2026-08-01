@@ -1,6 +1,7 @@
 import { MessageType, type Message as ProtoMessage } from '@/gen/api/v1/message_pb'
 
 import { toMessageAttachment } from '@/api/message/attachments'
+import { optionalIdempotencyKey } from '@/api/idempotency'
 import { assertIdentifier } from '@/api/message/internal'
 import { messageClient } from '@/api/message/client'
 import type {
@@ -85,6 +86,7 @@ export async function createMessage(details: CreateChannelMessageDetails): Promi
           referencedMessageId: BigInt(referencedMessageId!),
         }
       : {}),
+    ...optionalIdempotencyKey(details.idempotencyKey),
   })
 
   if (!response.message) {

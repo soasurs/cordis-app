@@ -2,29 +2,37 @@ import { GuildChannelType, GuildPermissionOverwriteType } from '@/gen/api/v1/gui
 
 import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
+import { optionalIdempotencyKey } from '@/api/idempotency'
 import type {
   CreateGuildChannelDetails,
+  DeleteGuildChannelResult,
   GuildChannel,
+  GuildChannelList,
   GuildChannelPermissionOverwrite,
   GuildChannelPermissionOverwriteAppliesTo,
   GuildChannelPosition,
+  GuildChannelMutationResult,
   UpdateGuildChannelDetails,
   UpsertGuildChannelPermissionOverwriteDetails,
 } from '@/api/guild/types'
 
-export async function listGuildChannels(guildId: string): Promise<GuildChannel[]> {
+export async function listGuildChannels(guildId: string): Promise<GuildChannelList> {
   assertIdentifier(guildId, 'guild')
 
   const response = await guildClient.listGuildChannels({ guildId: BigInt(guildId) })
 
-  return response.channels.map(toGuildChannel)
+  return {
+    channelLayoutRevision: toChannelLayoutRevision(response.channelLayoutRevision),
+    channels: response.channels.map(toGuildChannel),
+  }
 }
 
 export async function createGuildChannel(
   details: CreateGuildChannelDetails,
-): Promise<GuildChannel> {
+): Promise<GuildChannelMutationResult> {
   assertIdentifier(details.guildId, 'guild')
   if (details.parentId) assertIdentifier(details.parentId, 'parent channel')
+  assertChannelLayoutRevision(details.expectedChannelLayoutRevision)
 
   const type = {
     category: GuildChannelType.CATEGORY,
@@ -39,23 +47,31 @@ export async function createGuildChannel(
     parentId: details.parentId ? BigInt(details.parentId) : 0n,
     topic: '',
     type,
+    expectedChannelLayoutRevision: BigInt(details.expectedChannelLayoutRevision),
+    ...optionalIdempotencyKey(details.idempotencyKey),
   })
 
   if (!response.channel) {
     throw new Error('create guild channel response was incomplete')
   }
 
-  return toGuildChannel(response.channel)
+  return {
+    channel: toGuildChannel(response.channel),
+    channelLayoutRevision: toChannelLayoutRevision(response.channelLayoutRevision),
+  }
 }
 
 export async function updateGuildChannel(
   channelId: string,
   details: UpdateGuildChannelDetails,
-): Promise<GuildChannel> {
+): Promise<GuildChannelMutationResult> {
   assertIdentifier(channelId, 'channel')
   if (details.parentId) assertIdentifier(details.parentId, 'parent channel')
   if (details.name === undefined && details.topic === undefined && details.parentId === undefined) {
     throw new Error('at least one channel field is required')
+  }
+  if (details.parentId !== undefined) {
+    assertChannelLayoutRevision(details.expectedChannelLayoutRevision)
   }
 
   const response = await guildClient.updateGuildChannel({
@@ -65,20 +81,28 @@ export async function updateGuildChannel(
     ...(details.parentId !== undefined
       ? { parentId: details.parentId === null ? 0n : BigInt(details.parentId) }
       : {}),
+    ...(details.parentId !== undefined
+      ? { expectedChannelLayoutRevision: BigInt(details.expectedChannelLayoutRevision!) }
+      : {}),
   })
 
   if (!response.channel) {
     throw new Error('update guild channel response was incomplete')
   }
 
-  return toGuildChannel(response.channel)
+  return {
+    channel: toGuildChannel(response.channel),
+    channelLayoutRevision: toOptionalChannelLayoutRevision(response.channelLayoutRevision),
+  }
 }
 
 export async function reorderGuildChannels(
   guildId: string,
   positions: GuildChannelPosition[],
-): Promise<GuildChannel[]> {
+  expectedChannelLayoutRevision: number,
+): Promise<GuildChannelList> {
   assertIdentifier(guildId, 'guild')
+  assertChannelLayoutRevision(expectedChannelLayoutRevision)
   for (const item of positions) {
     assertIdentifier(item.channelId, 'channel')
     if (item.parentId) assertIdentifier(item.parentId, 'parent channel')
@@ -89,6 +113,7 @@ export async function reorderGuildChannels(
 
   const response = await guildClient.reorderGuildChannels({
     guildId: BigInt(guildId),
+    expectedChannelLayoutRevision: BigInt(expectedChannelLayoutRevision),
     positions: positions.map((item) => ({
       channelId: BigInt(item.channelId),
       // undefined = omit field (keep current parent); null = clear parent via 0n.
@@ -99,7 +124,31 @@ export async function reorderGuildChannels(
     })),
   })
 
-  return response.channels.map(toGuildChannel)
+  return {
+    channelLayoutRevision: toChannelLayoutRevision(response.channelLayoutRevision),
+    channels: response.channels.map(toGuildChannel),
+  }
+}
+
+export async function deleteGuildChannel(
+  channelId: string,
+  expectedChannelLayoutRevision: number,
+): Promise<DeleteGuildChannelResult> {
+  assertIdentifier(channelId, 'channel')
+  assertChannelLayoutRevision(expectedChannelLayoutRevision)
+
+  const response = await guildClient.deleteGuildChannel({
+    channelId: BigInt(channelId),
+    expectedChannelLayoutRevision: BigInt(expectedChannelLayoutRevision),
+  })
+
+  if (!response.ok) {
+    throw new Error('delete guild channel was not accepted')
+  }
+
+  return {
+    channelLayoutRevision: toChannelLayoutRevision(response.channelLayoutRevision),
+  }
 }
 
 export async function listGuildChannelPermissionOverwrites(
@@ -186,6 +235,25 @@ function toGuildChannel(channel: {
     topic: channel.topic,
     type: channel.type,
   }
+}
+
+function assertChannelLayoutRevision(value: number | undefined): asserts value is number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('channel layout revision is invalid')
+  }
+}
+
+function toChannelLayoutRevision(value: bigint): number {
+  const revision = Number(value)
+  if (!Number.isSafeInteger(revision) || revision <= 0) {
+    throw new Error('channel layout revision response is invalid')
+  }
+  return revision
+}
+
+function toOptionalChannelLayoutRevision(value: bigint): number | undefined {
+  if (value === 0n) return undefined
+  return toChannelLayoutRevision(value)
 }
 
 function toGuildChannelPermissionOverwrite(overwrite: {

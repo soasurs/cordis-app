@@ -83,6 +83,7 @@ describe('MessageComposer', () => {
         attachmentAssetIds: [],
         channelId: '43',
         content: 'Ship it',
+        idempotencyKey: expect.any(String),
       }),
     )
     expect(screen.getByLabelText('Message #general')).toHaveValue('')
@@ -127,6 +128,7 @@ describe('MessageComposer', () => {
         attachmentAssetIds: [],
         channelId: '43',
         content: 'Agreed',
+        idempotencyKey: expect.any(String),
         referencedChannelId: '43',
         referencedMessageId: '102',
       }),
@@ -190,8 +192,118 @@ describe('MessageComposer', () => {
         attachmentAssetIds: ['900'],
         channelId: '43',
         content: '',
+        idempotencyKey: expect.any(String),
       }),
     )
+  })
+
+  it('keeps the complete message intent when sending with an attachment fails', async () => {
+    const user = userEvent.setup()
+    uploadApi.uploadMessageAttachment.mockResolvedValue({
+      assetId: '902',
+      contentType: 'image/png',
+      filename: 'retry.png',
+      height: 0,
+      size: 4,
+      url: 'https://cdn.example.com/retry.png',
+      urlExpiresAt: 0,
+      width: 0,
+    })
+    messageApi.createMessage
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ ...sampleMessage, content: 'Retry me', id: '202' })
+    const queryClient = createQueryClient()
+
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer canSend channelId="43" channelName="general" />
+      </QueryClientProvider>,
+    )
+
+    await user.upload(
+      container.querySelector('input[type="file"]') as HTMLInputElement,
+      new File(['abcd'], 'retry.png', { type: 'image/png' }),
+    )
+    expect(await screen.findByRole('img', { name: 'retry.png' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Message #general'), 'Retry me')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('img', { name: 'retry.png' })).toBeInTheDocument()
+    const firstKey = messageApi.createMessage.mock.calls[0]?.[0].idempotencyKey
+
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(messageApi.createMessage).toHaveBeenCalledTimes(2))
+
+    expect(messageApi.createMessage.mock.calls[1]?.[0].idempotencyKey).toBe(firstKey)
+    await waitFor(() =>
+      expect(screen.queryByRole('img', { name: 'retry.png' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('retries an interrupted attachment creation with the same key', async () => {
+    const user = userEvent.setup()
+    uploadApi.uploadMessageAttachment
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({
+        assetId: '903',
+        contentType: 'image/png',
+        filename: 'retry-upload.png',
+        height: 0,
+        size: 4,
+        url: 'https://cdn.example.com/retry-upload.png',
+        urlExpiresAt: 0,
+        width: 0,
+      })
+    const queryClient = createQueryClient()
+
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer canSend channelId="43" channelName="general" />
+      </QueryClientProvider>,
+    )
+    const file = new File(['abcd'], 'retry-upload.png', { type: 'image/png' })
+
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file)
+    await screen.findByText('Unable to upload this file. Please try again.')
+    const firstKey = uploadApi.uploadMessageAttachment.mock.calls[0]?.[2]
+
+    await user.click(screen.getByRole('button', { name: 'Retry retry-upload.png' }))
+    await waitFor(() => expect(uploadApi.uploadMessageAttachment).toHaveBeenCalledTimes(2))
+
+    expect(uploadApi.uploadMessageAttachment.mock.calls[1]?.[2]).toBe(firstKey)
+    expect(await screen.findByRole('img', { name: 'retry-upload.png' })).toBeInTheDocument()
+  })
+
+  it('does not reuse a message intent after the channel changes', async () => {
+    const user = userEvent.setup()
+    messageApi.createMessage
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ ...sampleMessage, channelId: '44', content: 'Retry me', id: '203' })
+    const queryClient = createQueryClient()
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer canSend channelId="43" channelName="general" />
+      </QueryClientProvider>,
+    )
+
+    await user.type(screen.getByLabelText('Message #general'), 'Retry me')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('alert')
+    const firstKey = messageApi.createMessage.mock.calls[0]?.[0].idempotencyKey
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer canSend channelId="44" channelName="random" />
+      </QueryClientProvider>,
+    )
+    await user.type(screen.getByLabelText('Message #random'), 'Retry me')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() => expect(messageApi.createMessage).toHaveBeenCalledTimes(2))
+    expect(messageApi.createMessage.mock.calls[1]?.[0].channelId).toBe('44')
+    expect(messageApi.createMessage.mock.calls[1]?.[0].idempotencyKey).not.toBe(firstKey)
   })
 
   it('shows a filename chip for non-image attachments', async () => {

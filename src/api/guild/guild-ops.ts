@@ -1,14 +1,29 @@
 import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
+import { optionalIdempotencyKey } from '@/api/idempotency'
+import { toUploadStatus } from '@/api/assets'
 import type {
   CreateGuildIconUploadDetails,
+  CreateGuildDetails,
   Guild,
   GuildIconUploadContract,
   UpdateGuildDetails,
 } from '@/api/guild/types'
 
-export async function createGuild(name: string): Promise<Guild> {
-  const response = await guildClient.createGuild({ name })
+export function createGuild(details: CreateGuildDetails): Promise<Guild>
+export function createGuild(
+  name: string,
+  options?: Pick<CreateGuildDetails, 'idempotencyKey'>,
+): Promise<Guild>
+export async function createGuild(
+  input: string | CreateGuildDetails,
+  options: Pick<CreateGuildDetails, 'idempotencyKey'> = {},
+): Promise<Guild> {
+  const details = typeof input === 'string' ? { name: input, ...options } : input
+  const response = await guildClient.createGuild({
+    name: details.name,
+    ...optionalIdempotencyKey(details.idempotencyKey),
+  })
 
   if (!response.guild) {
     throw new Error('create guild response was incomplete')
@@ -53,13 +68,16 @@ export async function createGuildIconUpload(
     contentType: details.contentType,
     expectedSize: BigInt(details.expectedSize),
     guildId: BigInt(guildId),
+    ...optionalIdempotencyKey(details.idempotencyKey),
   })
 
   return {
     expiresAt: Number(response.expiresAt),
+    idempotentReplay: response.idempotentReplay,
     presignedUrl: response.presignedUrl,
     // Copy so callers cannot mutate the Connect response object in place.
     requestHeaders: { ...response.requestHeaders },
+    status: toUploadStatus(response.status),
     uploadId: response.uploadId.toString(),
   }
 }

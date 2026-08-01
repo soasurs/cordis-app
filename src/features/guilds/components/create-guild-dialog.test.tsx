@@ -46,6 +46,9 @@ describe('CreateGuildDialog', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(guildApi.createGuild.mock.calls[0]?.[0]).toBe('Cordis Studio')
+    expect(guildApi.createGuild.mock.calls[0]?.[1]).toEqual({
+      idempotencyKey: expect.any(String),
+    })
     expect(queryClient.getQueryData(guildsQueryKey)).toEqual([createdGuild])
   })
 
@@ -63,6 +66,25 @@ describe('CreateGuildDialog', () => {
     )
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByLabelText(/^Community name/)).toHaveValue('Cordis Studio')
+  })
+
+  it('reuses the intent key when retrying the same community create', async () => {
+    guildApi.createGuild.mockRejectedValueOnce(new Error('temporary failure'))
+    guildApi.createGuild.mockResolvedValueOnce(createdGuild)
+    renderDialog()
+    const user = userEvent.setup()
+
+    act(() => useCreateGuildDialog.getState().open())
+    await user.type(screen.getByLabelText(/^Community name/), 'Cordis Studio')
+    await user.click(screen.getByRole('button', { name: 'Create community' }))
+    await screen.findByRole('alert')
+    await user.click(screen.getByRole('button', { name: 'Create community' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(guildApi.createGuild.mock.calls[0]?.[1]).toEqual({
+      idempotencyKey: expect.any(String),
+    })
+    expect(guildApi.createGuild.mock.calls[1]?.[1]).toEqual(guildApi.createGuild.mock.calls[0]?.[1])
   })
 })
 

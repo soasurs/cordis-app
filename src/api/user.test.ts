@@ -76,8 +76,10 @@ describe('user API', () => {
     })
     userClient.createAvatarUpload.mockResolvedValue({
       expiresAt: 8_000n,
+      idempotentReplay: false,
       presignedUrl: 'https://upload.example/avatar',
       requestHeaders: { 'content-type': 'image/png' },
+      status: 1,
       uploadId: 19n,
     })
 
@@ -88,11 +90,20 @@ describe('user API', () => {
       maxPixels: 4_000_000,
       maxWidth: 2048,
     })
-    await expect(createAvatarUpload({ size: 256, type: 'image/png' })).resolves.toEqual({
+    await expect(
+      createAvatarUpload({ size: 256, type: 'image/png' }, { idempotencyKey: 'avatar-intent' }),
+    ).resolves.toEqual({
       expiresAt: 8_000,
+      idempotentReplay: false,
       presignedUrl: 'https://upload.example/avatar',
       requestHeaders: { 'content-type': 'image/png' },
+      status: 'created',
       uploadId: '19',
+    })
+    expect(userClient.createAvatarUpload).toHaveBeenCalledWith({
+      contentType: 'image/png',
+      expectedSize: 256n,
+      idempotencyKey: 'avatar-intent',
     })
   })
 

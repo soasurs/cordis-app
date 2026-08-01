@@ -1,5 +1,7 @@
 import type { Attachment as ProtoAttachment } from '@/gen/api/v1/message_pb'
 
+import { toUploadStatus } from '@/api/assets'
+import { optionalIdempotencyKey } from '@/api/idempotency'
 import { assertIdentifier } from '@/api/message/internal'
 import { messageClient } from '@/api/message/client'
 import type {
@@ -28,13 +30,16 @@ export async function createAttachmentUpload(
     contentType: details.contentType,
     expectedSize: BigInt(details.expectedSize),
     filename: details.filename,
+    ...optionalIdempotencyKey(details.idempotencyKey),
   })
 
   return {
     expiresAt: Number(response.expiresAt),
+    idempotentReplay: response.idempotentReplay,
     presignedUrl: response.presignedUrl,
     // Copy so callers cannot mutate the Connect response object in place.
     requestHeaders: { ...response.requestHeaders },
+    status: toUploadStatus(response.status),
     uploadId: response.uploadId.toString(),
   }
 }

@@ -4,6 +4,8 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { UploadStatus } from "./media_pb";
+import { file_api_v1_media } from "./media_pb";
 import type { UserProfile } from "./user_pb";
 import { file_api_v1_user } from "./user_pb";
 import type { Message as Message$1 } from "@bufbuild/protobuf";
@@ -12,7 +14,7 @@ import type { Message as Message$1 } from "@bufbuild/protobuf";
  * Describes the file api/v1/message.proto.
  */
 export const file_api_v1_message: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcGkvdjEvbWVzc2FnZS5wcm90bxIGYXBpLnYxInQKEENoYW5uZWxSZWFkU3RhdGUSEgoKY2hhbm5lbF9pZBgBIAEoAxIXCg9sYXN0X21lc3NhZ2VfaWQYAiABKAMSHAoUbGFzdF9yZWFkX21lc3NhZ2VfaWQYAyABKAMSFQoNbWVudGlvbl9jb3VudBgEIAEoBSJpCglEbUNoYW5uZWwSCgoCaWQYASABKAMSFAoMcmVjaXBpZW50X2lkGAIgASgDEhIKCmNyZWF0ZWRfYXQYAyABKAMSJgoJcmVjaXBpZW50GAQgASgLMhMuYXBpLnYxLlVzZXJQcm9maWxlIsUCCgdNZXNzYWdlEgoKAmlkGAEgASgDEhIKCmNoYW5uZWxfaWQYAiABKAMSIwoGYXV0aG9yGAMgASgLMhMuYXBpLnYxLlVzZXJQcm9maWxlEg8KB2NvbnRlbnQYBCABKAkSIQoEdHlwZRgFIAEoDjITLmFwaS52MS5NZXNzYWdlVHlwZRINCgVmbGFncxgGIAEoBRIdChVyZWZlcmVuY2VkX21lc3NhZ2VfaWQYByABKAMSHQoVcmVmZXJlbmNlZF9jaGFubmVsX2lkGAggASgDEicKC2F0dGFjaG1lbnRzGAkgAygLMhIuYXBpLnYxLkF0dGFjaG1lbnQSEQoJZWRpdGVkX2F0GAogASgDEhIKCmNyZWF0ZWRfYXQYCyABKAMSEgoKdXBkYXRlZF9hdBgMIAEoAxIQCghyZXZpc2lvbhgNIAEoAyKqAQoKQXR0YWNobWVudBIQCghhc3NldF9pZBgBIAEoAxIQCghmaWxlbmFtZRgCIAEoCRIMCgRzaXplGAMgASgDEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRINCgV3aWR0aBgFIAEoBRIOCgZoZWlnaHQYBiABKAUSCwoDdXJsGAcgASgJEhYKDnVybF9leHBpcmVzX2F0GAggASgDEhAKCGJsdXJoYXNoGAkgASgJInIKHUNyZWF0ZUF0dGFjaG1lbnRVcGxvYWRSZXF1ZXN0EhIKCmNoYW5uZWxfaWQYASABKAMSFQoNZXhwZWN0ZWRfc2l6ZRgCIAEoAxIUCgxjb250ZW50X3R5cGUYAyABKAkSEAoIZmlsZW5hbWUYBCABKAki6gEKHkNyZWF0ZUF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZRIRCgl1cGxvYWRfaWQYASABKAMSFQoNcHJlc2lnbmVkX3VybBgCIAEoCRISCgpleHBpcmVzX2F0GAMgASgDElMKD3JlcXVlc3RfaGVhZGVycxgEIAMoCzI6LmFwaS52MS5DcmVhdGVBdHRhY2htZW50VXBsb2FkUmVzcG9uc2UuUmVxdWVzdEhlYWRlcnNFbnRyeRo1ChNSZXF1ZXN0SGVhZGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiSAofQ29tcGxldGVBdHRhY2htZW50VXBsb2FkUmVxdWVzdBISCgpjaGFubmVsX2lkGAEgASgDEhEKCXVwbG9hZF9pZBgCIAEoAyJKCiBDb21wbGV0ZUF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZRImCgphdHRhY2htZW50GAEgASgLMhIuYXBpLnYxLkF0dGFjaG1lbnQiRQocQWJvcnRBdHRhY2htZW50VXBsb2FkUmVxdWVzdBISCgpjaGFubmVsX2lkGAEgASgDEhEKCXVwbG9hZF9pZBgCIAEoAyIfCh1BYm9ydEF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZSI5Cg5BdHRhY2htZW50TGlzdBInCgthdHRhY2htZW50cxgBIAMoCzISLmFwaS52MS5BdHRhY2htZW50Ih8KC01lbnRpb25MaXN0EhAKCHVzZXJfaWRzGAEgAygDIu4BChRDcmVhdGVNZXNzYWdlUmVxdWVzdBISCgpjaGFubmVsX2lkGAEgASgDEg8KB2NvbnRlbnQYAiABKAkSIQoEdHlwZRgDIAEoDjITLmFwaS52MS5NZXNzYWdlVHlwZRINCgVmbGFncxgEIAEoBRIdChVyZWZlcmVuY2VkX21lc3NhZ2VfaWQYBSABKAMSHQoVcmVmZXJlbmNlZF9jaGFubmVsX2lkGAYgASgDEicKC2F0dGFjaG1lbnRzGAcgAygLMhIuYXBpLnYxLkF0dGFjaG1lbnQSGAoQbWVudGlvbl91c2VyX2lkcxgIIAMoAyI5ChVDcmVhdGVNZXNzYWdlUmVzcG9uc2USIAoHbWVzc2FnZRgBIAEoCzIPLmFwaS52MS5NZXNzYWdlIp4BChRVcGRhdGVNZXNzYWdlUmVxdWVzdBISCgptZXNzYWdlX2lkGAEgASgDEg8KB2NvbnRlbnQYAiABKAkSDQoFZmxhZ3MYAyABKAUSKwoLYXR0YWNobWVudHMYBCABKAsyFi5hcGkudjEuQXR0YWNobWVudExpc3QSJQoIbWVudGlvbnMYBSABKAsyEy5hcGkudjEuTWVudGlvbkxpc3QiOQoVVXBkYXRlTWVzc2FnZVJlc3BvbnNlEiAKB21lc3NhZ2UYASABKAsyDy5hcGkudjEuTWVzc2FnZSIqChREZWxldGVNZXNzYWdlUmVxdWVzdBISCgptZXNzYWdlX2lkGAEgASgDIiMKFURlbGV0ZU1lc3NhZ2VSZXNwb25zZRIKCgJvaxgBIAEoCCInChFHZXRNZXNzYWdlUmVxdWVzdBISCgptZXNzYWdlX2lkGAEgASgDIjYKEkdldE1lc3NhZ2VSZXNwb25zZRIgCgdtZXNzYWdlGAEgASgLMg8uYXBpLnYxLk1lc3NhZ2UidwoTTGlzdE1lc3NhZ2VzUmVxdWVzdBISCgpjaGFubmVsX2lkGAEgASgDEhAKBmJlZm9yZRgCIAEoA0gAEg8KBWFmdGVyGAMgASgDSAASEAoGYXJvdW5kGAQgASgDSAASDQoFbGltaXQYBSABKAVCCAoGY3Vyc29yImYKFExpc3RNZXNzYWdlc1Jlc3BvbnNlEiEKCG1lc3NhZ2VzGAEgAygLMg8uYXBpLnYxLk1lc3NhZ2USFQoNYmVmb3JlX2N1cnNvchgCIAEoAxIUCgxhZnRlcl9jdXJzb3IYAyABKAMiKwoWQ3JlYXRlRG1DaGFubmVsUmVxdWVzdBIRCgl0YXJnZXRfaWQYASABKAMiPQoXQ3JlYXRlRG1DaGFubmVsUmVzcG9uc2USIgoHY2hhbm5lbBgBIAEoCzIRLmFwaS52MS5EbUNoYW5uZWwiNgoVTGlzdERtQ2hhbm5lbHNSZXF1ZXN0Eg4KBmN1cnNvchgBIAEoCRINCgVsaW1pdBgCIAEoBSJSChZMaXN0RG1DaGFubmVsc1Jlc3BvbnNlEiMKCGNoYW5uZWxzGAEgAygLMhEuYXBpLnYxLkRtQ2hhbm5lbBITCgtuZXh0X2N1cnNvchgCIAEoCSI7ChFBY2tNZXNzYWdlUmVxdWVzdBISCgpjaGFubmVsX2lkGAEgASgDEhIKCm1lc3NhZ2VfaWQYAiABKAMiQgoSQWNrTWVzc2FnZVJlc3BvbnNlEiwKCnJlYWRfc3RhdGUYASABKAsyGC5hcGkudjEuQ2hhbm5lbFJlYWRTdGF0ZSJTChRHZXRSZWFkU3RhdGVzUmVxdWVzdBIpCgVzY29wZRgBIAEoDjIaLmFwaS52MS5SZWFkU3RhdGVTY29wZVR5cGUSEAoIZ3VpbGRfaWQYAiABKAMibgoVR2V0UmVhZFN0YXRlc1Jlc3BvbnNlEiYKC2RtX2NoYW5uZWxzGAEgAygLMhEuYXBpLnYxLkRtQ2hhbm5lbBItCgtyZWFkX3N0YXRlcxgCIAMoCzIYLmFwaS52MS5DaGFubmVsUmVhZFN0YXRlKn4KC01lc3NhZ2VUeXBlEhwKGE1FU1NBR0VfVFlQRV9VTlNQRUNJRklFRBAAEhgKFE1FU1NBR0VfVFlQRV9ERUZBVUxUEAESFgoSTUVTU0FHRV9UWVBFX1JFUExZEBMSHwobTUVTU0FHRV9UWVBFX1RIUkVBRF9TVEFSVEVSEBUqcgoLTWVzc2FnZUZsYWcSHAoYTUVTU0FHRV9GTEFHX1VOU1BFQ0lGSUVEEAASGwoXTUVTU0FHRV9GTEFHX0hBU19USFJFQUQQIBIoCiNNRVNTQUdFX0ZMQUdfU1VQUFJFU1NfTk9USUZJQ0FUSU9OUxCAICp/ChJSZWFkU3RhdGVTY29wZVR5cGUSJQohUkVBRF9TVEFURV9TQ09QRV9UWVBFX1VOU1BFQ0lGSUVEEAASHwobUkVBRF9TVEFURV9TQ09QRV9UWVBFX0dVSUxEEAESIQodUkVBRF9TVEFURV9TQ09QRV9UWVBFX0FMTF9ETVMQAjKACAoOTWVzc2FnZVNlcnZpY2USTAoNQ3JlYXRlTWVzc2FnZRIcLmFwaS52MS5DcmVhdGVNZXNzYWdlUmVxdWVzdBodLmFwaS52MS5DcmVhdGVNZXNzYWdlUmVzcG9uc2USTAoNVXBkYXRlTWVzc2FnZRIcLmFwaS52MS5VcGRhdGVNZXNzYWdlUmVxdWVzdBodLmFwaS52MS5VcGRhdGVNZXNzYWdlUmVzcG9uc2USTAoNRGVsZXRlTWVzc2FnZRIcLmFwaS52MS5EZWxldGVNZXNzYWdlUmVxdWVzdBodLmFwaS52MS5EZWxldGVNZXNzYWdlUmVzcG9uc2USQwoKR2V0TWVzc2FnZRIZLmFwaS52MS5HZXRNZXNzYWdlUmVxdWVzdBoaLmFwaS52MS5HZXRNZXNzYWdlUmVzcG9uc2USSQoMTGlzdE1lc3NhZ2VzEhsuYXBpLnYxLkxpc3RNZXNzYWdlc1JlcXVlc3QaHC5hcGkudjEuTGlzdE1lc3NhZ2VzUmVzcG9uc2USZwoWQ3JlYXRlQXR0YWNobWVudFVwbG9hZBIlLmFwaS52MS5DcmVhdGVBdHRhY2htZW50VXBsb2FkUmVxdWVzdBomLmFwaS52MS5DcmVhdGVBdHRhY2htZW50VXBsb2FkUmVzcG9uc2USbQoYQ29tcGxldGVBdHRhY2htZW50VXBsb2FkEicuYXBpLnYxLkNvbXBsZXRlQXR0YWNobWVudFVwbG9hZFJlcXVlc3QaKC5hcGkudjEuQ29tcGxldGVBdHRhY2htZW50VXBsb2FkUmVzcG9uc2USZAoVQWJvcnRBdHRhY2htZW50VXBsb2FkEiQuYXBpLnYxLkFib3J0QXR0YWNobWVudFVwbG9hZFJlcXVlc3QaJS5hcGkudjEuQWJvcnRBdHRhY2htZW50VXBsb2FkUmVzcG9uc2USUgoPQ3JlYXRlRG1DaGFubmVsEh4uYXBpLnYxLkNyZWF0ZURtQ2hhbm5lbFJlcXVlc3QaHy5hcGkudjEuQ3JlYXRlRG1DaGFubmVsUmVzcG9uc2USTwoOTGlzdERtQ2hhbm5lbHMSHS5hcGkudjEuTGlzdERtQ2hhbm5lbHNSZXF1ZXN0Gh4uYXBpLnYxLkxpc3REbUNoYW5uZWxzUmVzcG9uc2USQwoKQWNrTWVzc2FnZRIZLmFwaS52MS5BY2tNZXNzYWdlUmVxdWVzdBoaLmFwaS52MS5BY2tNZXNzYWdlUmVzcG9uc2USTAoNR2V0UmVhZFN0YXRlcxIcLmFwaS52MS5HZXRSZWFkU3RhdGVzUmVxdWVzdBodLmFwaS52MS5HZXRSZWFkU3RhdGVzUmVzcG9uc2ViCGVkaXRpb25zcOgH", [file_api_v1_user]);
+  fileDesc("ChRhcGkvdjEvbWVzc2FnZS5wcm90bxIGYXBpLnYxInQKEENoYW5uZWxSZWFkU3RhdGUSEgoKY2hhbm5lbF9pZBgBIAEoAxIXCg9sYXN0X21lc3NhZ2VfaWQYAiABKAMSHAoUbGFzdF9yZWFkX21lc3NhZ2VfaWQYAyABKAMSFQoNbWVudGlvbl9jb3VudBgEIAEoBSJpCglEbUNoYW5uZWwSCgoCaWQYASABKAMSFAoMcmVjaXBpZW50X2lkGAIgASgDEhIKCmNyZWF0ZWRfYXQYAyABKAMSJgoJcmVjaXBpZW50GAQgASgLMhMuYXBpLnYxLlVzZXJQcm9maWxlIpMDCgdNZXNzYWdlEgoKAmlkGAEgASgDEhIKCmNoYW5uZWxfaWQYAiABKAMSIwoGYXV0aG9yGAMgASgLMhMuYXBpLnYxLlVzZXJQcm9maWxlEg8KB2NvbnRlbnQYBCABKAkSIQoEdHlwZRgFIAEoDjITLmFwaS52MS5NZXNzYWdlVHlwZRINCgVmbGFncxgGIAEoBRIdChVyZWZlcmVuY2VkX21lc3NhZ2VfaWQYByABKAMSHQoVcmVmZXJlbmNlZF9jaGFubmVsX2lkGAggASgDEicKC2F0dGFjaG1lbnRzGAkgAygLMhIuYXBpLnYxLkF0dGFjaG1lbnQSEQoJZWRpdGVkX2F0GAogASgDEhIKCmNyZWF0ZWRfYXQYCyABKAMSEgoKdXBkYXRlZF9hdBgMIAEoAxIQCghyZXZpc2lvbhgNIAEoAxIYChBtZW50aW9uX3VzZXJfaWRzGA4gAygDEhgKEG1lbnRpb25fcm9sZV9pZHMYDyADKAMSGAoQbWVudGlvbl9ldmVyeW9uZRgQIAEoCCKqAQoKQXR0YWNobWVudBIQCghhc3NldF9pZBgBIAEoAxIQCghmaWxlbmFtZRgCIAEoCRIMCgRzaXplGAMgASgDEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRINCgV3aWR0aBgFIAEoBRIOCgZoZWlnaHQYBiABKAUSCwoDdXJsGAcgASgJEhYKDnVybF9leHBpcmVzX2F0GAggASgDEhAKCGJsdXJoYXNoGAkgASgJIosBCh1DcmVhdGVBdHRhY2htZW50VXBsb2FkUmVxdWVzdBISCgpjaGFubmVsX2lkGAEgASgDEhUKDWV4cGVjdGVkX3NpemUYAiABKAMSFAoMY29udGVudF90eXBlGAMgASgJEhAKCGZpbGVuYW1lGAQgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgFIAEoCSKrAgoeQ3JlYXRlQXR0YWNobWVudFVwbG9hZFJlc3BvbnNlEhEKCXVwbG9hZF9pZBgBIAEoAxIVCg1wcmVzaWduZWRfdXJsGAIgASgJEhIKCmV4cGlyZXNfYXQYAyABKAMSUwoPcmVxdWVzdF9oZWFkZXJzGAQgAygLMjouYXBpLnYxLkNyZWF0ZUF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZS5SZXF1ZXN0SGVhZGVyc0VudHJ5EiQKBnN0YXR1cxgFIAEoDjIULmFwaS52MS5VcGxvYWRTdGF0dXMSGQoRaWRlbXBvdGVudF9yZXBsYXkYBiABKAgaNQoTUmVxdWVzdEhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIkgKH0NvbXBsZXRlQXR0YWNobWVudFVwbG9hZFJlcXVlc3QSEgoKY2hhbm5lbF9pZBgBIAEoAxIRCgl1cGxvYWRfaWQYAiABKAMiSgogQ29tcGxldGVBdHRhY2htZW50VXBsb2FkUmVzcG9uc2USJgoKYXR0YWNobWVudBgBIAEoCzISLmFwaS52MS5BdHRhY2htZW50IkUKHEFib3J0QXR0YWNobWVudFVwbG9hZFJlcXVlc3QSEgoKY2hhbm5lbF9pZBgBIAEoAxIRCgl1cGxvYWRfaWQYAiABKAMiHwodQWJvcnRBdHRhY2htZW50VXBsb2FkUmVzcG9uc2UiOQoOQXR0YWNobWVudExpc3QSJwoLYXR0YWNobWVudHMYASADKAsyEi5hcGkudjEuQXR0YWNobWVudCLzAQoUQ3JlYXRlTWVzc2FnZVJlcXVlc3QSEgoKY2hhbm5lbF9pZBgBIAEoAxIPCgdjb250ZW50GAIgASgJEiEKBHR5cGUYAyABKA4yEy5hcGkudjEuTWVzc2FnZVR5cGUSDQoFZmxhZ3MYBCABKAUSHQoVcmVmZXJlbmNlZF9tZXNzYWdlX2lkGAUgASgDEh0KFXJlZmVyZW5jZWRfY2hhbm5lbF9pZBgGIAEoAxInCgthdHRhY2htZW50cxgHIAMoCzISLmFwaS52MS5BdHRhY2htZW50EhcKD2lkZW1wb3RlbmN5X2tleRgJIAEoCUoECAgQCSI5ChVDcmVhdGVNZXNzYWdlUmVzcG9uc2USIAoHbWVzc2FnZRgBIAEoCzIPLmFwaS52MS5NZXNzYWdlIn0KFFVwZGF0ZU1lc3NhZ2VSZXF1ZXN0EhIKCm1lc3NhZ2VfaWQYASABKAMSDwoHY29udGVudBgCIAEoCRINCgVmbGFncxgDIAEoBRIrCgthdHRhY2htZW50cxgEIAEoCzIWLmFwaS52MS5BdHRhY2htZW50TGlzdEoECAUQBiI5ChVVcGRhdGVNZXNzYWdlUmVzcG9uc2USIAoHbWVzc2FnZRgBIAEoCzIPLmFwaS52MS5NZXNzYWdlIioKFERlbGV0ZU1lc3NhZ2VSZXF1ZXN0EhIKCm1lc3NhZ2VfaWQYASABKAMiIwoVRGVsZXRlTWVzc2FnZVJlc3BvbnNlEgoKAm9rGAEgASgIIicKEUdldE1lc3NhZ2VSZXF1ZXN0EhIKCm1lc3NhZ2VfaWQYASABKAMiNgoSR2V0TWVzc2FnZVJlc3BvbnNlEiAKB21lc3NhZ2UYASABKAsyDy5hcGkudjEuTWVzc2FnZSJ3ChNMaXN0TWVzc2FnZXNSZXF1ZXN0EhIKCmNoYW5uZWxfaWQYASABKAMSEAoGYmVmb3JlGAIgASgDSAASDwoFYWZ0ZXIYAyABKANIABIQCgZhcm91bmQYBCABKANIABINCgVsaW1pdBgFIAEoBUIICgZjdXJzb3IiZgoUTGlzdE1lc3NhZ2VzUmVzcG9uc2USIQoIbWVzc2FnZXMYASADKAsyDy5hcGkudjEuTWVzc2FnZRIVCg1iZWZvcmVfY3Vyc29yGAIgASgDEhQKDGFmdGVyX2N1cnNvchgDIAEoAyIrChZDcmVhdGVEbUNoYW5uZWxSZXF1ZXN0EhEKCXRhcmdldF9pZBgBIAEoAyI9ChdDcmVhdGVEbUNoYW5uZWxSZXNwb25zZRIiCgdjaGFubmVsGAEgASgLMhEuYXBpLnYxLkRtQ2hhbm5lbCI2ChVMaXN0RG1DaGFubmVsc1JlcXVlc3QSDgoGY3Vyc29yGAEgASgJEg0KBWxpbWl0GAIgASgFIlIKFkxpc3REbUNoYW5uZWxzUmVzcG9uc2USIwoIY2hhbm5lbHMYASADKAsyES5hcGkudjEuRG1DaGFubmVsEhMKC25leHRfY3Vyc29yGAIgASgJIjsKEUFja01lc3NhZ2VSZXF1ZXN0EhIKCmNoYW5uZWxfaWQYASABKAMSEgoKbWVzc2FnZV9pZBgCIAEoAyJCChJBY2tNZXNzYWdlUmVzcG9uc2USLAoKcmVhZF9zdGF0ZRgBIAEoCzIYLmFwaS52MS5DaGFubmVsUmVhZFN0YXRlIlMKFEdldFJlYWRTdGF0ZXNSZXF1ZXN0EikKBXNjb3BlGAEgASgOMhouYXBpLnYxLlJlYWRTdGF0ZVNjb3BlVHlwZRIQCghndWlsZF9pZBgCIAEoAyJuChVHZXRSZWFkU3RhdGVzUmVzcG9uc2USJgoLZG1fY2hhbm5lbHMYASADKAsyES5hcGkudjEuRG1DaGFubmVsEi0KC3JlYWRfc3RhdGVzGAIgAygLMhguYXBpLnYxLkNoYW5uZWxSZWFkU3RhdGUqfgoLTWVzc2FnZVR5cGUSHAoYTUVTU0FHRV9UWVBFX1VOU1BFQ0lGSUVEEAASGAoUTUVTU0FHRV9UWVBFX0RFRkFVTFQQARIWChJNRVNTQUdFX1RZUEVfUkVQTFkQExIfChtNRVNTQUdFX1RZUEVfVEhSRUFEX1NUQVJURVIQFSpyCgtNZXNzYWdlRmxhZxIcChhNRVNTQUdFX0ZMQUdfVU5TUEVDSUZJRUQQABIbChdNRVNTQUdFX0ZMQUdfSEFTX1RIUkVBRBAgEigKI01FU1NBR0VfRkxBR19TVVBQUkVTU19OT1RJRklDQVRJT05TEIAgKn8KElJlYWRTdGF0ZVNjb3BlVHlwZRIlCiFSRUFEX1NUQVRFX1NDT1BFX1RZUEVfVU5TUEVDSUZJRUQQABIfChtSRUFEX1NUQVRFX1NDT1BFX1RZUEVfR1VJTEQQARIhCh1SRUFEX1NUQVRFX1NDT1BFX1RZUEVfQUxMX0RNUxACMoAICg5NZXNzYWdlU2VydmljZRJMCg1DcmVhdGVNZXNzYWdlEhwuYXBpLnYxLkNyZWF0ZU1lc3NhZ2VSZXF1ZXN0Gh0uYXBpLnYxLkNyZWF0ZU1lc3NhZ2VSZXNwb25zZRJMCg1VcGRhdGVNZXNzYWdlEhwuYXBpLnYxLlVwZGF0ZU1lc3NhZ2VSZXF1ZXN0Gh0uYXBpLnYxLlVwZGF0ZU1lc3NhZ2VSZXNwb25zZRJMCg1EZWxldGVNZXNzYWdlEhwuYXBpLnYxLkRlbGV0ZU1lc3NhZ2VSZXF1ZXN0Gh0uYXBpLnYxLkRlbGV0ZU1lc3NhZ2VSZXNwb25zZRJDCgpHZXRNZXNzYWdlEhkuYXBpLnYxLkdldE1lc3NhZ2VSZXF1ZXN0GhouYXBpLnYxLkdldE1lc3NhZ2VSZXNwb25zZRJJCgxMaXN0TWVzc2FnZXMSGy5hcGkudjEuTGlzdE1lc3NhZ2VzUmVxdWVzdBocLmFwaS52MS5MaXN0TWVzc2FnZXNSZXNwb25zZRJnChZDcmVhdGVBdHRhY2htZW50VXBsb2FkEiUuYXBpLnYxLkNyZWF0ZUF0dGFjaG1lbnRVcGxvYWRSZXF1ZXN0GiYuYXBpLnYxLkNyZWF0ZUF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZRJtChhDb21wbGV0ZUF0dGFjaG1lbnRVcGxvYWQSJy5hcGkudjEuQ29tcGxldGVBdHRhY2htZW50VXBsb2FkUmVxdWVzdBooLmFwaS52MS5Db21wbGV0ZUF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZRJkChVBYm9ydEF0dGFjaG1lbnRVcGxvYWQSJC5hcGkudjEuQWJvcnRBdHRhY2htZW50VXBsb2FkUmVxdWVzdBolLmFwaS52MS5BYm9ydEF0dGFjaG1lbnRVcGxvYWRSZXNwb25zZRJSCg9DcmVhdGVEbUNoYW5uZWwSHi5hcGkudjEuQ3JlYXRlRG1DaGFubmVsUmVxdWVzdBofLmFwaS52MS5DcmVhdGVEbUNoYW5uZWxSZXNwb25zZRJPCg5MaXN0RG1DaGFubmVscxIdLmFwaS52MS5MaXN0RG1DaGFubmVsc1JlcXVlc3QaHi5hcGkudjEuTGlzdERtQ2hhbm5lbHNSZXNwb25zZRJDCgpBY2tNZXNzYWdlEhkuYXBpLnYxLkFja01lc3NhZ2VSZXF1ZXN0GhouYXBpLnYxLkFja01lc3NhZ2VSZXNwb25zZRJMCg1HZXRSZWFkU3RhdGVzEhwuYXBpLnYxLkdldFJlYWRTdGF0ZXNSZXF1ZXN0Gh0uYXBpLnYxLkdldFJlYWRTdGF0ZXNSZXNwb25zZWIIZWRpdGlvbnNw6Ac", [file_api_v1_media, file_api_v1_user]);
 
 /**
  * ChannelReadState is one user's read position relative to a channel head.
@@ -168,6 +170,27 @@ export type Message = Message$1<"api.v1.Message"> & {
    * @generated from field: int64 revision = 13;
    */
   revision: bigint;
+
+  /**
+   * User IDs parsed from mentions in content, in ascending user ID order.
+   *
+   * @generated from field: repeated int64 mention_user_ids = 14;
+   */
+  mentionUserIds: bigint[];
+
+  /**
+   * Role IDs parsed from mentions in content, in ascending role ID order.
+   *
+   * @generated from field: repeated int64 mention_role_ids = 15;
+   */
+  mentionRoleIds: bigint[];
+
+  /**
+   * Whether the content mentions @everyone.
+   *
+   * @generated from field: bool mention_everyone = 16;
+   */
+  mentionEveryone: boolean;
 };
 
 /**
@@ -292,6 +315,14 @@ export type CreateAttachmentUploadRequest = Message$1<"api.v1.CreateAttachmentUp
    * @generated from field: string filename = 4;
    */
   filename: string;
+
+  /**
+   * Optional opaque key identifying one client-side attachment upload intent.
+   * Retrying with the same key returns the same upload.
+   *
+   * @generated from field: string idempotency_key = 5;
+   */
+  idempotencyKey: string;
 };
 
 /**
@@ -336,6 +367,20 @@ export type CreateAttachmentUploadResponse = Message$1<"api.v1.CreateAttachmentU
    * @generated from field: map<string, string> request_headers = 4;
    */
   requestHeaders: { [key: string]: string };
+
+  /**
+   * status is the upload lifecycle state observed for this response.
+   *
+   * @generated from field: api.v1.UploadStatus status = 5;
+   */
+  status: UploadStatus;
+
+  /**
+   * True when the existing idempotency record was replayed.
+   *
+   * @generated from field: bool idempotent_replay = 6;
+   */
+  idempotentReplay: boolean;
 };
 
 /**
@@ -453,25 +498,6 @@ export const AttachmentListSchema: GenMessage<AttachmentList> = /*@__PURE__*/
   messageDesc(file_api_v1_message, 10);
 
 /**
- * MentionList distinguishes an omitted update from removing every mention.
- *
- * @generated from message api.v1.MentionList
- */
-export type MentionList = Message$1<"api.v1.MentionList"> & {
-  /**
-   * @generated from field: repeated int64 user_ids = 1;
-   */
-  userIds: bigint[];
-};
-
-/**
- * Describes the message api.v1.MentionList.
- * Use `create(MentionListSchema)` to create a new message.
- */
-export const MentionListSchema: GenMessage<MentionList> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 11);
-
-/**
  * @generated from message api.v1.CreateMessageRequest
  */
 export type CreateMessageRequest = Message$1<"api.v1.CreateMessageRequest"> & {
@@ -515,11 +541,11 @@ export type CreateMessageRequest = Message$1<"api.v1.CreateMessageRequest"> & {
   attachments: Attachment[];
 
   /**
-   * User IDs parsed from mentions in content.
+   * Optional opaque key identifying one client-side message creation intent.
    *
-   * @generated from field: repeated int64 mention_user_ids = 8;
+   * @generated from field: string idempotency_key = 9;
    */
-  mentionUserIds: bigint[];
+  idempotencyKey: string;
 };
 
 /**
@@ -527,7 +553,7 @@ export type CreateMessageRequest = Message$1<"api.v1.CreateMessageRequest"> & {
  * Use `create(CreateMessageRequestSchema)` to create a new message.
  */
 export const CreateMessageRequestSchema: GenMessage<CreateMessageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 12);
+  messageDesc(file_api_v1_message, 11);
 
 /**
  * @generated from message api.v1.CreateMessageResponse
@@ -544,7 +570,7 @@ export type CreateMessageResponse = Message$1<"api.v1.CreateMessageResponse"> & 
  * Use `create(CreateMessageResponseSchema)` to create a new message.
  */
 export const CreateMessageResponseSchema: GenMessage<CreateMessageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 13);
+  messageDesc(file_api_v1_message, 12);
 
 /**
  * @generated from message api.v1.UpdateMessageRequest
@@ -575,13 +601,6 @@ export type UpdateMessageRequest = Message$1<"api.v1.UpdateMessageRequest"> & {
    * @generated from field: api.v1.AttachmentList attachments = 4;
    */
   attachments?: AttachmentList | undefined;
-
-  /**
-   * When present, replaces the complete mention list.
-   *
-   * @generated from field: api.v1.MentionList mentions = 5;
-   */
-  mentions?: MentionList | undefined;
 };
 
 /**
@@ -589,7 +608,7 @@ export type UpdateMessageRequest = Message$1<"api.v1.UpdateMessageRequest"> & {
  * Use `create(UpdateMessageRequestSchema)` to create a new message.
  */
 export const UpdateMessageRequestSchema: GenMessage<UpdateMessageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 14);
+  messageDesc(file_api_v1_message, 13);
 
 /**
  * @generated from message api.v1.UpdateMessageResponse
@@ -606,7 +625,7 @@ export type UpdateMessageResponse = Message$1<"api.v1.UpdateMessageResponse"> & 
  * Use `create(UpdateMessageResponseSchema)` to create a new message.
  */
 export const UpdateMessageResponseSchema: GenMessage<UpdateMessageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 15);
+  messageDesc(file_api_v1_message, 14);
 
 /**
  * @generated from message api.v1.DeleteMessageRequest
@@ -623,7 +642,7 @@ export type DeleteMessageRequest = Message$1<"api.v1.DeleteMessageRequest"> & {
  * Use `create(DeleteMessageRequestSchema)` to create a new message.
  */
 export const DeleteMessageRequestSchema: GenMessage<DeleteMessageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 16);
+  messageDesc(file_api_v1_message, 15);
 
 /**
  * @generated from message api.v1.DeleteMessageResponse
@@ -640,7 +659,7 @@ export type DeleteMessageResponse = Message$1<"api.v1.DeleteMessageResponse"> & 
  * Use `create(DeleteMessageResponseSchema)` to create a new message.
  */
 export const DeleteMessageResponseSchema: GenMessage<DeleteMessageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 17);
+  messageDesc(file_api_v1_message, 16);
 
 /**
  * @generated from message api.v1.GetMessageRequest
@@ -657,7 +676,7 @@ export type GetMessageRequest = Message$1<"api.v1.GetMessageRequest"> & {
  * Use `create(GetMessageRequestSchema)` to create a new message.
  */
 export const GetMessageRequestSchema: GenMessage<GetMessageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 18);
+  messageDesc(file_api_v1_message, 17);
 
 /**
  * @generated from message api.v1.GetMessageResponse
@@ -674,7 +693,7 @@ export type GetMessageResponse = Message$1<"api.v1.GetMessageResponse"> & {
  * Use `create(GetMessageResponseSchema)` to create a new message.
  */
 export const GetMessageResponseSchema: GenMessage<GetMessageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 19);
+  messageDesc(file_api_v1_message, 18);
 
 /**
  * @generated from message api.v1.ListMessagesRequest
@@ -723,7 +742,7 @@ export type ListMessagesRequest = Message$1<"api.v1.ListMessagesRequest"> & {
  * Use `create(ListMessagesRequestSchema)` to create a new message.
  */
 export const ListMessagesRequestSchema: GenMessage<ListMessagesRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 20);
+  messageDesc(file_api_v1_message, 19);
 
 /**
  * @generated from message api.v1.ListMessagesResponse
@@ -754,7 +773,7 @@ export type ListMessagesResponse = Message$1<"api.v1.ListMessagesResponse"> & {
  * Use `create(ListMessagesResponseSchema)` to create a new message.
  */
 export const ListMessagesResponseSchema: GenMessage<ListMessagesResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 21);
+  messageDesc(file_api_v1_message, 20);
 
 /**
  * @generated from message api.v1.CreateDmChannelRequest
@@ -771,7 +790,7 @@ export type CreateDmChannelRequest = Message$1<"api.v1.CreateDmChannelRequest"> 
  * Use `create(CreateDmChannelRequestSchema)` to create a new message.
  */
 export const CreateDmChannelRequestSchema: GenMessage<CreateDmChannelRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 22);
+  messageDesc(file_api_v1_message, 21);
 
 /**
  * @generated from message api.v1.CreateDmChannelResponse
@@ -788,7 +807,7 @@ export type CreateDmChannelResponse = Message$1<"api.v1.CreateDmChannelResponse"
  * Use `create(CreateDmChannelResponseSchema)` to create a new message.
  */
 export const CreateDmChannelResponseSchema: GenMessage<CreateDmChannelResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 23);
+  messageDesc(file_api_v1_message, 22);
 
 /**
  * @generated from message api.v1.ListDmChannelsRequest
@@ -814,7 +833,7 @@ export type ListDmChannelsRequest = Message$1<"api.v1.ListDmChannelsRequest"> & 
  * Use `create(ListDmChannelsRequestSchema)` to create a new message.
  */
 export const ListDmChannelsRequestSchema: GenMessage<ListDmChannelsRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 24);
+  messageDesc(file_api_v1_message, 23);
 
 /**
  * @generated from message api.v1.ListDmChannelsResponse
@@ -841,7 +860,7 @@ export type ListDmChannelsResponse = Message$1<"api.v1.ListDmChannelsResponse"> 
  * Use `create(ListDmChannelsResponseSchema)` to create a new message.
  */
 export const ListDmChannelsResponseSchema: GenMessage<ListDmChannelsResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 25);
+  messageDesc(file_api_v1_message, 24);
 
 /**
  * @generated from message api.v1.AckMessageRequest
@@ -865,7 +884,7 @@ export type AckMessageRequest = Message$1<"api.v1.AckMessageRequest"> & {
  * Use `create(AckMessageRequestSchema)` to create a new message.
  */
 export const AckMessageRequestSchema: GenMessage<AckMessageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 26);
+  messageDesc(file_api_v1_message, 25);
 
 /**
  * @generated from message api.v1.AckMessageResponse
@@ -882,7 +901,7 @@ export type AckMessageResponse = Message$1<"api.v1.AckMessageResponse"> & {
  * Use `create(AckMessageResponseSchema)` to create a new message.
  */
 export const AckMessageResponseSchema: GenMessage<AckMessageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 27);
+  messageDesc(file_api_v1_message, 26);
 
 /**
  * @generated from message api.v1.GetReadStatesRequest
@@ -906,7 +925,7 @@ export type GetReadStatesRequest = Message$1<"api.v1.GetReadStatesRequest"> & {
  * Use `create(GetReadStatesRequestSchema)` to create a new message.
  */
 export const GetReadStatesRequestSchema: GenMessage<GetReadStatesRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 28);
+  messageDesc(file_api_v1_message, 27);
 
 /**
  * @generated from message api.v1.GetReadStatesResponse
@@ -928,7 +947,7 @@ export type GetReadStatesResponse = Message$1<"api.v1.GetReadStatesResponse"> & 
  * Use `create(GetReadStatesResponseSchema)` to create a new message.
  */
 export const GetReadStatesResponseSchema: GenMessage<GetReadStatesResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_message, 29);
+  messageDesc(file_api_v1_message, 28);
 
 /**
  * MessageType identifies the semantic kind of a message.

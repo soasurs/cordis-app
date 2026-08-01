@@ -17,6 +17,7 @@ import {
 } from '@/features/guilds/components/guild-channel-states'
 import { GuildPageHeader } from '@/features/guilds/components/guild-page-header'
 import {
+  guildChannelLayoutRevisionQueryOptions,
   guildChannelsQueryOptions,
   guildsQueryOptions,
   type GuildChannelSummary,
@@ -56,6 +57,7 @@ export function GuildPage({
   const { data: guilds } = useQuery(guildsQueryOptions)
   const { data: session } = useQuery(authSessionQueryOptions)
   const channelsQuery = useQuery(guildChannelsQueryOptions(guildId))
+  const { data: channelLayoutRevision } = useQuery(guildChannelLayoutRevisionQueryOptions(guildId))
   const readStatesQuery = useQuery(guildReadStatesQueryOptions(guildId))
   const channelReordering = useChannelReordering(guildId)
   const { can } = useGuildCapabilities(guildId)
@@ -204,6 +206,7 @@ export function GuildPage({
 
       {canManageChannels && createChannelTarget ? (
         <CreateGuildChannelDialog
+          channelLayoutRevision={channelLayoutRevision}
           guildId={guildId}
           guildName={guild?.name ?? 'Community'}
           kind={createChannelTarget.kind}

@@ -12,6 +12,7 @@ import {
 
 import { resolveAvatarUrl } from '@/api/assets'
 import { getApiErrorMessage } from '@/api/errors'
+import { createIdempotencyKey } from '@/api/idempotency'
 import { deleteMessage, updateMessage, type MessageAttachment } from '@/api/message'
 import { Button } from '@/components/ui/button'
 import { getInitials } from '@/components/layout/app-shell-types'
@@ -243,6 +244,7 @@ export function MessageItem({
     for (const file of accepted) {
       const validationError = validateMessageAttachmentFile(file)
       const id = crypto.randomUUID()
+      const idempotencyKey = createIdempotencyKey()
       const contentType = file.type.trim().toLowerCase()
       const previewUrl =
         isImageAttachmentContentType(contentType) || isVideoAttachmentContentType(contentType)
@@ -270,11 +272,12 @@ export function MessageItem({
           id,
           contentType,
           filename: file.name,
+          idempotencyKey,
           previewUrl,
           status: 'uploading',
         },
       ])
-      void uploadMessageAttachment(message.channelId, file)
+      void uploadMessageAttachment(message.channelId, file, idempotencyKey)
         .then((attachment) => {
           setPending((current) =>
             current.map((item) =>

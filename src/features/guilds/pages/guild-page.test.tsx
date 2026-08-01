@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +8,7 @@ import { authSessionQueryKey } from '@/features/auth/auth-session'
 
 import {
   guildChannelsQueryKey,
+  guildChannelLayoutRevisionQueryKey,
   guildsQueryKey,
   type GuildChannelSummary,
   type GuildSummary,
@@ -144,6 +146,27 @@ describe('GuildPage', () => {
     expect(guildApi.listGuildChannels.mock.calls[0]?.[0]).toBe('42')
   })
 
+  it('does not replace a newer channel cache with an older API snapshot', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    queryClient.setQueryData(guildChannelLayoutRevisionQueryKey('42'), 2)
+    guildApi.listGuildChannels.mockResolvedValue({
+      channelLayoutRevision: 1,
+      channels: channels.map((channel) => ({ ...channel, name: 'stale snapshot' })),
+    })
+    renderGuildPage(queryClient, { channelId: '43' })
+
+    void queryClient.invalidateQueries({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
+    })
+
+    await waitFor(() => expect(guildApi.listGuildChannels).toHaveBeenCalledOnce())
+    expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toEqual(channels)
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(2)
+  })
+
   it('uses a channel list already supplied by READY without another API call', async () => {
     const queryClient = createQueryClient()
     queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
@@ -218,7 +241,10 @@ describe('GuildPage', () => {
       topic: '',
       type: 3,
     }
-    guildApi.createGuildChannel.mockResolvedValue(createdChannel)
+    guildApi.createGuildChannel.mockResolvedValue({
+      channel: createdChannel,
+      channelLayoutRevision: 1,
+    })
     queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
     renderGuildPage(queryClient, { channelId: '43', onSelectChannel })
     const user = userEvent.setup()
@@ -239,7 +265,9 @@ describe('GuildPage', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(guildApi.createGuildChannel).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 1,
       guildId: '42',
+      idempotencyKey: expect.any(String),
       name: 'standup',
       parentId: '45',
       type: 'voice',
@@ -260,7 +288,10 @@ describe('GuildPage', () => {
       topic: '',
       type: 1,
     }
-    guildApi.createGuildChannel.mockResolvedValue(createdChannel)
+    guildApi.createGuildChannel.mockResolvedValue({
+      channel: createdChannel,
+      channelLayoutRevision: 1,
+    })
     queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
     renderGuildPage(queryClient, { channelId: '43', onSelectChannel })
     const user = userEvent.setup()
@@ -274,7 +305,9 @@ describe('GuildPage', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(guildApi.createGuildChannel).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 1,
       guildId: '42',
+      idempotencyKey: expect.any(String),
       name: 'announcements',
       parentId: undefined,
       type: 'text',
@@ -320,7 +353,10 @@ describe('GuildPage', () => {
       topic: '',
       type: 2,
     }
-    guildApi.createGuildChannel.mockResolvedValue(createdCategory)
+    guildApi.createGuildChannel.mockResolvedValue({
+      channel: createdCategory,
+      channelLayoutRevision: 1,
+    })
     queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
     renderGuildPage(queryClient, { channelId: '43', onSelectChannel })
     const user = userEvent.setup()
@@ -334,12 +370,44 @@ describe('GuildPage', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(guildApi.createGuildChannel).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 1,
       guildId: '42',
+      idempotencyKey: expect.any(String),
       name: 'Announcements',
       type: 'category',
     })
     expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toContainEqual(createdCategory)
     expect(onSelectChannel).not.toHaveBeenCalled()
+  })
+
+  it('refreshes channels and does not replay a stale create after a conflict', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelLayoutRevisionQueryKey('42'), 3)
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+    guildApi.createGuildChannel.mockRejectedValue(new ConnectError('stale layout', Code.Aborted))
+    renderGuildPage(queryClient, { channelId: '43' })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Community menu' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Create channel' }))
+    await user.type(screen.getByLabelText(/^Channel name/), 'announcements')
+    await user.click(screen.getByRole('button', { name: 'Create channel' }))
+
+    await screen.findByRole('alert')
+    expect(guildApi.createGuildChannel).toHaveBeenCalledOnce()
+    expect(guildApi.createGuildChannel).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 3,
+      guildId: '42',
+      idempotencyKey: expect.any(String),
+      name: 'announcements',
+      parentId: undefined,
+      type: 'text',
+    })
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
+    })
   })
 
   it('keeps channel create actions for the owner even without Manage Channels on roles', async () => {
@@ -481,6 +549,7 @@ function createQueryClient() {
     user: { email: 'alex@example.com', userId: 7n },
   })
   queryClient.setQueryData(guildsQueryKey, [guild])
+  queryClient.setQueryData(guildChannelLayoutRevisionQueryKey('42'), 1)
   return queryClient
 }
 

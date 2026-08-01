@@ -1,10 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { getApiErrorMessage } from '@/api/errors'
 import { createGuildInvite } from '@/api/guild'
+import { getIdempotencyKeyForIntent, type IdempotencyIntent } from '@/api/idempotency'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 
@@ -42,9 +43,15 @@ export function CreateGuildInviteDialog({
   const queryClient = useQueryClient()
   const [createdCode, setCreatedCode] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const intentRef = useRef<IdempotencyIntent | undefined>(undefined)
   const mutation = useMutation({
-    mutationFn: (values: { expiresInMs: number; maxUses: number }) =>
-      createGuildInvite(guildId, values),
+    mutationFn: ({
+      idempotencyKey,
+      values,
+    }: {
+      idempotencyKey: string
+      values: { expiresInMs: number; maxUses: number }
+    }) => createGuildInvite(guildId, { ...values, idempotencyKey }),
   })
   const form = useForm({
     defaultValues: {
@@ -53,10 +60,17 @@ export function CreateGuildInviteDialog({
     },
     onSubmit: async ({ value }) => {
       try {
-        const invite = await mutation.mutateAsync({
+        const values = {
           expiresInMs: Number(value.expiresInMs),
           maxUses: Number(value.maxUses),
-        })
+        }
+        const intent = getIdempotencyKeyForIntent(
+          intentRef.current,
+          JSON.stringify({ guildId, ...values }),
+        )
+        intentRef.current = intent
+        const invite = await mutation.mutateAsync({ idempotencyKey: intent.key, values })
+        intentRef.current = undefined
         prependGuildInviteFromApi(queryClient, invite)
         setCreatedCode(invite.code)
       } catch {
@@ -65,7 +79,10 @@ export function CreateGuildInviteDialog({
     },
   })
   const closeDialog = () => {
-    if (!mutation.isPending) onClose()
+    if (!mutation.isPending) {
+      intentRef.current = undefined
+      onClose()
+    }
   }
   const error = mutation.error
     ? getApiErrorMessage(mutation.error, 'Unable to create this invite. Please try again.')

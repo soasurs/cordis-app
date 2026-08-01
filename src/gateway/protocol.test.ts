@@ -87,6 +87,7 @@ describe('gateway protocol', () => {
           icon_asset_id: '0',
           revision: 1,
           access_revision: 1,
+          channel_layout_revision: 1,
           created_at: 100,
           updated_at: 100,
           roles: [],

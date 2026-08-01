@@ -1,8 +1,10 @@
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 
 import { createGuildRole, type GuildRole } from '@/api/guild'
 import { getApiErrorMessage } from '@/api/errors'
+import { getIdempotencyKeyForIntent, type IdempotencyIntent } from '@/api/idempotency'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
@@ -21,15 +23,33 @@ interface GuildRoleCreateFormProps {
 
 export function GuildRoleCreateForm({ guildId, onCancel, onCreated }: GuildRoleCreateFormProps) {
   const queryClient = useQueryClient()
+  const intentRef = useRef<IdempotencyIntent | undefined>(undefined)
   const mutation = useMutation({
-    mutationFn: (values: GuildRoleFormValues) => createGuildRole(guildId, values),
+    mutationFn: ({
+      idempotencyKey,
+      values,
+    }: {
+      idempotencyKey: string
+      values: GuildRoleFormValues
+    }) => createGuildRole(guildId, { ...values, idempotencyKey }),
   })
   const form = useForm({
     defaultValues: { name: '', permissions: '0' } satisfies GuildRoleFormValues,
     validators: { onSubmit: guildRoleSchema },
     onSubmit: async ({ value }) => {
+      const values = guildRoleSchema.parse(value)
+      const intent = getIdempotencyKeyForIntent(
+        intentRef.current,
+        JSON.stringify({
+          guildId,
+          name: values.name.trim(),
+          permissions: values.permissions,
+        }),
+      )
+      intentRef.current = intent
       try {
-        const role = await mutation.mutateAsync(guildRoleSchema.parse(value))
+        const role = await mutation.mutateAsync({ idempotencyKey: intent.key, values })
+        intentRef.current = undefined
         upsertGuildRoleFromApi(queryClient, role)
         onCreated(role)
       } catch {
@@ -40,6 +60,10 @@ export function GuildRoleCreateForm({ guildId, onCancel, onCreated }: GuildRoleC
   const error = mutation.error
     ? getApiErrorMessage(mutation.error, 'Unable to create this role. Please try again.')
     : undefined
+  const handleCancel = () => {
+    intentRef.current = undefined
+    onCancel()
+  }
 
   return (
     <form
@@ -73,7 +97,7 @@ export function GuildRoleCreateForm({ guildId, onCancel, onCreated }: GuildRoleC
         )}
       </form.Field>
       <div className="flex justify-end gap-2">
-        <Button size="small" variant="ghost" disabled={mutation.isPending} onClick={onCancel}>
+        <Button size="small" variant="ghost" disabled={mutation.isPending} onClick={handleCancel}>
           Cancel
         </Button>
         <Button size="small" type="submit" loading={mutation.isPending}>

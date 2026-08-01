@@ -2,10 +2,14 @@ export { GuildChannelType } from '@/gen/api/v1/guild_pb'
 export { guildPermission } from '@/api/guild/permissions'
 export type {
   CreateGuildChannelDetails,
+  CreateGuildDetails,
   CreateGuildIconUploadDetails,
   CreateGuildInviteDetails,
+  DeleteGuildChannelResult,
   Guild,
   GuildChannel,
+  GuildChannelList,
+  GuildChannelMutationResult,
   GuildChannelPermissionOverwrite,
   GuildChannelPermissionOverwriteAppliesTo,
   GuildChannelPosition,
@@ -32,6 +36,7 @@ export {
 } from '@/api/guild/guild-ops'
 export {
   createGuildChannel,
+  deleteGuildChannel,
   deleteGuildChannelPermissionOverwrite,
   listGuildChannelPermissionOverwrites,
   listGuildChannels,

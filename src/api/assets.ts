@@ -1,12 +1,57 @@
+import { UploadStatus as UploadStatusProto } from '@/gen/api/v1/media_pb'
+
 const PUBLIC_BUCKET = 'cordis-public'
 
 const BROWSER_MANAGED_HEADERS = new Set(['content-length', 'host', 'transfer-encoding'])
 
+export type UploadStatus = 'aborted' | 'completing' | 'created' | 'expired' | 'failed' | 'ready'
+
+export type TerminalUploadStatus = Extract<UploadStatus, 'aborted' | 'expired' | 'failed'>
+
 export interface PresignedUploadContract {
   expiresAt: number
+  idempotentReplay: boolean
   presignedUrl: string
   requestHeaders: Record<string, string>
+  status: UploadStatus
   uploadId: string
+}
+
+export class UploadIntentRetiredError extends Error {
+  constructor(
+    public readonly status: TerminalUploadStatus | 'aborted' | undefined,
+    cause?: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : 'upload intent is no longer reusable')
+    this.name = 'UploadIntentRetiredError'
+  }
+}
+
+export function isUploadIntentRetiredError(error: unknown): error is UploadIntentRetiredError {
+  return error instanceof UploadIntentRetiredError
+}
+
+export function isTerminalUploadStatus(status: UploadStatus): status is TerminalUploadStatus {
+  return status === 'aborted' || status === 'expired' || status === 'failed'
+}
+
+export function toUploadStatus(status: UploadStatusProto): UploadStatus {
+  switch (status) {
+    case UploadStatusProto.CREATED:
+      return 'created'
+    case UploadStatusProto.COMPLETING:
+      return 'completing'
+    case UploadStatusProto.READY:
+      return 'ready'
+    case UploadStatusProto.FAILED:
+      return 'failed'
+    case UploadStatusProto.ABORTED:
+      return 'aborted'
+    case UploadStatusProto.EXPIRED:
+      return 'expired'
+    default:
+      throw new Error('upload status is invalid')
+  }
 }
 
 export function resolveGuildIconUrl(guildId: string, iconAssetId: string): string | undefined {

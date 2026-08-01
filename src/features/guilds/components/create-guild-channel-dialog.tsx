@@ -1,14 +1,16 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 
 import { createGuildChannel, type CreateGuildChannelDetails, type GuildChannel } from '@/api/guild'
-import { getApiErrorMessage } from '@/api/errors'
+import { getApiErrorMessage, isResourceConflictError } from '@/api/errors'
+import { getIdempotencyKeyForIntent, type IdempotencyIntent } from '@/api/idempotency'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { TextInput } from '@/components/ui/text-input'
 
-import { upsertGuildChannelFromApi } from '@/features/guilds/guild-queries'
+import { guildChannelsQueryKey, upsertGuildChannelFromApi } from '@/features/guilds/guild-queries'
 import {
   createGuildChannelSchema,
   getGuildFieldError,
@@ -23,6 +25,7 @@ interface ParentCategory {
 interface CreateGuildChannelDialogProps {
   guildId: string
   guildName: string
+  channelLayoutRevision?: number
   kind: 'category' | 'channel'
   onClose: () => void
   onCreated: (channel: GuildChannel) => void
@@ -32,24 +35,59 @@ interface CreateGuildChannelDialogProps {
 export function CreateGuildChannelDialog({
   guildId,
   guildName,
+  channelLayoutRevision,
   kind,
   onClose,
   onCreated,
   parentCategory,
 }: CreateGuildChannelDialogProps) {
   const queryClient = useQueryClient()
+  const intentRef = useRef<IdempotencyIntent | undefined>(undefined)
   const mutation = useMutation({
-    mutationFn: (values: CreateGuildChannelFormValues) => {
+    retry: false,
+    mutationFn: ({
+      idempotencyKey,
+      values,
+    }: {
+      idempotencyKey: string
+      values: CreateGuildChannelFormValues
+    }) => {
+      if (channelLayoutRevision === undefined) {
+        void queryClient.invalidateQueries({
+          exact: true,
+          queryKey: guildChannelsQueryKey(guildId),
+          refetchType: 'all',
+        })
+        throw new Error('channel layout revision is unavailable')
+      }
+
       const details: CreateGuildChannelDetails =
         kind === 'category'
-          ? { guildId, name: values.name, type: 'category' }
-          : {
+          ? {
+              expectedChannelLayoutRevision: channelLayoutRevision,
               guildId,
+              idempotencyKey,
+              name: values.name,
+              type: 'category',
+            }
+          : {
+              expectedChannelLayoutRevision: channelLayoutRevision,
+              guildId,
+              idempotencyKey,
               name: values.name,
               parentId: parentCategory?.id,
               type: values.type === 'voice' ? 'voice' : 'text',
             }
       return createGuildChannel(details)
+    },
+    onError: (error) => {
+      if (isResourceConflictError(error)) {
+        void queryClient.invalidateQueries({
+          exact: true,
+          queryKey: guildChannelsQueryKey(guildId),
+          refetchType: 'all',
+        })
+      }
     },
   })
   const form = useForm({
@@ -59,17 +97,33 @@ export function CreateGuildChannelDialog({
     } as CreateGuildChannelFormValues,
     validators: { onSubmit: createGuildChannelSchema },
     onSubmit: async ({ value }) => {
+      const values = createGuildChannelSchema.parse(value)
+      const intent = getIdempotencyKeyForIntent(
+        intentRef.current,
+        JSON.stringify({
+          guildId,
+          kind,
+          name: values.name.trim(),
+          parentId: parentCategory?.id,
+          type: values.type,
+        }),
+      )
+      intentRef.current = intent
       try {
-        const channel = await mutation.mutateAsync(createGuildChannelSchema.parse(value))
-        upsertGuildChannelFromApi(queryClient, channel)
-        onCreated(channel)
+        const result = await mutation.mutateAsync({ idempotencyKey: intent.key, values })
+        intentRef.current = undefined
+        upsertGuildChannelFromApi(queryClient, result.channel, result.channelLayoutRevision)
+        onCreated(result.channel)
       } catch {
         // The mutation error is rendered below while the form remains available.
       }
     },
   })
   const closeDialog = () => {
-    if (!mutation.isPending) onClose()
+    if (!mutation.isPending) {
+      intentRef.current = undefined
+      onClose()
+    }
   }
   const isCategory = kind === 'category'
   const title = isCategory ? 'Create a category' : 'Create a channel'

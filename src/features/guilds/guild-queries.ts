@@ -16,7 +16,9 @@ import {
   listGuildRoles,
   type Guild,
   type GuildChannel,
+  type GuildChannelList,
   type GuildChannelPermissionOverwrite,
+  type DeleteGuildChannelResult,
   type GuildInvite,
   type GuildInvitePage,
   type GuildMember,
@@ -32,6 +34,7 @@ import type {
   GatewayReadyData,
   GuildChannelOverwriteDeletedPayload,
   GuildChannelOverwritePayload,
+  GuildChannelDeletedPayload,
   GuildChannelPayload,
   GuildDeletedPayload,
   GuildPayload,
@@ -71,13 +74,71 @@ export function guildChannelsQueryKey(guildId: string) {
   return [...guildsQueryKey, guildId, 'channels'] as const
 }
 
+export function guildChannelLayoutRevisionQueryKey(guildId: string) {
+  return [...guildChannelsQueryKey(guildId), 'layout-revision'] as const
+}
+
+export function guildChannelLayoutRevisionQueryOptions(guildId: string) {
+  return queryOptions<
+    number | undefined,
+    Error,
+    number | undefined,
+    ReturnType<typeof guildChannelLayoutRevisionQueryKey>
+  >({
+    queryFn: skipToken,
+    queryKey: guildChannelLayoutRevisionQueryKey(guildId),
+  })
+}
+
+export function getGuildChannelLayoutRevision(queryClient: QueryClient, guildId: string) {
+  return queryClient.getQueryData<number>(guildChannelLayoutRevisionQueryKey(guildId))
+}
+
+export function setGuildChannelLayoutRevision(
+  queryClient: QueryClient,
+  guildId: string,
+  revision: number,
+) {
+  if (!Number.isSafeInteger(revision) || revision <= 0) {
+    return false
+  }
+
+  const key = guildChannelLayoutRevisionQueryKey(guildId)
+  const current = queryClient.getQueryData<number>(key)
+  if (current !== undefined && current > revision) {
+    return false
+  }
+
+  queryClient.setQueryData(key, revision)
+  return true
+}
+
 function guildQueryKey(guildId: string) {
   return [...guildsQueryKey, guildId] as const
 }
 
 export function guildChannelsQueryOptions(guildId: string) {
   return queryOptions({
-    queryFn: () => listGuildChannels(guildId),
+    queryFn: async ({ client }) => {
+      const snapshot = await listGuildChannels(guildId)
+      if (Array.isArray(snapshot)) {
+        return snapshot
+      }
+      const revisionAccepted = setGuildChannelLayoutRevision(
+        client,
+        guildId,
+        snapshot.channelLayoutRevision,
+      )
+      if (!revisionAccepted) {
+        const currentChannels = client.getQueryData<GuildChannelSummary[]>(
+          guildChannelsQueryKey(guildId),
+        )
+        if (currentChannels !== undefined) {
+          return currentChannels
+        }
+      }
+      return snapshot.channels
+    },
     queryKey: guildChannelsQueryKey(guildId),
     staleTime: Number.POSITIVE_INFINITY,
   })
@@ -570,6 +631,12 @@ export function replaceGuildsFromReady(queryClient: QueryClient, ready: GatewayR
       guildChannelsQueryKey(guild.id),
       guild.channels.map(toChannelSummary),
     )
+    if (Number.isSafeInteger(guild.channel_layout_revision) && guild.channel_layout_revision > 0) {
+      queryClient.setQueryData(
+        guildChannelLayoutRevisionQueryKey(guild.id),
+        guild.channel_layout_revision,
+      )
+    }
     queryClient.setQueryData<GuildRoleSummary[]>(guildRolesQueryKey(guild.id), roles)
     queryClient.setQueryData<GuildRoleSummary[]>(
       guildMemberRolesQueryKey(guild.id, ready.user_id),
@@ -621,6 +688,19 @@ export function upsertGuildChannelFromGateway(
   queryClient: QueryClient,
   channel: GuildChannelPayload,
 ) {
+  const currentLayoutRevision = getGuildChannelLayoutRevision(queryClient, channel.guild_id)
+  if (
+    channel.channel_layout_revision !== undefined &&
+    currentLayoutRevision !== undefined &&
+    channel.channel_layout_revision < currentLayoutRevision
+  ) {
+    return
+  }
+
+  if (channel.channel_layout_revision !== undefined) {
+    setGuildChannelLayoutRevision(queryClient, channel.guild_id, channel.channel_layout_revision)
+  }
+
   const nextChannel = toChannelSummary(channel)
   const channelsKey = guildChannelsQueryKey(channel.guild_id)
   const isNew = !queryClient
@@ -636,7 +716,15 @@ export function upsertGuildChannelFromGateway(
   }
 }
 
-export function upsertGuildChannelFromApi(queryClient: QueryClient, channel: GuildChannelSummary) {
+export function upsertGuildChannelFromApi(
+  queryClient: QueryClient,
+  channel: GuildChannelSummary,
+  channelLayoutRevision?: number,
+) {
+  if (channelLayoutRevision !== undefined) {
+    setGuildChannelLayoutRevision(queryClient, channel.guildId, channelLayoutRevision)
+  }
+
   const channelsKey = guildChannelsQueryKey(channel.guildId)
   const isNew = !queryClient
     .getQueryData<GuildChannelSummary[]>(channelsKey)
@@ -654,8 +742,15 @@ export function upsertGuildChannelFromApi(queryClient: QueryClient, channel: Gui
 export function upsertGuildChannelsFromApi(
   queryClient: QueryClient,
   guildId: string,
-  channels: GuildChannelSummary[],
+  result: GuildChannelList | GuildChannelSummary[],
+  channelLayoutRevision?: number,
 ) {
+  const channels = Array.isArray(result) ? result : result.channels
+  const revision = Array.isArray(result) ? channelLayoutRevision : result.channelLayoutRevision
+  if (revision !== undefined) {
+    setGuildChannelLayoutRevision(queryClient, guildId, revision)
+  }
+
   queryClient.setQueryData<GuildChannelSummary[]>(guildChannelsQueryKey(guildId), (current = []) =>
     channels.reduce((nextChannels, channel) => upsertByRevision(nextChannels, channel), current),
   )
@@ -663,9 +758,46 @@ export function upsertGuildChannelsFromApi(
 
 export function removeGuildChannelFromGateway(
   queryClient: QueryClient,
+  deleted: GuildChannelDeletedPayload,
+) {
+  const {
+    channel_layout_revision: channelLayoutRevision,
+    guild_id: guildId,
+    id: channelId,
+  } = deleted
+  const currentLayoutRevision = getGuildChannelLayoutRevision(queryClient, guildId)
+  if (
+    channelLayoutRevision !== undefined &&
+    currentLayoutRevision !== undefined &&
+    channelLayoutRevision < currentLayoutRevision
+  ) {
+    return
+  }
+
+  const channelsKey = guildChannelsQueryKey(guildId)
+  const currentChannels = queryClient.getQueryData<GuildChannelSummary[]>(channelsKey)
+  if (currentChannels !== undefined) {
+    queryClient.setQueryData<GuildChannelSummary[]>(
+      channelsKey,
+      currentChannels.filter((channel) => channel.id !== channelId),
+    )
+  }
+  queryClient.removeQueries({ queryKey: guildChannelOverwritesQueryKey(guildId, channelId) })
+  if (channelLayoutRevision !== undefined) {
+    setGuildChannelLayoutRevision(queryClient, guildId, channelLayoutRevision)
+  }
+  if (currentChannels === undefined || channelLayoutRevision === undefined) {
+    invalidateGuildChannelsFromGateway(queryClient, guildId)
+  }
+}
+
+export function removeGuildChannelFromApi(
+  queryClient: QueryClient,
   guildId: string,
   channelId: string,
+  result: DeleteGuildChannelResult,
 ) {
+  setGuildChannelLayoutRevision(queryClient, guildId, result.channelLayoutRevision)
   queryClient.setQueryData<GuildChannelSummary[]>(guildChannelsQueryKey(guildId), (current = []) =>
     current.filter((channel) => channel.id !== channelId),
   )

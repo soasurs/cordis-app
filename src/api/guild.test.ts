@@ -10,6 +10,7 @@ const guildClient = vi.hoisted(() => ({
   createGuildIconUpload: vi.fn(),
   createGuildInvite: vi.fn(),
   createGuildRole: vi.fn(),
+  deleteGuildChannel: vi.fn(),
   deleteGuildInvite: vi.fn(),
   deleteGuildRole: vi.fn(),
   deleteGuildChannelPermissionOverwrite: vi.fn(),
@@ -42,10 +43,12 @@ import {
   addGuildMemberRole,
   addGuildRoleMembers,
   completeGuildIconUpload,
+  createGuild,
   createGuildChannel,
   createGuildIconUpload,
   createGuildInvite,
   createGuildRole,
+  deleteGuildChannel,
   deleteGuildInvite,
   deleteGuildRole,
   deleteGuildChannelPermissionOverwrite,
@@ -73,6 +76,32 @@ beforeEach(() => {
 })
 
 describe('guild API', () => {
+  it('forwards an idempotency key for guild creation', async () => {
+    guildClient.createGuild.mockResolvedValue({
+      guild: {
+        createdAt: 1_000n,
+        description: '',
+        iconAssetId: 0n,
+        id: 42n,
+        name: 'Cordis Studio',
+        ownerId: 7n,
+        revision: 1n,
+        updatedAt: 1_000n,
+      },
+    })
+
+    await expect(
+      createGuild('Cordis Studio', { idempotencyKey: 'guild-intent' }),
+    ).resolves.toMatchObject({
+      id: '42',
+      name: 'Cordis Studio',
+    })
+    expect(guildClient.createGuild).toHaveBeenCalledWith({
+      idempotencyKey: 'guild-intent',
+      name: 'Cordis Studio',
+    })
+  })
+
   it('maps channel identifiers into the application boundary', async () => {
     guildClient.listGuildChannels.mockResolvedValue({
       channels: [
@@ -87,20 +116,24 @@ describe('guild API', () => {
           type: 1,
         },
       ],
+      channelLayoutRevision: 4n,
     })
 
-    await expect(listGuildChannels('42')).resolves.toEqual([
-      {
-        guildId: '42',
-        id: '43',
-        name: 'general',
-        parentId: undefined,
-        position: 0,
-        revision: 1,
-        topic: 'Welcome',
-        type: 1,
-      },
-    ])
+    await expect(listGuildChannels('42')).resolves.toEqual({
+      channelLayoutRevision: 4,
+      channels: [
+        {
+          guildId: '42',
+          id: '43',
+          name: 'general',
+          parentId: undefined,
+          position: 0,
+          revision: 1,
+          topic: 'Welcome',
+          type: 1,
+        },
+      ],
+    })
     expect(guildClient.listGuildChannels).toHaveBeenCalledWith({ guildId: 42n })
   })
 
@@ -206,10 +239,15 @@ describe('guild API', () => {
     })
 
     await expect(
-      createGuildRole('42', { name: 'Helpers', permissions: '3' }),
+      createGuildRole('42', {
+        idempotencyKey: 'role-intent',
+        name: 'Helpers',
+        permissions: '3',
+      }),
     ).resolves.toMatchObject({ id: '50', name: 'Helpers', permissions: '3' })
     expect(guildClient.createGuildRole).toHaveBeenCalledWith({
       guildId: 42n,
+      idempotencyKey: 'role-intent',
       name: 'Helpers',
       permissions: 3n,
     })
@@ -474,26 +512,32 @@ describe('guild API', () => {
         topic: '',
         type: 1,
       },
+      channelLayoutRevision: 2n,
     })
 
     await expect(
       createGuildChannel({
         guildId: '42',
+        expectedChannelLayoutRevision: 1,
         name: 'design',
         parentId: '45',
         type: 'text',
       }),
     ).resolves.toEqual({
-      guildId: '42',
-      id: '47',
-      name: 'design',
-      parentId: '45',
-      position: 2,
-      revision: 1,
-      topic: '',
-      type: 1,
+      channel: {
+        guildId: '42',
+        id: '47',
+        name: 'design',
+        parentId: '45',
+        position: 2,
+        revision: 1,
+        topic: '',
+        type: 1,
+      },
+      channelLayoutRevision: 2,
     })
     expect(guildClient.createGuildChannel).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 1n,
       guildId: 42n,
       name: 'design',
       parentId: 45n,
@@ -514,15 +558,18 @@ describe('guild API', () => {
         topic: '',
         type: 2,
       },
+      channelLayoutRevision: 3n,
     })
 
     await createGuildChannel({
+      expectedChannelLayoutRevision: 2,
       guildId: '42',
       name: 'Announcements',
       type: 'category',
     })
 
     expect(guildClient.createGuildChannel).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 2n,
       guildId: 42n,
       name: 'Announcements',
       parentId: 0n,
@@ -532,16 +579,24 @@ describe('guild API', () => {
   })
 
   it('reorders guild channels with validated positions', async () => {
-    guildClient.reorderGuildChannels.mockResolvedValue({ channels: [] })
+    guildClient.reorderGuildChannels.mockResolvedValue({
+      channelLayoutRevision: 4n,
+      channels: [],
+    })
 
     await expect(
-      reorderGuildChannels('42', [
-        { channelId: '44', parentId: '45', position: 0 },
-        { channelId: '43', parentId: null, position: 1 },
-        { channelId: '42', position: 2 },
-      ]),
-    ).resolves.toEqual([])
+      reorderGuildChannels(
+        '42',
+        [
+          { channelId: '44', parentId: '45', position: 0 },
+          { channelId: '43', parentId: null, position: 1 },
+          { channelId: '42', position: 2 },
+        ],
+        3,
+      ),
+    ).resolves.toEqual({ channelLayoutRevision: 4, channels: [] })
     expect(guildClient.reorderGuildChannels).toHaveBeenCalledWith({
+      expectedChannelLayoutRevision: 3n,
       guildId: 42n,
       positions: [
         { channelId: 44n, parentId: 45n, position: 0 },
@@ -563,23 +618,43 @@ describe('guild API', () => {
         topic: 'Hang out here',
         type: 1,
       },
+      channelLayoutRevision: 0n,
     })
 
     await expect(
       updateGuildChannel('43', { name: 'lobby', topic: 'Hang out here' }),
     ).resolves.toEqual({
-      guildId: '42',
-      id: '43',
-      name: 'lobby',
-      position: 0,
-      revision: 2,
-      topic: 'Hang out here',
-      type: 1,
+      channel: {
+        guildId: '42',
+        id: '43',
+        name: 'lobby',
+        parentId: undefined,
+        position: 0,
+        revision: 2,
+        topic: 'Hang out here',
+        type: 1,
+      },
+      channelLayoutRevision: undefined,
     })
     expect(guildClient.updateGuildChannel).toHaveBeenCalledWith({
       channelId: 43n,
       name: 'lobby',
       topic: 'Hang out here',
+    })
+  })
+
+  it('deletes a guild channel with the expected layout revision', async () => {
+    guildClient.deleteGuildChannel.mockResolvedValue({
+      channelLayoutRevision: 6n,
+      ok: true,
+    })
+
+    await expect(deleteGuildChannel('43', 5)).resolves.toEqual({
+      channelLayoutRevision: 6,
+    })
+    expect(guildClient.deleteGuildChannel).toHaveBeenCalledWith({
+      channelId: 43n,
+      expectedChannelLayoutRevision: 5n,
     })
   })
 
@@ -595,6 +670,7 @@ describe('guild API', () => {
         topic: 'Updated topic',
         type: 1,
       },
+      channelLayoutRevision: 0n,
     })
 
     await updateGuildChannel('43', { topic: 'Updated topic' })
@@ -603,6 +679,33 @@ describe('guild API', () => {
       channelId: 43n,
       topic: 'Updated topic',
     })
+  })
+
+  it('requires a layout revision when moving a channel', async () => {
+    guildClient.updateGuildChannel.mockResolvedValue({
+      channel: {
+        guildId: 42n,
+        id: 43n,
+        name: 'general',
+        parentId: 0n,
+        position: 0,
+        revision: 2n,
+        topic: '',
+        type: 1,
+      },
+      channelLayoutRevision: 6n,
+    })
+
+    await updateGuildChannel('43', { expectedChannelLayoutRevision: 5, parentId: null })
+
+    expect(guildClient.updateGuildChannel).toHaveBeenCalledWith({
+      channelId: 43n,
+      expectedChannelLayoutRevision: 5n,
+      parentId: 0n,
+    })
+    await expect(updateGuildChannel('43', { parentId: null })).rejects.toThrow(
+      'channel layout revision is invalid',
+    )
   })
 
   it('lists channel permission overwrites as domain models', async () => {
@@ -723,11 +826,13 @@ describe('guild API', () => {
   it('creates a guild icon upload contract', async () => {
     guildClient.createGuildIconUpload.mockResolvedValue({
       expiresAt: 1_800_000n,
+      idempotentReplay: false,
       presignedUrl: 'https://storage.example/upload',
       requestHeaders: {
         'Content-Length': '12',
         'Content-Type': 'image/png',
       },
+      status: 1,
       uploadId: 99n,
     })
 
@@ -735,20 +840,24 @@ describe('guild API', () => {
       createGuildIconUpload('42', {
         contentType: 'image/png',
         expectedSize: 12,
+        idempotencyKey: 'icon-intent',
       }),
     ).resolves.toEqual({
       expiresAt: 1_800_000,
+      idempotentReplay: false,
       presignedUrl: 'https://storage.example/upload',
       requestHeaders: {
         'Content-Length': '12',
         'Content-Type': 'image/png',
       },
+      status: 'created',
       uploadId: '99',
     })
     expect(guildClient.createGuildIconUpload).toHaveBeenCalledWith({
       contentType: 'image/png',
       expectedSize: 12n,
       guildId: 42n,
+      idempotencyKey: 'icon-intent',
     })
   })
 
@@ -888,22 +997,27 @@ describe('guild API', () => {
       limit: 50,
     })
 
-    await expect(createGuildInvite('42', { expiresInMs: 86_400_000, maxUses: 5 })).resolves.toEqual(
-      {
-        code: 'cordis-new',
-        createdAt: 2_000,
-        creator: undefined,
-        creatorUserId: '7',
-        expiresAt: 3_000,
-        guildId: '42',
-        id: '91',
+    await expect(
+      createGuildInvite('42', {
+        expiresInMs: 86_400_000,
+        idempotencyKey: 'invite-intent',
         maxUses: 5,
-        uses: 0,
-      },
-    )
+      }),
+    ).resolves.toEqual({
+      code: 'cordis-new',
+      createdAt: 2_000,
+      creator: undefined,
+      creatorUserId: '7',
+      expiresAt: 3_000,
+      guildId: '42',
+      id: '91',
+      maxUses: 5,
+      uses: 0,
+    })
     expect(guildClient.createGuildInvite).toHaveBeenCalledWith({
       expiresInMs: 86_400_000n,
       guildId: 42n,
+      idempotencyKey: 'invite-intent',
       maxUses: 5,
     })
 
