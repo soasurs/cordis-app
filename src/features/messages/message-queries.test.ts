@@ -176,6 +176,48 @@ describe('message query helpers', () => {
     expect(getMessages(queryClient).find((item) => item.id === '102')?.content).toBe('Hello edited')
   })
 
+  it('does not create a newer cursor for messages inserted at the live tip', () => {
+    const queryClient = new QueryClient()
+    seedMessages(queryClient, [newer])
+
+    upsertChannelMessageFromApi(queryClient, {
+      ...older,
+      id: '103',
+      content: 'Newest',
+      createdAt: 3_000,
+      updatedAt: 3_000,
+    })
+
+    expect(channelHasNewerMessages(queryClient.getQueryData(channelMessagesQueryKey('43')))).toBe(
+      false,
+    )
+  })
+
+  it('preserves the newer cursor while inserting into an around window', () => {
+    const queryClient = new QueryClient()
+    replaceChannelMessagesPage(queryClient, '43', {
+      afterCursor: '50',
+      beforeCursor: '40',
+      messages: [{ ...older, id: '50', content: 'Around' }],
+    })
+
+    upsertChannelMessageFromApi(queryClient, {
+      ...newer,
+      id: '60',
+      content: 'Newest known message',
+      createdAt: 3_000,
+      updatedAt: 3_000,
+    })
+
+    expect(channelHasNewerMessages(queryClient.getQueryData(channelMessagesQueryKey('43')))).toBe(
+      true,
+    )
+    expect(
+      queryClient.getQueryData<InfiniteData<ChannelMessagePage>>(channelMessagesQueryKey('43'))
+        ?.pages[0]?.afterCursor,
+    ).toBe('50')
+  })
+
   it('removes messages from the infinite cache', () => {
     const queryClient = new QueryClient()
     seedMessages(queryClient, [newer, older])
