@@ -51,3 +51,6 @@ needs separate paragraphs.
 Keep commits focused and exclude generated changes unrelated to the update. Write the body in enough detail to explain what the current commit actually changes; a title-only commit is not acceptable. Pull requests should explain behavior and verification, link relevant issues, identify backend tag changes, and include screenshots for visible UI changes.
 
 Create every commit with `git commit -s` so it includes a `Signed-off-by` trailer.
+If a signed commit fails because GPG signing or pinentry is unavailable, do not bypass
+signing or create an unsigned commit; return the exact complete commit message to the user
+so they can submit it locally, then continue the workflow after the user confirms the commit.

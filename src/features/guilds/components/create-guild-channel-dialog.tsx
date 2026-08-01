@@ -113,6 +113,11 @@ export function CreateGuildChannelDialog({
         const result = await mutation.mutateAsync({ idempotencyKey: intent.key, values })
         intentRef.current = undefined
         upsertGuildChannelFromApi(queryClient, result.channel, result.channelLayoutRevision)
+        void queryClient.invalidateQueries({
+          exact: true,
+          queryKey: guildChannelsQueryKey(guildId),
+          refetchType: 'all',
+        })
         onCreated(result.channel)
       } catch {
         // The mutation error is rendered below while the form remains available.

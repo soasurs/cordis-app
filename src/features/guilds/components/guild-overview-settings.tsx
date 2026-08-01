@@ -48,6 +48,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const iconIntentRef = useRef<{ file: File; guildId: string; key: string } | undefined>(undefined)
   const [cropFile, setCropFile] = useState<File>()
+  const [iconRetry, setIconRetry] = useState<{ file: File; key: string }>()
   const [selectionError, setSelectionError] = useState<string>()
   const updateMutation = useMutation({
     mutationFn: (details: UpdateGuildDetails) => updateGuild(guild.id, details),
@@ -77,6 +78,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
         throw new UploadIntentRetiredError(upload.status)
       }
 
+      let completionStarted = false
       try {
         if (upload.status === 'created') {
           if (!upload.presignedUrl) {
@@ -84,6 +86,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
           }
           await putToPresignedUrl(file, upload)
         }
+        completionStarted = true
         return await completeGuildIconUpload(guild.id, upload.uploadId)
       } catch (error) {
         if (isUploadIntentRetiredError(error)) {
@@ -92,7 +95,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
         }
 
         let abortSucceeded = false
-        if (upload.status === 'created' && upload.presignedUrl) {
+        if (!completionStarted && upload.status === 'created' && upload.presignedUrl) {
           try {
             await abortGuildIconUpload(guild.id, upload.uploadId)
             abortSucceeded = true
@@ -143,6 +146,23 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
             'Unable to update the community icon. Please try again.',
           )
       : undefined
+
+  const runIconUpload = (intent: { file: File; key: string }) => {
+    setIconRetry(undefined)
+    void iconMutation
+      .mutateAsync({ file: intent.file, idempotencyKey: intent.key })
+      .then((updatedGuild) => {
+        iconIntentRef.current = undefined
+        setIconRetry(undefined)
+        upsertGuildFromApi(queryClient, updatedGuild)
+      })
+      .catch(() => {
+        const currentIntent = iconIntentRef.current
+        if (currentIntent?.file === intent.file && currentIntent.guildId === guild.id) {
+          setIconRetry({ file: intent.file, key: intent.key })
+        }
+      })
+  }
 
   return (
     <>
@@ -198,6 +218,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
                 if (iconMutation.isError || iconMutation.isSuccess) {
                   iconMutation.reset()
                 }
+                setIconRetry(undefined)
                 const validationError = validateGuildIconFile(file)
                 if (validationError) {
                   setSelectionError(validationError)
@@ -219,11 +240,25 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
                 if (iconMutation.isError || iconMutation.isSuccess) {
                   iconMutation.reset()
                 }
+                setIconRetry(undefined)
                 fileInputRef.current?.click()
               }}
             >
               Change icon
             </Button>
+            {iconRetry ? (
+              <Button
+                className="mt-2 w-full"
+                disabled={iconMutation.isPending}
+                loading={iconMutation.isPending}
+                size="small"
+                type="button"
+                variant="ghost"
+                onClick={() => runIconUpload(iconRetry)}
+              >
+                Retry icon upload
+              </Button>
+            ) : null}
           </div>
 
           <form
@@ -331,15 +366,7 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
                 ? iconIntentRef.current
                 : { file: croppedFile, guildId: guild.id, key: createIdempotencyKey() }
             iconIntentRef.current = intent
-            void iconMutation
-              .mutateAsync({ file: croppedFile, idempotencyKey: intent.key })
-              .then((updatedGuild) => {
-                iconIntentRef.current = undefined
-                upsertGuildFromApi(queryClient, updatedGuild)
-              })
-              .catch(() => {
-                // The mutation error is rendered above.
-              })
+            runIconUpload(intent)
           }}
         />
       ) : null}
