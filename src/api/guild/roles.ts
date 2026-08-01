@@ -3,7 +3,7 @@ import { assertIdentifier } from '@/api/guild/internal'
 import { optionalIdempotencyKey } from '@/api/idempotency'
 import type { GuildRole, GuildRoleDetails, GuildRolePosition } from '@/api/guild/types'
 
-const GUILD_MENTION_SEARCH_LIMIT = 25
+const GUILD_MENTION_SEARCH_LIMIT = 20
 
 export async function listGuildRoles(guildId: string): Promise<GuildRole[]> {
   assertIdentifier(guildId, 'guild')

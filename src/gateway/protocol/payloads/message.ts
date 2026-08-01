@@ -23,8 +23,8 @@ export interface MessagePayload {
   referenced_message_id?: string
   referenced_channel_id?: string
   attachments: MessageAttachmentPayload[]
-  mention_user_ids: string[]
-  mention_role_ids?: string[]
+  mention_user_ids?: string[] | null
+  mention_role_ids?: string[] | null
   mention_everyone?: boolean
   edited_at: number
   created_at: number
@@ -40,8 +40,8 @@ export interface MessageDeletedPayload {
   revision: number
   deleted_at: number
   last_message_id: string
-  mention_user_ids: string[]
-  mention_role_ids?: string[]
+  mention_user_ids?: string[] | null
+  mention_role_ids?: string[] | null
   mention_everyone?: boolean
 }
 

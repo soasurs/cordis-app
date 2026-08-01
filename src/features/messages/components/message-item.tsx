@@ -26,6 +26,7 @@ import {
 import { MessageVideoPlayer } from '@/features/messages/components/message-video-player'
 import { MentionSuggestions } from '@/features/messages/components/mention-suggestions'
 import { MentionTextarea } from '@/features/messages/components/mention-textarea'
+import { formatMessageTime } from '@/features/messages/message-time'
 import {
   ExistingAttachmentChip,
   PendingAttachmentChip,
@@ -46,6 +47,7 @@ import {
   useMentionInput,
   type MentionCandidate,
   type MentionCandidateSearch,
+  type MentionEditorHandle,
 } from '@/features/messages/mentions'
 
 interface MessageItemProps {
@@ -82,7 +84,7 @@ export function MessageItem({
   const queryClient = useQueryClient()
   const fileInputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const textareaRef = useRef<MentionEditorHandle>(null)
   const pendingRef = useRef<PendingAttachmentDraft[]>([])
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(message.content)
@@ -245,7 +247,7 @@ export function MessageItem({
     })
   }
 
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (mentionInput.handleKeyDown(event)) return
     if (event.key === 'Escape') {
       event.preventDefault()
@@ -461,23 +463,15 @@ export function MessageItem({
                     ref={textareaRef}
                     mentionCandidates={mentionInput.draftMentionCandidates}
                     value={draft}
-                    rows={3}
                     disabled={updateMutation.isPending}
-                    onChange={(event) =>
-                      mentionInput.updateDraft(
-                        event.target.value,
-                        event.target.selectionStart ?? event.target.value.length,
-                      )
+                    aria-label="Edit message"
+                    onRawChange={(value, selectionStart) =>
+                      mentionInput.updateDraft(value, selectionStart)
                     }
                     onKeyDown={onKeyDown}
-                    onSelect={(event) => {
-                      const target = event.currentTarget
-                      mentionInput.handleSelect(
-                        target.value,
-                        target.selectionStart,
-                        target.selectionEnd,
-                      )
-                    }}
+                    onRawSelect={(value, selectionStart, selectionEnd) =>
+                      mentionInput.handleSelect(value, selectionStart, selectionEnd)
+                    }
                     aria-autocomplete="list"
                     aria-controls={
                       mentionInput.showMentionSuggestions
@@ -810,11 +804,4 @@ function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`
-}
-
-function formatMessageTime(createdAt: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(createdAt))
 }

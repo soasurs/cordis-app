@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 
 import { syncGatewayDispatch } from '@/app/gateway-query-sync'
+import { gatewayReadyQueryKey } from '@/app/gateway-context'
 import {
   guildChannelOverwritesQueryKey,
   guildChannelLayoutRevisionQueryKey,
@@ -11,6 +12,11 @@ import {
   type GuildChannelSummary,
   type GuildRoleSummary,
 } from '@/features/guilds/guild-queries'
+import {
+  channelReadStatesQueryKey,
+  mergeChannelReadStates,
+  type ChannelReadStatesMap,
+} from '@/features/messages/read-state-queries'
 
 describe('syncGatewayDispatch channel overwrites', () => {
   it('patches overwrite cache and invalidates channel list when View Channel changes', () => {
@@ -658,5 +664,131 @@ describe('syncGatewayDispatch messages', () => {
       pages: Array<{ messages: Array<{ id: string }> }>
     }>(channelMessagesQueryKey('43'))
     expect(afterDelete?.pages[0]?.messages.map((item) => item.id)).toEqual(['101'])
+  })
+
+  it('increments the mention count for direct, role, and everyone mentions', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(gatewayReadyQueryKey, {
+      guilds: [{ id: '42', member_role_ids: ['50'] }],
+      user_id: '7',
+    })
+    queryClient.setQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey(), {
+      '43': {
+        channelId: '43',
+        lastMessageId: '100',
+        lastReadMessageId: '100',
+        mentionCount: 0,
+      },
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.created',
+      sequence: 1,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '8',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Hello @me',
+        created_at: 2_000,
+        edited_at: 0,
+        flags: 0,
+        id: '101',
+        mention_user_ids: ['7'],
+        revision: 1,
+        type: 1,
+        updated_at: 2_000,
+      },
+    })
+
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43'],
+    ).toEqual({
+      channelId: '43',
+      lastMessageId: '101',
+      lastReadMessageId: '100',
+      mentionCount: 1,
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.created',
+      sequence: 2,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '8',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Hello @role',
+        created_at: 3_000,
+        edited_at: 0,
+        flags: 0,
+        guild_id: '42',
+        id: '102',
+        mention_role_ids: ['50'],
+        mention_user_ids: null,
+        revision: 1,
+        type: 1,
+        updated_at: 3_000,
+      },
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.created',
+      sequence: 3,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '8',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Hello everyone',
+        created_at: 4_000,
+        edited_at: 0,
+        flags: 0,
+        guild_id: '42',
+        id: '103',
+        mention_everyone: true,
+        mention_role_ids: null,
+        mention_user_ids: null,
+        revision: 1,
+        type: 1,
+        updated_at: 4_000,
+      },
+    })
+
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
+        ?.mentionCount,
+    ).toBe(3)
+
+    mergeChannelReadStates(queryClient, [
+      {
+        channelId: '43',
+        lastMessageId: '103',
+        lastReadMessageId: '100',
+        mentionCount: 0,
+      },
+    ])
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
+        ?.mentionCount,
+    ).toBe(3)
   })
 })

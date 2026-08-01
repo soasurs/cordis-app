@@ -9,6 +9,7 @@ import {
 } from '@/features/friends/relationship-queries'
 import {
   guildsQueryKey,
+  guildMemberRolesQueryKey,
   invalidateGuildChannelOverwritesFromGateway,
   invalidateGuildChannelsFromGateway,
   invalidateGuildMembersFromGateway,
@@ -22,6 +23,7 @@ import {
   upsertGuildChannelOverwriteFromGateway,
   upsertGuildFromGateway,
   upsertGuildRoleFromGateway,
+  type GuildRoleSummary,
 } from '@/features/guilds/guild-queries'
 import {
   clearChannelMessageQueries,
@@ -47,7 +49,12 @@ import {
   replacePresencePreferenceFromReady,
 } from '@/features/presence/presence-preference-queries'
 import { patchUserProfileFromGateway } from '@/features/users/user-queries'
-import { isGatewayDispatch, type GatewayDispatch, type GatewayReadyData } from '@/gateway'
+import {
+  isGatewayDispatch,
+  type GatewayDispatch,
+  type GatewayReadyData,
+  type MessagePayload,
+} from '@/gateway'
 
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
 
@@ -149,7 +156,13 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'message.created')) {
     upsertChannelMessageFromGateway(queryClient, dispatch.data)
-    bumpChannelLastMessageId(queryClient, dispatch.data.channel_id, dispatch.data.id)
+    const ready = queryClient.getQueryData<GatewayReadyData>(gatewayReadyQueryKey)
+    bumpChannelLastMessageId(
+      queryClient,
+      dispatch.data.channel_id,
+      dispatch.data.id,
+      messageMentionsCurrentUser(queryClient, dispatch.data, ready),
+    )
     return
   }
 
@@ -193,6 +206,33 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
   if (isGatewayDispatch(dispatch, 'presence.preference.updated')) {
     applyPresencePreferenceFromGateway(queryClient, dispatch.data)
   }
+}
+
+function messageMentionsCurrentUser(
+  queryClient: QueryClient,
+  message: MessagePayload,
+  ready: GatewayReadyData | undefined,
+) {
+  if (!ready) return false
+  if (message.mention_user_ids?.includes(ready.user_id)) return true
+  if (message.mention_everyone) return true
+
+  if (!message.guild_id || !message.mention_role_ids?.length) return false
+  const guild = ready.guilds.find(
+    (item) =>
+      item.id === message.guild_id ||
+      item.channels.some((channel) => channel.id === message.channel_id),
+  )
+  if (!guild) return false
+
+  const cachedMemberRoles = queryClient.getQueryData<GuildRoleSummary[]>(
+    guildMemberRolesQueryKey(guild.id, ready.user_id),
+  )
+  const memberRoleIds = new Set([
+    ...guild.member_role_ids,
+    ...(cachedMemberRoles?.map((role) => role.id) ?? []),
+  ])
+  return message.mention_role_ids.some((roleId) => memberRoleIds.has(roleId))
 }
 
 export function clearGatewayQueries(queryClient: QueryClient) {

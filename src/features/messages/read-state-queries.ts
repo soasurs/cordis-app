@@ -40,7 +40,7 @@ export function mergeChannelReadStates(
   queryClient.setQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey(), (current = {}) => {
     const next = { ...current }
     for (const state of states) {
-      next[state.channelId] = state
+      next[state.channelId] = mergeChannelReadState(next[state.channelId], state)
     }
     return next
   })
@@ -57,6 +57,7 @@ export function bumpChannelLastMessageId(
   queryClient: QueryClient,
   channelId: string,
   messageId: string,
+  isMention = false,
 ) {
   queryClient.setQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey(), (current = {}) => {
     const existing = current[channelId]
@@ -69,7 +70,7 @@ export function bumpChannelLastMessageId(
         channelId,
         lastMessageId: messageId,
         lastReadMessageId: existing?.lastReadMessageId ?? '0',
-        mentionCount: existing?.mentionCount ?? 0,
+        mentionCount: (existing?.mentionCount ?? 0) + (isMention ? 1 : 0),
       },
     }
   })
@@ -113,12 +114,59 @@ export function upsertChannelReadStateFromGateway(
   queryClient: QueryClient,
   payload: MessageReadUpdatedPayload,
 ) {
-  upsertChannelReadState(queryClient, {
-    channelId: payload.channel_id,
-    lastMessageId: payload.last_message_id,
-    lastReadMessageId: payload.last_read_message_id,
-    mentionCount: payload.mention_count,
+  queryClient.setQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey(), (current = {}) => {
+    const channelId = payload.channel_id
+    const nextState = mergeChannelReadState(current[channelId], {
+      channelId,
+      lastMessageId: payload.last_message_id,
+      lastReadMessageId: payload.last_read_message_id,
+      mentionCount: payload.mention_count,
+    })
+    if (current[channelId] === nextState) {
+      return current
+    }
+    return {
+      ...current,
+      [channelId]: nextState,
+    }
   })
+}
+
+function mergeChannelReadState(
+  existing: ChannelReadStateSummary | undefined,
+  incoming: ChannelReadStateSummary,
+) {
+  if (!existing) return incoming
+
+  const lastMessageId =
+    compareSnowflakeId(incoming.lastMessageId, existing.lastMessageId) > 0
+      ? incoming.lastMessageId
+      : existing.lastMessageId
+  const lastReadMessageId =
+    compareSnowflakeId(incoming.lastReadMessageId, existing.lastReadMessageId) > 0
+      ? incoming.lastReadMessageId
+      : existing.lastReadMessageId
+  // Role/everyone mentions are expanded asynchronously on the server. Until the
+  // read cursor advances, a lower server count must not erase the local event bump.
+  const mentionCount =
+    compareSnowflakeId(incoming.lastReadMessageId, existing.lastReadMessageId) > 0
+      ? incoming.mentionCount
+      : Math.max(existing.mentionCount, incoming.mentionCount)
+
+  if (
+    existing.lastMessageId === lastMessageId &&
+    existing.lastReadMessageId === lastReadMessageId &&
+    existing.mentionCount === mentionCount
+  ) {
+    return existing
+  }
+
+  return {
+    ...incoming,
+    lastMessageId,
+    lastReadMessageId,
+    mentionCount,
+  }
 }
 
 /** Advance last-read (and head if needed) through messageId without lowering either cursor. */

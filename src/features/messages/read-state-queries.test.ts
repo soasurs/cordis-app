@@ -8,6 +8,7 @@ import {
   compareSnowflakeId,
   isChannelUnread,
   markChannelReadThrough,
+  mergeChannelReadStates,
   replaceChannelReadStatesFromReady,
   type ChannelReadStatesMap,
 } from '@/features/messages/read-state-queries'
@@ -66,6 +67,57 @@ describe('read-state helpers', () => {
       queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
         ?.lastMessageId,
     ).toBe('250')
+  })
+
+  it('increments mention counts for newly received direct mentions', () => {
+    const queryClient = new QueryClient()
+    replaceChannelReadStatesFromReady(queryClient, [
+      {
+        channel_id: '43',
+        last_message_id: '100',
+        last_read_message_id: '100',
+        mention_count: 1,
+      },
+    ])
+
+    bumpChannelLastMessageId(queryClient, '43', '101', true)
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
+        ?.mentionCount,
+    ).toBe(2)
+
+    bumpChannelLastMessageId(queryClient, '43', '102')
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
+        ?.mentionCount,
+    ).toBe(2)
+  })
+
+  it('keeps a local mention while a stale read-state fetch is pending', () => {
+    const queryClient = new QueryClient()
+    replaceChannelReadStatesFromReady(queryClient, [
+      {
+        channel_id: '43',
+        last_message_id: '100',
+        last_read_message_id: '90',
+        mention_count: 0,
+      },
+    ])
+
+    bumpChannelLastMessageId(queryClient, '43', '101', true)
+    mergeChannelReadStates(queryClient, [
+      {
+        channelId: '43',
+        lastMessageId: '101',
+        lastReadMessageId: '90',
+        mentionCount: 0,
+      },
+    ])
+
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
+        ?.mentionCount,
+    ).toBe(1)
   })
 })
 
@@ -162,8 +214,49 @@ describe('syncGatewayDispatch read states', () => {
     ).toBe('200')
 
     syncGatewayDispatch(queryClient, {
-      type: 'message.deleted',
+      type: 'message.created',
       sequence: 4,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '8',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: '<@7>',
+        created_at: 4_000,
+        edited_at: 0,
+        flags: 0,
+        id: '300',
+        mention_user_ids: ['7'],
+        revision: 1,
+        type: 1,
+        updated_at: 4_000,
+      },
+    })
+    syncGatewayDispatch(queryClient, {
+      type: 'message.read.updated',
+      sequence: 5,
+      data: {
+        channel_id: '43',
+        last_message_id: '300',
+        last_read_message_id: '200',
+        mention_count: 0,
+        user_id: '7',
+      },
+    })
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
+        ?.mentionCount,
+    ).toBe(1)
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.deleted',
+      sequence: 6,
       data: {
         channel_id: '43',
         deleted_at: 3_000,
