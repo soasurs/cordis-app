@@ -8,6 +8,7 @@ import type {
 import { toPublicUserProfile } from '@/api/user'
 import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
+import { optionalIdempotencyKey } from '@/api/idempotency'
 import type {
   CreateGuildInviteDetails,
   Guild,
@@ -51,6 +52,7 @@ export async function createGuildInvite(
     expiresInMs: BigInt(details.expiresInMs),
     guildId: BigInt(guildId),
     maxUses: details.maxUses,
+    ...optionalIdempotencyKey(details.idempotencyKey),
   })
 
   if (!response.invite) {

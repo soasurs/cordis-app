@@ -2,6 +2,12 @@ import { Code, ConnectError } from '@connectrpc/connect'
 
 import { PublicErrorInfoSchema } from '@/gen/api/v1/error_pb'
 
+export function isResourceConflictError(error: unknown) {
+  const connectError = ConnectError.from(error)
+  const publicError = connectError.findDetails(PublicErrorInfoSchema)[0]
+  return publicError?.code === 'resource.conflict' || connectError.code === Code.Aborted
+}
+
 export function getApiErrorMessage(error: unknown, fallback: string) {
   const connectError = ConnectError.from(error)
   const publicError = connectError.findDetails(PublicErrorInfoSchema)[0]

@@ -1,3 +1,4 @@
+import type { PresignedUploadContract } from '@/api/assets'
 import type { PublicUserProfile } from '@/api/user'
 
 // Domain models use decimal strings for snowflake IDs (JSON cannot carry bigint).
@@ -50,6 +51,8 @@ export interface CreateChannelMessageDetails {
   attachmentAssetIds?: string[]
   channelId: string
   content: string
+  /** Optional key identifying one message creation intent. */
+  idempotencyKey?: string
   /** Both reference fields must be set together for a reply. */
   referencedChannelId?: string
   referencedMessageId?: string
@@ -78,12 +81,9 @@ export interface CreateAttachmentUploadDetails {
   contentType: string
   expectedSize: number
   filename: string
+  /** Optional key identifying one attachment upload intent. */
+  idempotencyKey?: string
 }
 
 /** Presigned PUT contract; callers must send `requestHeaders` exactly as returned. */
-export interface AttachmentUploadContract {
-  expiresAt: number
-  presignedUrl: string
-  requestHeaders: Record<string, string>
-  uploadId: string
-}
+export type AttachmentUploadContract = PresignedUploadContract

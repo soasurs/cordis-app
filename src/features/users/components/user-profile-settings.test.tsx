@@ -29,7 +29,10 @@ const userApi = vi.hoisted(() => ({
   updateUserProfile: vi.fn(),
 }))
 
-vi.mock('@/api/assets', () => assetsApi)
+vi.mock('@/api/assets', async (importOriginal) => ({
+  ...(await importOriginal()),
+  ...assetsApi,
+}))
 vi.mock('@/api/user', () => userApi)
 vi.mock('@/features/guilds/components/guild-icon-crop-dialog', () => ({
   GuildIconCropDialog: ({ file, onConfirm }: { file: File; onConfirm: (file: File) => void }) => (
@@ -111,8 +114,10 @@ describe('UserProfileSettings', () => {
   it('uploads the cropped avatar and aborts the unpublished upload when saving fails', async () => {
     userApi.createAvatarUpload.mockResolvedValue({
       expiresAt: 8_000,
+      idempotentReplay: false,
       presignedUrl: 'https://upload.example/avatar',
       requestHeaders: { 'content-type': 'image/png' },
+      status: 'created',
       uploadId: '19',
     })
     userApi.updateUserProfile.mockRejectedValue(new Error('update failed'))
@@ -127,13 +132,45 @@ describe('UserProfileSettings', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to update your profile.')
-    expect(userApi.createAvatarUpload).toHaveBeenCalledWith(file)
+    expect(userApi.createAvatarUpload).toHaveBeenCalledWith(file, {
+      idempotencyKey: expect.any(String),
+    })
     expect(assetsApi.putToPresignedUrl).toHaveBeenCalledWith(
       file,
       expect.objectContaining({ uploadId: '19' }),
     )
     expect(userApi.updateUserProfile).toHaveBeenCalledWith({ avatarAssetId: '19' })
     await waitFor(() => expect(userApi.abortAvatarUpload).toHaveBeenCalledWith('19'))
+  })
+
+  it('completes an already-terminal avatar replay without uploading again', async () => {
+    userApi.createAvatarUpload.mockResolvedValue({
+      expiresAt: 8_000,
+      idempotentReplay: true,
+      presignedUrl: '',
+      requestHeaders: {},
+      status: 'ready',
+      uploadId: '19',
+    })
+    userApi.updateUserProfile.mockResolvedValue({
+      ...profile,
+      avatarAssetId: 19n,
+      updatedAt: 3_000n,
+    })
+    renderSettings()
+    const user = userEvent.setup()
+    const file = new File(['avatar'], 'avatar.png', { type: 'image/png' })
+
+    await waitFor(() => expect(screen.getByLabelText('Upload profile photo')).toBeEnabled())
+    await user.upload(screen.getByLabelText('Upload profile photo'), file)
+    await user.click(screen.getByRole('button', { name: 'Use cropped image' }))
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() =>
+      expect(userApi.updateUserProfile).toHaveBeenCalledWith({ avatarAssetId: '19' }),
+    )
+    expect(assetsApi.putToPresignedUrl).not.toHaveBeenCalled()
+    expect(userApi.abortAvatarUpload).not.toHaveBeenCalled()
   })
 })
 

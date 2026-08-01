@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { authSessionQueryKey } from '@/features/auth/auth-session'
 import {
+  guildChannelLayoutRevisionQueryKey,
   guildChannelOverwritesQueryKey,
   guildChannelsQueryKey,
   guildRolesQueryKey,
@@ -96,12 +97,16 @@ beforeEach(() => {
 describe('ChannelSettingsPage', () => {
   it('saves only patched overview fields', async () => {
     guildApi.updateGuildChannel.mockResolvedValue({
-      ...channel,
-      name: 'lobby',
-      revision: 2,
-      topic: 'Welcome',
+      channel: {
+        ...channel,
+        name: 'lobby',
+        revision: 2,
+        topic: 'Welcome',
+      },
+      channelLayoutRevision: 2,
     })
     const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelLayoutRevisionQueryKey('42'), 1)
     renderChannelSettings(queryClient)
     const user = userEvent.setup()
 
@@ -117,6 +122,7 @@ describe('ChannelSettingsPage', () => {
     expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: '43', name: 'lobby' })]),
     )
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(2)
   })
 
   it('lists overwrites in a two-pane layout', async () => {

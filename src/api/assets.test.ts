@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { putToPresignedUrl, resolveAvatarUrl, resolveGuildIconUrl } from '@/api/assets'
+import {
+  isTerminalUploadStatus,
+  putToPresignedUrl,
+  resolveAvatarUrl,
+  resolveGuildIconUrl,
+  toUploadStatus,
+} from '@/api/assets'
+import { UploadStatus } from '@/gen/api/v1/media_pb'
 
 describe('asset URLs', () => {
   beforeEach(() => {
@@ -84,5 +91,22 @@ describe('putToPresignedUrl', () => {
         requestHeaders: { 'Content-Type': 'image/png' },
       }),
     ).rejects.toThrow('Unable to upload the file. Check your connection and try again.')
+  })
+})
+
+describe('upload status mapping', () => {
+  it('maps every supported protocol status', () => {
+    expect(toUploadStatus(UploadStatus.CREATED)).toBe('created')
+    expect(toUploadStatus(UploadStatus.COMPLETING)).toBe('completing')
+    expect(toUploadStatus(UploadStatus.READY)).toBe('ready')
+    expect(toUploadStatus(UploadStatus.FAILED)).toBe('failed')
+    expect(toUploadStatus(UploadStatus.ABORTED)).toBe('aborted')
+    expect(toUploadStatus(UploadStatus.EXPIRED)).toBe('expired')
+  })
+
+  it('rejects unspecified statuses and identifies terminal states', () => {
+    expect(() => toUploadStatus(UploadStatus.UNSPECIFIED)).toThrow('upload status is invalid')
+    expect(isTerminalUploadStatus('failed')).toBe(true)
+    expect(isTerminalUploadStatus('ready')).toBe(false)
   })
 })

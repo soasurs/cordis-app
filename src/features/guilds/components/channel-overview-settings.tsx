@@ -54,12 +54,12 @@ export function ChannelOverviewSettings({ channel }: { channel: GuildChannelSumm
           })
           return
         }
-        const updatedChannel = await updateMutation.mutateAsync(patch)
+        const result = await updateMutation.mutateAsync(patch)
         form.reset({
-          name: updatedChannel.name,
-          topic: updatedChannel.topic,
+          name: result.channel.name,
+          topic: result.channel.topic,
         })
-        upsertGuildChannelFromApi(queryClient, updatedChannel)
+        upsertGuildChannelFromApi(queryClient, result.channel, result.channelLayoutRevision)
       } catch {
         // The mutation error is rendered below while the form remains available.
       }

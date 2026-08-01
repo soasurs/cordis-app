@@ -4,9 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { syncGatewayDispatch } from '@/app/gateway-query-sync'
 import {
   guildChannelOverwritesQueryKey,
+  guildChannelLayoutRevisionQueryKey,
   guildChannelsQueryKey,
   guildRolesQueryKey,
   type GuildChannelOverwriteSummary,
+  type GuildChannelSummary,
   type GuildRoleSummary,
 } from '@/features/guilds/guild-queries'
 
@@ -330,6 +332,107 @@ describe('syncGatewayDispatch channel overwrites', () => {
     })
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: guildChannelOverwritesQueryKey('42', '43'),
+    })
+  })
+})
+
+describe('syncGatewayDispatch channel layout revisions', () => {
+  it('ignores stale structural events and preserves the newest layout token', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('42'), [
+      {
+        guildId: '42',
+        id: '43',
+        name: 'general',
+        position: 0,
+        revision: 1,
+        topic: '',
+        type: 1,
+      },
+    ])
+    queryClient.setQueryData(guildChannelLayoutRevisionQueryKey('42'), 5)
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.channel.updated',
+      sequence: 1,
+      data: {
+        channel_layout_revision: 4,
+        created_at: 1_000,
+        guild_id: '42',
+        id: '43',
+        name: 'stale',
+        parent_id: '0',
+        position: 0,
+        revision: 2,
+        topic: '',
+        type: 1,
+        updated_at: 2_000,
+      },
+    })
+
+    expect(queryClient.getQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('42'))).toEqual([
+      expect.objectContaining({ id: '43', name: 'general', revision: 1 }),
+    ])
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(5)
+  })
+
+  it('applies metadata events without dropping the cached layout token', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('42'), [
+      {
+        guildId: '42',
+        id: '43',
+        name: 'general',
+        position: 0,
+        revision: 1,
+        topic: '',
+        type: 1,
+      },
+    ])
+    queryClient.setQueryData(guildChannelLayoutRevisionQueryKey('42'), 5)
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.channel.updated',
+      sequence: 1,
+      data: {
+        created_at: 1_000,
+        guild_id: '42',
+        id: '43',
+        name: 'renamed',
+        parent_id: '0',
+        position: 0,
+        revision: 2,
+        topic: '',
+        type: 1,
+        updated_at: 2_000,
+      },
+    })
+
+    expect(queryClient.getQueryData<GuildChannelSummary[]>(guildChannelsQueryKey('42'))).toEqual([
+      expect.objectContaining({ id: '43', name: 'renamed', revision: 2 }),
+    ])
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(5)
+  })
+
+  it('refreshes an unseeded channel cache when a delete event has no layout token', () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+
+    syncGatewayDispatch(queryClient, {
+      type: 'guild.channel.deleted',
+      sequence: 1,
+      data: {
+        deleted_at: 2_000,
+        guild_id: '42',
+        id: '43',
+        revision: 2,
+      },
+    })
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
     })
   })
 })

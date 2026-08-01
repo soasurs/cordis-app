@@ -7,9 +7,15 @@ import { VideoFramePreview } from '@/features/messages/components/message-video-
 
 export interface PendingAttachmentDraft {
   attachment?: MessageAttachment
+  /** Original file retained so an interrupted upload can retry with its intent key. */
+  file?: File
   contentType: string
   errorMessage?: string
   filename: string
+  /** Channel scope used when the upload intent was created. */
+  channelId?: string
+  /** Key for the create-upload intent; keep it stable for retries of this item. */
+  idempotencyKey?: string
   id: string
   /** Local or remote URL for image/video thumbnails; revoke object URLs on remove/unmount. */
   previewUrl?: string
@@ -19,9 +25,11 @@ export interface PendingAttachmentDraft {
 export function PendingAttachmentChip({
   item,
   onRemove,
+  onRetry,
 }: {
   item: PendingAttachmentDraft
   onRemove: () => void
+  onRetry?: () => void
 }) {
   const isImage = isImageAttachmentContentType(item.contentType) && Boolean(item.previewUrl)
   const isVideo = isVideoAttachmentContentType(item.contentType) && Boolean(item.previewUrl)
@@ -85,6 +93,17 @@ export function PendingAttachmentChip({
         <p className="border-t border-negative/20 px-2 py-1 text-[0.65rem] leading-4 text-negative">
           {item.errorMessage}
         </p>
+      ) : null}
+
+      {item.status === 'error' && onRetry ? (
+        <button
+          type="button"
+          aria-label={`Retry ${item.filename}`}
+          onClick={onRetry}
+          className="absolute bottom-1 left-1 rounded-control bg-canvas/90 px-2 py-1 text-[0.65rem] font-medium text-brand-text shadow-sm hover:bg-surface-hover"
+        >
+          Retry
+        </button>
       ) : null}
 
       <button

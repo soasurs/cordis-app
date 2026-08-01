@@ -213,7 +213,12 @@ describe('message API', () => {
     })
 
     await expect(
-      createMessage({ channelId: '43', content: '', attachmentAssetIds: ['900'] }),
+      createMessage({
+        attachmentAssetIds: ['900'],
+        channelId: '43',
+        content: '',
+        idempotencyKey: 'message-intent',
+      }),
     ).resolves.toEqual(
       expect.objectContaining({
         attachments: [expect.objectContaining({ assetId: '900', filename: 'shot.png' })],
@@ -225,6 +230,7 @@ describe('message API', () => {
       attachments: [{ assetId: 900n }],
       channelId: 43n,
       content: '',
+      idempotencyKey: 'message-intent',
       type: 1,
     })
   })
@@ -319,8 +325,10 @@ describe('message API', () => {
   it('maps attachment upload create/complete/abort', async () => {
     messageClient.createAttachmentUpload.mockResolvedValue({
       expiresAt: 9_000n,
+      idempotentReplay: false,
       presignedUrl: 'https://upload.example.com/put',
       requestHeaders: { 'Content-Type': 'application/pdf' },
+      status: 1,
       uploadId: 55n,
     })
     messageClient.completeAttachmentUpload.mockResolvedValue({
@@ -340,11 +348,14 @@ describe('message API', () => {
         contentType: 'application/pdf',
         expectedSize: 100,
         filename: 'notes.pdf',
+        idempotencyKey: 'attachment-intent',
       }),
     ).resolves.toEqual({
       expiresAt: 9_000,
+      idempotentReplay: false,
       presignedUrl: 'https://upload.example.com/put',
       requestHeaders: { 'Content-Type': 'application/pdf' },
+      status: 'created',
       uploadId: '55',
     })
     await expect(completeAttachmentUpload('43', '55')).resolves.toEqual(

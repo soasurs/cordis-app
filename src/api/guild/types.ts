@@ -1,3 +1,4 @@
+import type { PresignedUploadContract } from '@/api/assets'
 import type { PublicUserProfile } from '@/api/user'
 
 // Domain models use decimal strings for snowflake IDs (JSON cannot carry bigint).
@@ -19,18 +20,19 @@ export interface UpdateGuildDetails {
   name?: string
 }
 
+export interface CreateGuildDetails {
+  idempotencyKey?: string
+  name: string
+}
+
 export interface CreateGuildIconUploadDetails {
   contentType: string
   expectedSize: number
+  idempotencyKey?: string
 }
 
 /** Presigned PUT contract; callers must send `requestHeaders` exactly as returned. */
-export interface GuildIconUploadContract {
-  expiresAt: number
-  presignedUrl: string
-  requestHeaders: Record<string, string>
-  uploadId: string
-}
+export type GuildIconUploadContract = PresignedUploadContract
 
 export interface GuildChannel {
   guildId: string
@@ -41,6 +43,21 @@ export interface GuildChannel {
   revision: number
   topic: string
   type: number
+}
+
+export interface GuildChannelList {
+  channelLayoutRevision: number
+  channels: GuildChannel[]
+}
+
+export interface GuildChannelMutationResult {
+  channel: GuildChannel
+  /** Present when the mutation changed the guild channel layout. */
+  channelLayoutRevision?: number
+}
+
+export interface DeleteGuildChannelResult {
+  channelLayoutRevision: number
 }
 
 export interface GuildMember {
@@ -80,6 +97,7 @@ export interface GuildInvitePage {
 export interface CreateGuildInviteDetails {
   /** Relative lifetime in milliseconds; 0 means never expires. */
   expiresInMs: number
+  idempotencyKey?: string
   /** 0 means unlimited uses. */
   maxUses: number
 }
@@ -118,6 +136,8 @@ export interface GuildRoleDetails {
   name?: string
   /** Decimal string of the uint64 permission bitmask. Omit from updates when unchanged. */
   permissions?: string
+  /** Optional key identifying one role creation intent. */
+  idempotencyKey?: string
 }
 
 export interface GuildRolePosition {
@@ -126,7 +146,9 @@ export interface GuildRolePosition {
 }
 
 interface CreateTextOrVoiceGuildChannelDetails {
+  expectedChannelLayoutRevision: number
   guildId: string
+  idempotencyKey?: string
   name: string
   parentId?: string
   type: 'text' | 'voice'
@@ -134,7 +156,9 @@ interface CreateTextOrVoiceGuildChannelDetails {
 
 // Categories are always root-level; `parentId?: never` rejects nesting at the type level.
 interface CreateGuildCategoryDetails {
+  expectedChannelLayoutRevision: number
   guildId: string
+  idempotencyKey?: string
   name: string
   parentId?: never
   type: 'category'
@@ -158,6 +182,8 @@ export interface UpdateGuildChannelDetails {
    * parent unchanged.
    */
   parentId?: string | null
+  /** Required when changing the parent; omit for metadata-only updates. */
+  expectedChannelLayoutRevision?: number
   /** Omit when unchanged. Empty string clears the topic. */
   topic?: string
 }

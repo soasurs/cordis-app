@@ -1,9 +1,10 @@
 import { createClient } from '@connectrpc/connect'
 
-import type { PresignedUploadContract } from '@/api/assets'
+import { toUploadStatus, type PresignedUploadContract } from '@/api/assets'
 import { UserService, type User, type UserProfile } from '@/gen/api/v1/user_pb'
 
 import { apiTransport } from '@/api/client'
+import { optionalIdempotencyKey } from '@/api/idempotency'
 
 const userClient = createClient(UserService, apiTransport)
 
@@ -37,6 +38,10 @@ export interface AvatarUploadConstraints {
   maxHeight: number
   maxPixels: number
   maxWidth: number
+}
+
+export interface CreateAvatarUploadOptions {
+  idempotencyKey?: string
 }
 
 export async function getCurrentUser(): Promise<CurrentUser> {
@@ -117,6 +122,7 @@ export async function changePassword(oldPassword: string, newPassword: string): 
 
 export async function createAvatarUpload(
   file: Pick<File, 'size' | 'type'>,
+  options: CreateAvatarUploadOptions = {},
 ): Promise<PresignedUploadContract> {
   if (!Number.isInteger(file.size) || file.size <= 0) {
     throw new Error('expected upload size is invalid')
@@ -125,12 +131,15 @@ export async function createAvatarUpload(
   const response = await userClient.createAvatarUpload({
     contentType: file.type,
     expectedSize: BigInt(file.size),
+    ...optionalIdempotencyKey(options.idempotencyKey),
   })
 
   return {
     expiresAt: Number(response.expiresAt),
+    idempotentReplay: response.idempotentReplay,
     presignedUrl: response.presignedUrl,
     requestHeaders: { ...response.requestHeaders },
+    status: toUploadStatus(response.status),
     uploadId: response.uploadId.toString(),
   }
 }

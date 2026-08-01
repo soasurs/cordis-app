@@ -2,7 +2,12 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
-import { putToPresignedUrl } from '@/api/assets'
+import {
+  isTerminalUploadStatus,
+  isUploadIntentRetiredError,
+  putToPresignedUrl,
+  UploadIntentRetiredError,
+} from '@/api/assets'
 import { getApiErrorMessage } from '@/api/errors'
 import {
   abortGuildIconUpload,
@@ -11,6 +16,7 @@ import {
   updateGuild,
   type UpdateGuildDetails,
 } from '@/api/guild'
+import { createIdempotencyKey } from '@/api/idempotency'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { TextInput } from '@/components/ui/text-input'
@@ -40,13 +46,14 @@ function buildGuildUpdate(guild: GuildSummary, values: UpdateGuildFormValues): U
 export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const iconIntentRef = useRef<{ file: File; guildId: string; key: string } | undefined>(undefined)
   const [cropFile, setCropFile] = useState<File>()
   const [selectionError, setSelectionError] = useState<string>()
   const updateMutation = useMutation({
     mutationFn: (details: UpdateGuildDetails) => updateGuild(guild.id, details),
   })
   const iconMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, idempotencyKey }: { file: File; idempotencyKey: string }) => {
       const validationError = validateGuildIconFile(file)
       if (validationError) {
         throw new Error(validationError)
@@ -55,16 +62,47 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
       const upload = await createGuildIconUpload(guild.id, {
         contentType: file.type,
         expectedSize: file.size,
+        idempotencyKey,
       })
 
+      const clearIntent = () => {
+        const currentIntent = iconIntentRef.current
+        if (currentIntent?.file === file && currentIntent.guildId === guild.id) {
+          iconIntentRef.current = undefined
+        }
+      }
+
+      if (isTerminalUploadStatus(upload.status)) {
+        clearIntent()
+        throw new UploadIntentRetiredError(upload.status)
+      }
+
       try {
-        await putToPresignedUrl(file, upload)
+        if (upload.status === 'created') {
+          if (!upload.presignedUrl) {
+            throw new Error('upload response is missing a presigned URL')
+          }
+          await putToPresignedUrl(file, upload)
+        }
         return await completeGuildIconUpload(guild.id, upload.uploadId)
       } catch (error) {
-        try {
-          await abortGuildIconUpload(guild.id, upload.uploadId)
-        } catch {
-          // Best-effort cleanup; surface the original upload failure below.
+        if (isUploadIntentRetiredError(error)) {
+          clearIntent()
+          throw error
+        }
+
+        let abortSucceeded = false
+        if (upload.status === 'created' && upload.presignedUrl) {
+          try {
+            await abortGuildIconUpload(guild.id, upload.uploadId)
+            abortSucceeded = true
+          } catch {
+            // Best-effort cleanup; surface the original upload failure below.
+          }
+        }
+        if (abortSucceeded) {
+          clearIntent()
+          throw new UploadIntentRetiredError('aborted', error)
         }
         throw error
       }
@@ -287,9 +325,16 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
           onCancel={() => setCropFile(undefined)}
           onConfirm={(croppedFile) => {
             setCropFile(undefined)
+            const intent =
+              iconIntentRef.current?.file === croppedFile &&
+              iconIntentRef.current.guildId === guild.id
+                ? iconIntentRef.current
+                : { file: croppedFile, guildId: guild.id, key: createIdempotencyKey() }
+            iconIntentRef.current = intent
             void iconMutation
-              .mutateAsync(croppedFile)
+              .mutateAsync({ file: croppedFile, idempotencyKey: intent.key })
               .then((updatedGuild) => {
+                iconIntentRef.current = undefined
                 upsertGuildFromApi(queryClient, updatedGuild)
               })
               .catch(() => {

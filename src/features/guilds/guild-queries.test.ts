@@ -5,12 +5,14 @@ import type { GatewayReadyData } from '@/gateway'
 
 import {
   guildChannelOverwritesQueryKey,
+  guildChannelLayoutRevisionQueryKey,
   guildChannelsQueryKey,
   guildInvitesInfiniteQueryOptions,
   guildMemberRolesQueryKey,
   guildMembersInfiniteQueryOptions,
   guildRolesQueryKey,
   guildsQueryKey,
+  setGuildChannelLayoutRevision,
   replaceGuildsFromReady,
   type GuildChannelOverwriteSummary,
   type GuildChannelSummary,
@@ -27,6 +29,18 @@ describe('guildMembersInfiniteQueryOptions', () => {
       options.getNextPageParam({ members: [], nextCursor: 'opaque-next' }, [], undefined, []),
     ).toBe('opaque-next')
     expect(options.getNextPageParam({ members: [] }, [], undefined, [])).toBeUndefined()
+  })
+})
+
+describe('guild channel layout revisions', () => {
+  it('advances monotonically and ignores stale revisions', () => {
+    const queryClient = new QueryClient()
+
+    expect(setGuildChannelLayoutRevision(queryClient, '42', 5)).toBe(true)
+    expect(setGuildChannelLayoutRevision(queryClient, '42', 4)).toBe(false)
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(5)
+    expect(setGuildChannelLayoutRevision(queryClient, '42', 6)).toBe(true)
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(6)
   })
 })
 
@@ -52,6 +66,7 @@ describe('replaceGuildsFromReady', () => {
       guilds: [
         {
           access_revision: 1,
+          channel_layout_revision: 1,
           channels: [],
           created_at: 1_000,
           description: 'Community description',
@@ -110,6 +125,7 @@ describe('replaceGuildsFromReady', () => {
       updatedAt: 1_000,
     })
     expect(queryClient.getQueryData<GuildRoleSummary[]>(guildRolesQueryKey('42'))).toHaveLength(2)
+    expect(queryClient.getQueryData(guildChannelLayoutRevisionQueryKey('42'))).toBe(1)
     expect(
       queryClient.getQueryData<GuildRoleSummary[]>(guildMemberRolesQueryKey('42', '7')),
     ).toEqual([expect.objectContaining({ id: '51', name: 'Helpers', permissions: '128' })])
@@ -152,6 +168,7 @@ describe('replaceGuildsFromReady', () => {
       guilds: [
         {
           access_revision: 1,
+          channel_layout_revision: 2,
           channels: [
             {
               created_at: 1_000,

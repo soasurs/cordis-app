@@ -1,9 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 
 import { createGuild } from '@/api/guild'
 import { getApiErrorMessage } from '@/api/errors'
+import { getIdempotencyKeyForIntent, type IdempotencyIntent } from '@/api/idempotency'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 import { useCreateGuildDialog } from '@/stores/create-guild-dialog'
@@ -92,19 +94,30 @@ export function CreateGuildDialog() {
   const open = useCreateGuildDialog((state) => state.open)
   const openState = useCreateGuildDialog((state) => state.openState)
   const queryClient = useQueryClient()
-  const mutation = useMutation({ mutationFn: createGuild })
+  const intentRef = useRef<IdempotencyIntent | undefined>(undefined)
+  const mutation = useMutation({
+    mutationFn: ({ name, idempotencyKey }: { idempotencyKey: string; name: string }) =>
+      createGuild(name, { idempotencyKey }),
+  })
 
   const closeDialog = () => {
     if (mutation.isPending) {
       return
     }
     mutation.reset()
+    intentRef.current = undefined
     close()
   }
 
   const handleSubmit = async ({ name }: CreateGuildFormValues) => {
+    const intent = getIdempotencyKeyForIntent(
+      intentRef.current,
+      JSON.stringify({ name: name.trim() }),
+    )
+    intentRef.current = intent
     try {
-      const guild = await mutation.mutateAsync(name)
+      const guild = await mutation.mutateAsync({ idempotencyKey: intent.key, name })
+      intentRef.current = undefined
       upsertGuildFromApi(queryClient, guild)
       close()
     } catch {

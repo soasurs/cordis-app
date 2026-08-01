@@ -1,5 +1,6 @@
 import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
+import { optionalIdempotencyKey } from '@/api/idempotency'
 import type { GuildRole, GuildRoleDetails, GuildRolePosition } from '@/api/guild/types'
 
 export async function listGuildRoles(guildId: string): Promise<GuildRole[]> {
@@ -27,6 +28,7 @@ export async function createGuildRole(
     guildId: BigInt(guildId),
     name: details.name,
     permissions,
+    ...optionalIdempotencyKey(details.idempotencyKey),
   })
 
   if (!response.role) {

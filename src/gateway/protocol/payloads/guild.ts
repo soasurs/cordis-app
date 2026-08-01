@@ -69,13 +69,17 @@ export interface GuildMemberRolesUpdatedPayload {
 }
 
 // Live channel events always include parent_id (may be empty); READY may omit it.
-export type GuildChannelPayload = Required<ReadyChannel>
+export interface GuildChannelPayload extends Required<ReadyChannel> {
+  /** Structural events carry the complete layout token; metadata events may omit it. */
+  channel_layout_revision?: number
+}
 
 export interface GuildChannelDeletedPayload {
   id: string
   guild_id: string
   revision: number
   deleted_at: number
+  channel_layout_revision?: number
 }
 
 export interface GuildChannelOverwritePayload {
