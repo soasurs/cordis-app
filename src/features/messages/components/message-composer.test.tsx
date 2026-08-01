@@ -46,6 +46,9 @@ const sampleMessage: ChannelMessageSummary = {
   editedAt: 0,
   flags: 0,
   id: '102',
+  mentionEveryone: false,
+  mentionRoleIds: [],
+  mentionUserIds: [],
   revision: 1,
   type: 1,
   updatedAt: 2_000,
@@ -87,6 +90,65 @@ describe('MessageComposer', () => {
       }),
     )
     expect(screen.getByLabelText('Message #general')).toHaveValue('')
+  })
+
+  it('converts a selected member into server-side mention markup', async () => {
+    const user = userEvent.setup()
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '<@7> welcome',
+      id: '203',
+    })
+    const queryClient = createQueryClient()
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, '@ale')
+    await user.click(screen.getByRole('option', { name: '@Alex Chen' }))
+    await user.type(composer, ' welcome')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: '<@7> welcome',
+        idempotencyKey: expect.any(String),
+      }),
+    )
+  })
+
+  it('keeps the load-more action available when the current page has no match', async () => {
+    const user = userEvent.setup()
+    const onLoadMore = vi.fn()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+          onLoadMoreMentionCandidates={onLoadMore}
+        />
+      </QueryClientProvider>,
+    )
+
+    await user.type(screen.getByLabelText('Message #general'), '@zzz')
+
+    expect(screen.getByText('No matches on this page.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Load more members…' }))
+    expect(onLoadMore).toHaveBeenCalledOnce()
   })
 
   it('sends a reply with both reference ids and clears the reply bar', async () => {
@@ -351,6 +413,46 @@ describe('MessageComposer', () => {
 })
 
 describe('MessageItem', () => {
+  it('supports mention selection while editing', async () => {
+    const user = userEvent.setup()
+    messageApi.updateMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '<@7>',
+      editedAt: 3_000,
+      revision: 2,
+      updatedAt: 3_000,
+    })
+    const message = {
+      ...sampleMessage,
+      content: 'Hello room',
+    }
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={message}
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+        />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    const editor = screen.getByDisplayValue('Hello room')
+    await user.clear(editor)
+    await user.type(editor, '@ale')
+    await user.click(screen.getByRole('option', { name: '@Alex Chen' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(messageApi.updateMessage).toHaveBeenCalledWith('102', {
+        attachmentAssetIds: [],
+        content: '<@7>',
+      }),
+    )
+  })
+
   it('edits and deletes the current user message', async () => {
     const user = userEvent.setup()
     messageApi.updateMessage.mockResolvedValue({

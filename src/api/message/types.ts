@@ -31,6 +31,12 @@ export interface ChannelMessage {
   editedAt: number
   flags: number
   id: string
+  /** User IDs parsed from the message content by the Message service. */
+  mentionUserIds: string[]
+  /** Role IDs parsed from the message content by the Message service. */
+  mentionRoleIds: string[]
+  /** Whether the message content contains a server-accepted @everyone mention. */
+  mentionEveryone: boolean
   referencedChannelId?: string
   referencedMessageId?: string
   revision: number
