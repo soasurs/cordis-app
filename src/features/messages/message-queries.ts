@@ -293,7 +293,6 @@ function upsertMessagePages(
   if (nextPages.length === 0) {
     return [
       {
-        afterCursor: message.id,
         beforeCursor: message.id,
         messages: [message],
       },
@@ -305,7 +304,6 @@ function upsertMessagePages(
   return [
     {
       ...firstPage!,
-      afterCursor: message.id,
       messages,
     },
     ...rest,
