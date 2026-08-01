@@ -387,7 +387,7 @@ export function MessageComposer({
           </ul>
         ) : null}
 
-        <div className="flex items-center gap-2 px-2 py-1.5">
+        <div className="flex items-end gap-2 px-2 py-1.5">
           <input
             ref={fileInputRef}
             id={fileInputId}
@@ -427,7 +427,7 @@ export function MessageComposer({
               mentionInput.showMentionSuggestions ? `mention-suggestions-${channelId}` : undefined
             }
             aria-expanded={mentionInput.showMentionSuggestions}
-            className="h-9 max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"
+            className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"
           />
           <Button
             size="small"

@@ -59,6 +59,18 @@ beforeEach(() => {
 })
 
 describe('MessageComposer', () => {
+  it('grows the composer up to its bounded multiline height', () => {
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer canSend channelId="43" channelName="general" />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    expect(composer).toHaveClass('min-h-9', 'max-h-40')
+    expect(composer).not.toHaveClass('h-9')
+  })
+
   it('sends a message and clears the draft', async () => {
     const user = userEvent.setup()
     messageApi.createMessage.mockResolvedValue({
