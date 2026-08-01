@@ -89,7 +89,7 @@ describe('MessageComposer', () => {
         idempotencyKey: expect.any(String),
       }),
     )
-    expect(screen.getByLabelText('Message #general')).toHaveValue('')
+    expect(screen.getByLabelText('Message #general')).toHaveTextContent('')
   })
 
   it('converts a selected member into server-side mention markup', async () => {
@@ -115,7 +115,7 @@ describe('MessageComposer', () => {
     const composer = screen.getByLabelText('Message #general')
     await user.type(composer, '@ale')
     await user.click(screen.getByRole('option', { name: '@Alex Chen' }))
-    await user.type(composer, ' welcome')
+    await user.type(composer, 'welcome')
     await user.click(screen.getByRole('button', { name: 'Send' }))
 
     await waitFor(() =>
@@ -123,6 +123,79 @@ describe('MessageComposer', () => {
         attachmentAssetIds: [],
         channelId: '43',
         content: '<@7> welcome',
+        idempotencyKey: expect.any(String),
+      }),
+    )
+  })
+
+  it('keeps everyone mentions atomic when typing after the selection', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[
+            { id: 'everyone', kind: 'everyone', label: 'everyone', token: '@everyone' },
+          ]}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, '@eve')
+    await user.click(screen.getByRole('option', { name: '@everyone' }))
+    expect(composer.textContent).toBe('@everyone ')
+    expect(getEditorSelectionOffset(composer)).toBe(composer.textContent?.length)
+
+    await user.type(composer, 's')
+    expect(composer.textContent).toBe('@everyone s')
+    expect(getEditorSelectionOffset(composer)).toBe(composer.textContent?.length)
+  })
+
+  it('keeps mention spacing atomic and deletes the complete token', async () => {
+    const user = userEvent.setup()
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '',
+      id: '205',
+    })
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[
+            {
+              id: '825242744252878848',
+              kind: 'user',
+              label: 'Ziyi Zhang',
+              token: '<@825242744252878848>',
+            },
+          ]}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, '@zi')
+    await user.click(screen.getByRole('option', { name: '@Ziyi Zhang' }))
+
+    expect(composer.textContent).toBe('@Ziyi Zhang ')
+    await user.keyboard('{Backspace}')
+    expect(composer).toHaveTextContent('')
+    await user.type(composer, 'ok')
+
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: 'ok',
         idempotencyKey: expect.any(String),
       }),
     )
@@ -155,7 +228,7 @@ describe('MessageComposer', () => {
     expect(
       screen.getByText('You do not have permission to mention roles or everyone in this channel.'),
     ).toBeInTheDocument()
-    expect(composer).toHaveValue('hello @everyone')
+    expect(composer).toHaveTextContent('hello @everyone')
   })
 
   it('uses the server mention search when local candidates are not provided', async () => {
@@ -184,7 +257,7 @@ describe('MessageComposer', () => {
     await user.type(composer, '@ale')
     await waitFor(() => expect(onSearchMentionCandidates).toHaveBeenCalledWith('ale'))
     await user.click(await screen.findByRole('option', { name: '@Alex Chen' }))
-    await user.type(composer, ' welcome')
+    await user.type(composer, 'welcome')
     await user.click(screen.getByRole('button', { name: 'Send' }))
 
     await waitFor(() =>
@@ -508,7 +581,7 @@ describe('MessageItem', () => {
 
     fireEvent.contextMenu(screen.getByRole('article'))
     await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
-    const editor = screen.getByDisplayValue('Hello room')
+    const editor = screen.getByRole('textbox', { name: 'Edit message' })
     await user.clear(editor)
     await user.type(editor, '@ale')
     await user.click(screen.getByRole('option', { name: '@Alex Chen' }))
@@ -537,7 +610,7 @@ describe('MessageItem', () => {
 
     fireEvent.contextMenu(screen.getByRole('article'))
     await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
-    const editor = screen.getByDisplayValue('Hello room')
+    const editor = screen.getByRole('textbox', { name: 'Edit message' })
     await user.clear(editor)
     await user.type(editor, '<@&50> hello')
     await user.click(screen.getByRole('button', { name: 'Save' }))
@@ -617,7 +690,7 @@ describe('MessageItem', () => {
 
     fireEvent.contextMenu(screen.getByRole('article'))
     await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
-    const editor = screen.getByDisplayValue('Hello room')
+    const editor = screen.getByRole('textbox', { name: 'Edit message' })
     await user.clear(editor)
     await user.type(editor, 'Updated')
     await user.click(screen.getByRole('button', { name: 'Save' }))
@@ -925,6 +998,18 @@ describe('MessageItem', () => {
     )
   })
 })
+
+function getEditorSelectionOffset(editor: HTMLElement) {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return undefined
+  const range = selection.getRangeAt(0)
+  if (!editor.contains(range.startContainer)) return undefined
+
+  const prefix = document.createRange()
+  prefix.selectNodeContents(editor)
+  prefix.setEnd(range.startContainer, range.startOffset)
+  return prefix.toString().length
+}
 
 function createQueryClient() {
   return new QueryClient({

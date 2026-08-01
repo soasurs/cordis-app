@@ -32,6 +32,7 @@ import {
   useMentionInput,
   type MentionCandidate,
   type MentionCandidateSearch,
+  type MentionEditorHandle,
 } from '@/features/messages/mentions'
 
 interface MessageComposerProps {
@@ -61,7 +62,7 @@ export function MessageComposer({
   const fileInputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendIntentRef = useRef<IdempotencyIntent | undefined>(undefined)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const textareaRef = useRef<MentionEditorHandle>(null)
   const pendingRef = useRef<PendingAttachmentDraft[]>([])
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState<PendingAttachmentDraft[]>([])
@@ -192,7 +193,7 @@ export function MessageComposer({
     focusComposer()
   }
 
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (mentionInput.handleKeyDown(event)) return
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -386,7 +387,7 @@ export function MessageComposer({
           </ul>
         ) : null}
 
-        <div className="flex items-end gap-2 px-2 py-1.5">
+        <div className="flex items-center gap-2 px-2 py-1.5">
           <input
             ref={fileInputRef}
             id={fileInputId}
@@ -413,26 +414,20 @@ export function MessageComposer({
             ref={textareaRef}
             mentionCandidates={mentionInput.draftMentionCandidates}
             id={`message-composer-${channelId}`}
-            rows={1}
             value={draft}
             placeholder={replyTo ? `Reply to ${replyTo.authorName}` : `Message #${channelName}`}
-            onChange={(event) =>
-              mentionInput.updateDraft(
-                event.target.value,
-                event.target.selectionStart ?? event.target.value.length,
-              )
-            }
+            aria-label={`Message #${channelName}`}
+            onRawChange={(value, selectionStart) => mentionInput.updateDraft(value, selectionStart)}
             onKeyDown={onKeyDown}
-            onSelect={(event) => {
-              const target = event.currentTarget
-              mentionInput.handleSelect(target.value, target.selectionStart, target.selectionEnd)
-            }}
+            onRawSelect={(value, selectionStart, selectionEnd) =>
+              mentionInput.handleSelect(value, selectionStart, selectionEnd)
+            }
             aria-autocomplete="list"
             aria-controls={
               mentionInput.showMentionSuggestions ? `mention-suggestions-${channelId}` : undefined
             }
             aria-expanded={mentionInput.showMentionSuggestions}
-            className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"
+            className="h-9 max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"
           />
           <Button
             size="small"

@@ -185,6 +185,15 @@ describe('message mentions', () => {
     expect(screen.getByText('@Designers')).toBeInTheDocument()
   })
 
+  it('keeps the separator space outside a draft mention block', () => {
+    const nodes = renderMentionDraftContent('<@7> ', candidates)
+
+    render(createElement('p', {}, nodes))
+    const mention = screen.getByText('@Alex Chen')
+    expect(mention.textContent).toBe('@Alex Chen')
+    expect(mention.nextSibling?.textContent).toBe(' ')
+  })
+
   it('keeps escaped markup as plain text', () => {
     const nodes = renderMessageContent(
       {

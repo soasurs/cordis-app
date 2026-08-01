@@ -192,6 +192,24 @@ describe('GuildPage', () => {
     expect(screen.queryByRole('button', { name: 'Move Projects' })).not.toBeInTheDocument()
   })
 
+  it('renders direct mention unread counts as red badges', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(guildChannelsQueryKey('42'), channels)
+    messageApi.getReadStatesForGuild.mockResolvedValue([
+      {
+        channelId: '43',
+        lastMessageId: '200',
+        lastReadMessageId: '100',
+        mentionCount: 2,
+      },
+    ])
+    renderGuildPage(queryClient, { channelId: '43' })
+
+    const mentionBadges = await screen.findAllByText('2')
+    expect(mentionBadges).toHaveLength(2)
+    expect(mentionBadges[0]).toHaveClass('bg-negative')
+  })
+
   it('requests navigation when another channel is selected', async () => {
     const queryClient = createQueryClient()
     const onSelectChannel = vi.fn()

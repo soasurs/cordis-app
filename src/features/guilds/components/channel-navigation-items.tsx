@@ -312,7 +312,7 @@ function ChannelButton({
       </span>
       <span className="min-w-0 flex-1 truncate">{channel.name}</span>
       {mentionCount > 0 ? (
-        <span className="grid min-w-4 shrink-0 place-items-center rounded-full bg-accent px-1.5 py-0.5 text-[0.58rem] font-bold leading-none text-white">
+        <span className="grid min-w-4 shrink-0 place-items-center rounded-full bg-negative px-1.5 py-0.5 text-[0.58rem] font-bold leading-none text-white">
           {mentionCount > 99 ? '99+' : mentionCount}
         </span>
       ) : unread ? (
