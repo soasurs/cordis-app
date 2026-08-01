@@ -128,6 +128,75 @@ describe('MessageComposer', () => {
     )
   })
 
+  it('blocks role and everyone mentions before sending without permission', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          canMentionRolesAndEveryone={false}
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[
+            { id: 'everyone', kind: 'everyone', label: 'everyone', token: '@everyone' },
+            { id: '50', kind: 'role', label: 'Designers', token: '<@&50>' },
+            { id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' },
+          ]}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, 'hello @everyone')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageApi.createMessage).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('You do not have permission to mention roles or everyone in this channel.'),
+    ).toBeInTheDocument()
+    expect(composer).toHaveValue('hello @everyone')
+  })
+
+  it('uses the server mention search when local candidates are not provided', async () => {
+    const user = userEvent.setup()
+    const onSearchMentionCandidates = vi
+      .fn()
+      .mockResolvedValue([{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }])
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '<@7> welcome',
+      id: '204',
+    })
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          onSearchMentionCandidates={onSearchMentionCandidates}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, '@ale')
+    expect(onSearchMentionCandidates).toHaveBeenCalledWith('ale')
+    await user.click(await screen.findByRole('option', { name: '@Alex Chen' }))
+    await user.type(composer, ' welcome')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: '<@7> welcome',
+        idempotencyKey: expect.any(String),
+      }),
+    )
+  })
+
   it('keeps the load-more action available when the current page has no match', async () => {
     const user = userEvent.setup()
     const onLoadMore = vi.fn()
@@ -451,6 +520,36 @@ describe('MessageItem', () => {
         content: '<@7>',
       }),
     )
+  })
+
+  it('blocks role mentions before saving an edit without permission', async () => {
+    const user = userEvent.setup()
+    const message = {
+      ...sampleMessage,
+      content: 'Hello room',
+    }
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          canMentionRolesAndEveryone={false}
+          currentUserId="7"
+          message={message}
+        />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    const editor = screen.getByDisplayValue('Hello room')
+    await user.clear(editor)
+    await user.type(editor, '<@&50> hello')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(messageApi.updateMessage).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('You do not have permission to mention roles or everyone in this channel.'),
+    ).toBeInTheDocument()
   })
 
   it('edits and deletes the current user message', async () => {

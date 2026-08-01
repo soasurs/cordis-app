@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createMentionCandidates,
+  createMentionCandidatesFromSearch,
+  containsRoleOrEveryoneMention,
   extractDirectMentionUserIds,
+  filterMentionCandidatesByPermission,
   filterMentionCandidates,
   findMentionTrigger,
   renderMentionDraftContent,
@@ -49,6 +52,61 @@ describe('message mentions', () => {
   it('filters candidates by display name and username', () => {
     expect(filterMentionCandidates(candidates, 'ALEX').map((item) => item.id)).toEqual(['7'])
     expect(filterMentionCandidates(candidates, 'design').map((item) => item.id)).toEqual(['50'])
+  })
+
+  it('hides everyone and role candidates without the shared mention permission', () => {
+    expect(filterMentionCandidatesByPermission(candidates, false)).toEqual([candidates[2]])
+    expect(filterMentionCandidatesByPermission(candidates, true)).toEqual(candidates)
+  })
+
+  it('detects unescaped role and everyone markup for submit validation', () => {
+    expect(containsRoleOrEveryoneMention('<@&50>')).toBe(true)
+    expect(containsRoleOrEveryoneMention('hello @everyone')).toBe(true)
+    expect(containsRoleOrEveryoneMention('hello \\@everyone \\<@&50>')).toBe(false)
+    expect(containsRoleOrEveryoneMention('hello @everyones')).toBe(false)
+  })
+
+  it('maps server mention search results into user and role candidates', () => {
+    expect(
+      createMentionCandidatesFromSearch(
+        [
+          {
+            avatarAssetId: '9',
+            name: 'Alex Chen',
+            nickname: 'Alex',
+            userId: '7',
+            username: 'alex_chen',
+          },
+        ],
+        [
+          {
+            createdAt: 1_000,
+            guildId: '42',
+            id: '50',
+            isDefault: false,
+            name: 'Designers',
+            permissions: '0',
+            position: 1,
+            revision: 1,
+            updatedAt: 1_000,
+          },
+        ],
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        id: 'everyone',
+        kind: 'everyone',
+        token: '@everyone',
+      }),
+      expect.objectContaining({ id: '50', kind: 'role', token: '<@&50>' }),
+      expect.objectContaining({
+        id: '7',
+        kind: 'user',
+        label: 'Alex',
+        secondaryLabel: '@alex_chen',
+        token: '<@7>',
+      }),
+    ])
   })
 
   it('replaces the trigger with server-side mention markup', () => {

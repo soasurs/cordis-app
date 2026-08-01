@@ -7,11 +7,14 @@ import {
   type EffectiveGuildPermissions,
   type GuildCapability,
 } from '@/features/guilds/guild-capabilities'
+import { resolveEffectiveGuildChannelPermissions } from '@/features/guilds/components/guild-permissions'
 import {
+  guildChannelOverwritesQueryOptions,
   guildMemberRolesQueryOptions,
   guildRolesQueryOptions,
   guildsQueryOptions,
 } from '@/features/guilds/guild-queries'
+import { guildPermission } from '@/api/guild'
 
 export type GuildOwnershipState = { status: 'pending' } | { isOwner: boolean; status: 'ready' }
 
@@ -87,4 +90,47 @@ export function useGuildCapabilities(guildId: string) {
     ownership,
     permissions,
   }
+}
+
+/**
+ * Resolves the current member's channel-level permission to mention roles and
+ * @everyone. A pending or unavailable permission snapshot is treated as false
+ * by callers so the composer does not expose a candidate it cannot verify.
+ */
+export function useGuildMentionCapability(guildId: string, channelId?: string) {
+  const guildPermissions = useGuildPermissions(guildId)
+  const { data: session } = useQuery(authSessionQueryOptions)
+  const userId = session?.user.userId.toString()
+  const overwritesQuery = useQuery({
+    ...guildChannelOverwritesQueryOptions(guildId, channelId ?? ''),
+    enabled: Boolean(channelId) && guildPermissions.status === 'ready',
+  })
+  const memberRolesQuery = useQuery({
+    ...guildMemberRolesQueryOptions(guildId, userId ?? ''),
+    enabled:
+      Boolean(userId) &&
+      guildPermissions.status === 'ready' &&
+      !guildPermissions.isOwner,
+  })
+
+  if (!channelId || guildPermissions.status !== 'ready') return false
+  if (guildPermissions.isOwner) return true
+  if (!userId || !overwritesQuery.isSuccess || !memberRolesQuery.isSuccess) return false
+
+  const channelPermissions = resolveEffectiveGuildChannelPermissions({
+    guildId,
+    isOwner: guildPermissions.isOwner,
+    memberRoles: memberRolesQuery.data,
+    overwrites: overwritesQuery.data,
+    permissions: guildPermissions.permissions,
+    userId,
+  })
+  return (
+    hasPermission(channelPermissions, guildPermission.mentionEveryone) ||
+    hasPermission(channelPermissions, guildPermission.administrator)
+  )
+}
+
+function hasPermission(permissions: string, required: string) {
+  return (BigInt(permissions) & BigInt(required)) !== 0n
 }

@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createElement,
+  useCallback,
   useEffect,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -8,8 +9,14 @@ import {
   type ReactNode,
 } from 'react'
 
-import type { GuildMemberSummary, GuildRoleSummary } from '@/features/guilds/guild-queries'
+import type {
+  GuildMemberSummary,
+  GuildMentionUserSummary,
+  GuildRoleSummary,
+} from '@/features/guilds/guild-queries'
 import {
+  guildMentionRolesQueryOptions,
+  guildMentionUsersQueryOptions,
   guildMembersInfiniteQueryOptions,
   guildRolesQueryOptions,
 } from '@/features/guilds/guild-queries'
@@ -25,6 +32,21 @@ export interface MentionCandidate {
   token: string
 }
 
+export type MentionCandidateSearch = (query: string) => Promise<MentionCandidate[]>
+
+export function isRoleOrEveryoneMentionCandidate(candidate: MentionCandidate) {
+  return candidate.kind === 'everyone' || candidate.kind === 'role'
+}
+
+export function filterMentionCandidatesByPermission(
+  candidates: MentionCandidate[],
+  canMentionRolesAndEveryone: boolean,
+) {
+  return canMentionRolesAndEveryone
+    ? candidates
+    : candidates.filter((candidate) => !isRoleOrEveryoneMentionCandidate(candidate))
+}
+
 export interface MentionTrigger {
   end: number
   query: string
@@ -36,6 +58,9 @@ export interface MentionInputState {
   handleKeyDown: (event: ReactKeyboardEvent<HTMLTextAreaElement>) => boolean
   handleSelect: (value: string, selectionStart: number, selectionEnd: number) => void
   insertMention: (candidate: MentionCandidate) => void
+  isRemoteSearch: boolean
+  isMentionSearchPending: boolean
+  mentionCandidates: MentionCandidate[]
   mentionSuggestions: MentionCandidate[]
   showMentionSuggestions: boolean
   reset: () => void
@@ -43,15 +68,18 @@ export interface MentionInputState {
 }
 
 /**
- * Loads the public member and role lists used by the composer and by message
- * rendering. The member endpoint is paginated; callers can expose
- * fetchNextPage when the first page does not contain the desired member.
+ * Loads known member and role labels for rendering existing messages and
+ * exposes the channel-aware search used by compose/edit inputs. The member
+ * endpoint is paginated; callers can expose fetchNextPage when the first page
+ * does not contain the desired member.
  */
 export function useGuildMentionCandidates(
   guildId: string | undefined,
+  channelId: string | undefined,
   enabled = true,
   requiredUserIds: string[] = [],
 ) {
+  const queryClient = useQueryClient()
   const isEnabled = Boolean(guildId) && enabled
   const membersQuery = useInfiniteQuery({
     ...guildMembersInfiniteQueryOptions(guildId ?? ''),
@@ -82,11 +110,25 @@ export function useGuildMentionCandidates(
     void fetchNextPage()
   }, [fetchNextPage, hasMissingRequiredUsers, hasNextPage, isEnabled, isFetchingNextPage])
 
+  const searchMentionCandidates = useCallback<MentionCandidateSearch>(
+    async (query) => {
+      if (!guildId || !channelId) return []
+
+      const [users, roles] = await Promise.all([
+        queryClient.fetchQuery(guildMentionUsersQueryOptions(guildId, channelId, query)),
+        queryClient.fetchQuery(guildMentionRolesQueryOptions(guildId, query)),
+      ])
+      return createMentionCandidatesFromSearch(users, roles)
+    },
+    [channelId, guildId, queryClient],
+  )
+
   return {
     candidates,
     fetchNextMembersPage: hasNextPage ? fetchNextPage : undefined,
     hasNextMembersPage: hasNextPage,
     isLoading: membersPending || rolesQuery.isPending,
+    searchMentionCandidates,
   }
 }
 
@@ -131,6 +173,37 @@ export function createMentionCandidates(
   return candidates
 }
 
+export function createMentionCandidatesFromSearch(
+  users: GuildMentionUserSummary[],
+  roles: GuildRoleSummary[],
+): MentionCandidate[] {
+  const candidates: MentionCandidate[] = [createEveryoneCandidate()]
+
+  for (const role of roles) {
+    if (role.isDefault) continue
+    candidates.push({
+      id: role.id,
+      kind: 'role',
+      label: role.name,
+      secondaryLabel: 'Role',
+      token: `<@&${role.id}>`,
+    })
+  }
+
+  for (const user of users) {
+    const label = user.nickname || user.name || user.username || `User ${user.userId}`
+    candidates.push({
+      id: user.userId,
+      kind: 'user',
+      label,
+      secondaryLabel: user.username ? `@${user.username}` : undefined,
+      token: `<@${user.userId}>`,
+    })
+  }
+
+  return candidates
+}
+
 export function findMentionTrigger(value: string, cursor: number): MentionTrigger | undefined {
   const prefix = value.slice(0, cursor)
   const match = /(?:^|[\s([{"'`])@([^\s@<>]*)$/.exec(prefix)
@@ -152,6 +225,19 @@ export function extractDirectMentionUserIds(content: string): string[] {
     if (!isEscaped(content, match.index) && match[1]) ids.add(match[1])
   }
   return [...ids]
+}
+
+/** Whether content contains an unescaped role or @everyone mention. */
+export function containsRoleOrEveryoneMention(content: string) {
+  const pattern = /<@&[0-9]+>|@everyone(?![\p{L}\p{N}_])/gu
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(content))) {
+    if (!isEscaped(content, match.index)) {
+      if (match[0] === '@everyone' && !isMentionBoundary(content, match.index)) continue
+      return true
+    }
+  }
+  return false
 }
 
 export function filterMentionCandidates(
@@ -221,18 +307,68 @@ export function useMentionInput(
   candidates: MentionCandidate[],
   onLoadMore?: () => void,
   textareaRef?: RefObject<HTMLTextAreaElement | null>,
+  onSearch?: MentionCandidateSearch,
+  canMentionRolesAndEveryone = true,
 ): MentionInputState {
   const [mentionTrigger, setMentionTrigger] = useState<MentionTrigger>()
   const [activeMentionIndex, setActiveMentionIndex] = useState(0)
+  const [resolvedSearchQuery, setResolvedSearchQuery] = useState<string>()
+  const [searchResults, setSearchResults] = useState<MentionCandidate[]>([])
+  const hasRemoteSearch = Boolean(onSearch)
+  const mentionQuery = mentionTrigger?.query
+  const isMentionSearchPending = Boolean(
+    onSearch && mentionQuery !== undefined && resolvedSearchQuery !== mentionQuery,
+  )
+
+  useEffect(() => {
+    if (!onSearch || mentionQuery === undefined) return
+
+    const query = mentionQuery
+    let active = true
+    void onSearch(query)
+      .then((nextResults) => {
+        if (!active) return
+        setSearchResults(nextResults)
+        setResolvedSearchQuery(query)
+      })
+      .catch(() => {
+        if (!active) return
+        setSearchResults([])
+        setResolvedSearchQuery(query)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [mentionQuery, onSearch])
+
+  const mentionCandidates = mergeMentionCandidates(candidates, searchResults)
+  const selectableCandidates = filterMentionCandidatesByPermission(
+    candidates,
+    canMentionRolesAndEveryone,
+  )
+  const selectableSearchResults = filterMentionCandidatesByPermission(
+    searchResults,
+    canMentionRolesAndEveryone,
+  )
+  const searchHasSettled = resolvedSearchQuery === mentionQuery && !isMentionSearchPending
   const mentionSuggestions = mentionTrigger
-    ? filterMentionCandidates(candidates, mentionTrigger.query)
+    ? hasRemoteSearch
+      ? searchHasSettled
+        ? filterMentionCandidates(selectableSearchResults, mentionTrigger.query)
+        : []
+      : filterMentionCandidates(selectableCandidates, mentionTrigger.query)
     : []
   const showMentionSuggestions =
-    Boolean(mentionTrigger) && (mentionSuggestions.length > 0 || Boolean(onLoadMore))
+    Boolean(mentionTrigger) &&
+    (mentionSuggestions.length > 0 ||
+      (hasRemoteSearch && (isMentionSearchPending || searchHasSettled)) ||
+      Boolean(onLoadMore))
 
   const reset = () => {
     setMentionTrigger(undefined)
     setActiveMentionIndex(0)
+    setResolvedSearchQuery(undefined)
   }
 
   const updateDraft = (nextValue: string, cursor: number | null) => {
@@ -255,6 +391,7 @@ export function useMentionInput(
 
   const insertMention = (candidate: MentionCandidate) => {
     if (!mentionTrigger) return
+    if (!canMentionRolesAndEveryone && isRoleOrEveryoneMentionCandidate(candidate)) return
     const nextDraft = replaceMentionTrigger(value, mentionTrigger, candidate)
     const nextCursor = mentionTrigger.start + candidate.token.length
     onChange(nextDraft)
@@ -270,6 +407,14 @@ export function useMentionInput(
   }
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      isMentionSearchPending &&
+      mentionTrigger &&
+      (event.key === 'Enter' || event.key === 'Tab')
+    ) {
+      event.preventDefault()
+      return true
+    }
     if (mentionSuggestions.length > 0) {
       if (event.key === 'ArrowDown') {
         event.preventDefault()
@@ -303,11 +448,34 @@ export function useMentionInput(
     handleKeyDown,
     handleSelect,
     insertMention,
+    isRemoteSearch: hasRemoteSearch,
+    isMentionSearchPending,
+    mentionCandidates,
     mentionSuggestions,
     reset,
     showMentionSuggestions,
     updateDraft,
   }
+}
+
+function createEveryoneCandidate(): MentionCandidate {
+  return {
+    id: 'everyone',
+    kind: 'everyone',
+    label: 'everyone',
+    secondaryLabel: 'Everyone who can view this channel',
+    token: '@everyone',
+  }
+}
+
+function mergeMentionCandidates(...candidateLists: MentionCandidate[][]): MentionCandidate[] {
+  const candidates = new Map<string, MentionCandidate>()
+  for (const candidateList of candidateLists) {
+    for (const candidate of candidateList) {
+      candidates.set(`${candidate.kind}:${candidate.id}`, candidate)
+    }
+  }
+  return [...candidates.values()]
 }
 
 export function renderMessageContent(

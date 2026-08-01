@@ -27,24 +27,33 @@ import { upsertChannelMessageFromApi } from '@/features/messages/message-queries
 import { markChannelReadThrough } from '@/features/messages/read-state-queries'
 import type { MessageReplyTarget } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
-import { useMentionInput, type MentionCandidate } from '@/features/messages/mentions'
+import {
+  containsRoleOrEveryoneMention,
+  useMentionInput,
+  type MentionCandidate,
+  type MentionCandidateSearch,
+} from '@/features/messages/mentions'
 
 interface MessageComposerProps {
   canSend: boolean
+  canMentionRolesAndEveryone?: boolean
   channelId: string
   channelName: string
   mentionCandidates?: MentionCandidate[]
   onClearReply?: () => void
   onLoadMoreMentionCandidates?: () => void
+  onSearchMentionCandidates?: MentionCandidateSearch
   replyTo?: MessageReplyTarget
 }
 
 export function MessageComposer({
   canSend,
+  canMentionRolesAndEveryone = true,
   channelId,
   channelName,
   mentionCandidates = [],
   onLoadMoreMentionCandidates,
+  onSearchMentionCandidates,
   onClearReply,
   replyTo,
 }: MessageComposerProps) {
@@ -63,6 +72,8 @@ export function MessageComposer({
     mentionCandidates,
     onLoadMoreMentionCandidates,
     textareaRef,
+    onSearchMentionCandidates,
+    canMentionRolesAndEveryone,
   )
 
   const focusComposer = () => {
@@ -140,6 +151,11 @@ export function MessageComposer({
     event?.preventDefault()
     if (!canSubmit) return
     const content = trimmed
+    if (!canMentionRolesAndEveryone && containsRoleOrEveryoneMention(content)) {
+      setError('You do not have permission to mention roles or everyone in this channel.')
+      queueMicrotask(focusComposer)
+      return
+    }
     const attachmentAssetIds = readyAttachments.map((attachment) => attachment.assetId)
     const referencedChannelId = replyTo?.channelId
     const referencedMessageId = replyTo?.id
@@ -156,6 +172,7 @@ export function MessageComposer({
     sendIntentRef.current = intent
     // Clear the text immediately so the next message can be typed while this send is in flight.
     setDraft('')
+    mentionInput.reset()
     setError(undefined)
     sendMutation.mutate(
       {
@@ -394,7 +411,7 @@ export function MessageComposer({
           </label>
           <MentionTextarea
             ref={textareaRef}
-            mentionCandidates={mentionCandidates}
+            mentionCandidates={mentionInput.mentionCandidates}
             id={`message-composer-${channelId}`}
             rows={1}
             value={draft}

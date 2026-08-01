@@ -23,7 +23,10 @@ import {
   type GuildChannelSummary,
 } from '@/features/guilds/guild-queries'
 import { useChannelReordering } from '@/features/guilds/use-channel-reordering'
-import { useGuildCapabilities } from '@/features/guilds/use-guild-permissions'
+import {
+  useGuildCapabilities,
+  useGuildMentionCapability,
+} from '@/features/guilds/use-guild-permissions'
 import { TextChannelView } from '@/features/messages/components/text-channel-view'
 import {
   guildReadStatesQueryOptions,
@@ -69,6 +72,10 @@ export function GuildPage({
   const channels = [...(channelsQuery.data ?? [])].sort(compareChannels)
   const selectedChannel = channels.find((channel) => channel.id === channelId)
   const isTextChannel = selectedChannel?.type === GuildChannelType.TEXT
+  const canMentionRolesAndEveryone = useGuildMentionCapability(
+    guildId,
+    isTextChannel ? selectedChannel?.id : undefined,
+  )
 
   useEffect(() => {
     if (!readStatesQuery.data) return
@@ -187,6 +194,7 @@ export function GuildPage({
             <TextChannelView
               key={selectedChannel.id}
               canManageMessages={canManageMessages}
+              canMentionRolesAndEveryone={canMentionRolesAndEveryone}
               canSend={canSendMessages}
               channel={selectedChannel}
             />

@@ -23,6 +23,8 @@ const guildClient = vi.hoisted(() => ({
   listGuildMembers: vi.fn(),
   listGuildRoleMembers: vi.fn(),
   listGuildRoles: vi.fn(),
+  searchGuildMentionRoles: vi.fn(),
+  searchGuildMentionUsers: vi.fn(),
   reorderGuildChannels: vi.fn(),
   reorderGuildRoles: vi.fn(),
   removeGuildMemberRole: vi.fn(),
@@ -65,6 +67,8 @@ import {
   reorderGuildRoles,
   removeGuildMemberRole,
   removeGuildRoleMembers,
+  searchGuildMentionRoles,
+  searchGuildMentionUsers,
   updateGuild,
   updateGuildChannel,
   updateGuildRole,
@@ -230,6 +234,49 @@ describe('guild API', () => {
       },
     ])
     expect(guildClient.listGuildRoles).toHaveBeenCalledWith({ guildId: 42n })
+  })
+
+  it('searches channel-visible mention users with the application representation', async () => {
+    guildClient.searchGuildMentionUsers.mockResolvedValue({
+      users: [
+        {
+          avatarAssetId: 9n,
+          name: 'Alex Chen',
+          nickname: 'Alex',
+          userId: 7n,
+          username: 'alex_chen',
+        },
+      ],
+    })
+
+    await expect(searchGuildMentionUsers('42', '43', 'ale')).resolves.toEqual([
+      {
+        avatarAssetId: '9',
+        name: 'Alex Chen',
+        nickname: 'Alex',
+        userId: '7',
+        username: 'alex_chen',
+      },
+    ])
+    expect(guildClient.searchGuildMentionUsers).toHaveBeenCalledWith({
+      channelId: 43n,
+      guildId: 42n,
+      limit: 25,
+      query: 'ale',
+    })
+  })
+
+  it('searches mention roles with the application representation', async () => {
+    guildClient.searchGuildMentionRoles.mockResolvedValue({ roles: [roleMessage()] })
+
+    await expect(searchGuildMentionRoles('42', 'help')).resolves.toEqual([
+      expect.objectContaining({ guildId: '42', id: '50', name: 'Helpers' }),
+    ])
+    expect(guildClient.searchGuildMentionRoles).toHaveBeenCalledWith({
+      guildId: 42n,
+      limit: 25,
+      query: 'help',
+    })
   })
 
   it('creates and updates guild roles with permission bitfields', async () => {

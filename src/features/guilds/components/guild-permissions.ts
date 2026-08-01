@@ -1,4 +1,8 @@
-import { guildPermission, type GuildRole } from '@/api/guild'
+import {
+  guildPermission,
+  type GuildChannelPermissionOverwrite,
+  type GuildRole,
+} from '@/api/guild'
 
 export interface GuildPermissionItem {
   description: string
@@ -22,6 +26,12 @@ const sendMessagesPermission = {
   description: 'Send messages in channels this role can access.',
   label: 'Send messages',
   value: guildPermission.sendMessages,
+} as const satisfies GuildPermissionItem
+
+const mentionEveryonePermission = {
+  description: 'Mention @everyone and roles in channels this role can access.',
+  label: 'Mention @everyone and roles',
+  value: guildPermission.mentionEveryone,
 } as const satisfies GuildPermissionItem
 
 const manageChannelsPermission = {
@@ -94,6 +104,7 @@ export const guildPermissionGroups = [
     permissions: [
       viewChannelsPermission,
       sendMessagesPermission,
+      mentionEveryonePermission,
       manageChannelsPermission,
       manageMessagesPermission,
     ],
@@ -139,6 +150,10 @@ export const channelPermissionGroups = [
       {
         ...sendMessagesPermission,
         description: 'Send messages in this channel.',
+      },
+      {
+        ...mentionEveryonePermission,
+        description: 'Mention @everyone and roles in this channel.',
       },
       {
         ...manageMessagesPermission,
@@ -203,6 +218,73 @@ export function resolveHeldGuildRoles(guildRoles: GuildRole[], assignedRoles: Gu
 /** Bitwise OR of every held role's permission mask. */
 export function combineGuildRolePermissions(roles: GuildRole[]) {
   return roles.reduce((permissions, role) => permissions | BigInt(role.permissions), 0n).toString()
+}
+
+/**
+ * Applies a member's channel overwrites using the same precedence as Guild:
+ * @everyone, aggregated assigned roles, then the member-specific overwrite.
+ */
+export function resolveEffectiveGuildChannelPermissions(input: {
+  guildId: string
+  isOwner: boolean
+  memberRoles: GuildRole[]
+  overwrites: GuildChannelPermissionOverwrite[]
+  permissions: string
+  userId: string
+}) {
+  if (
+    input.isOwner ||
+    hasGuildPermission(input.permissions, guildPermission.administrator)
+  ) {
+    return input.permissions
+  }
+
+  let permissions = BigInt(input.permissions)
+  const defaultOverwrite = input.overwrites.find(
+    (overwrite) =>
+      overwrite.appliesTo === 'role' &&
+      overwrite.appliesToId === input.guildId,
+  )
+  if (defaultOverwrite) {
+    permissions = applyChannelOverwrite(permissions, defaultOverwrite)
+  }
+
+  const assignedRoleIds = new Set(
+    input.memberRoles.filter((role) => !role.isDefault).map((role) => role.id),
+  )
+  let roleDeny = 0n
+  let roleAllow = 0n
+  for (const overwrite of input.overwrites) {
+    if (overwrite.appliesTo !== 'role' || !assignedRoleIds.has(overwrite.appliesToId)) {
+      continue
+    }
+    roleDeny |= BigInt(overwrite.deny)
+    roleAllow |= BigInt(overwrite.allow)
+  }
+  permissions = permissions & ~roleDeny | roleAllow
+
+  const memberOverwrite = input.overwrites.find(
+    (overwrite) =>
+      overwrite.appliesTo === 'member' &&
+      overwrite.appliesToId === input.userId,
+  )
+  if (memberOverwrite) {
+    permissions = applyChannelOverwrite(permissions, memberOverwrite)
+  }
+
+  if (!hasGuildPermission(permissions.toString(), guildPermission.viewChannel)) {
+    permissions &= ~(
+      BigInt(guildPermission.sendMessages) | BigInt(guildPermission.manageMessages)
+    )
+  }
+  return permissions.toString()
+}
+
+function applyChannelOverwrite(
+  permissions: bigint,
+  overwrite: GuildChannelPermissionOverwrite,
+) {
+  return permissions & ~BigInt(overwrite.deny) | BigInt(overwrite.allow)
 }
 
 export function toggleGuildPermission(

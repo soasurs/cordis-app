@@ -14,6 +14,8 @@ import {
   listGuildMembers,
   listGuildRoleMembers,
   listGuildRoles,
+  searchGuildMentionRoles,
+  searchGuildMentionUsers,
   type Guild,
   type GuildChannel,
   type GuildChannelList,
@@ -23,6 +25,7 @@ import {
   type GuildInvitePage,
   type GuildMember,
   type GuildMemberPage,
+  type GuildMentionUser,
   type GuildRole,
 } from '@/api/guild'
 import {
@@ -59,6 +62,7 @@ export type GuildChannelSummary = GuildChannel
 export type GuildChannelOverwriteSummary = GuildChannelPermissionOverwrite
 export type GuildInviteSummary = GuildInvite
 export type GuildMemberSummary = GuildMember
+export type GuildMentionUserSummary = GuildMentionUser
 export type GuildRoleSummary = GuildRole
 
 export const guildsQueryKey = ['guilds'] as const
@@ -267,6 +271,18 @@ export function guildMembersInfiniteQueryOptions(guildId: string) {
   })
 }
 
+export function guildMentionUsersQueryKey(guildId: string, channelId: string, query: string) {
+  return [...guildsQueryKey, guildId, 'mention-users', channelId, query] as const
+}
+
+export function guildMentionUsersQueryOptions(guildId: string, channelId: string, query: string) {
+  return queryOptions({
+    queryFn: () => searchGuildMentionUsers(guildId, channelId, query),
+    queryKey: guildMentionUsersQueryKey(guildId, channelId, query),
+    staleTime: 30_000,
+  })
+}
+
 export function guildInvitesQueryKey(guildId: string) {
   return [...guildsQueryKey, guildId, 'invites'] as const
 }
@@ -434,6 +450,18 @@ export function guildRolesQueryOptions(guildId: string) {
   return queryOptions({
     queryFn: () => listGuildRoles(guildId),
     queryKey: guildRolesQueryKey(guildId),
+    staleTime: 30_000,
+  })
+}
+
+export function guildMentionRolesQueryKey(guildId: string, query: string) {
+  return [...guildsQueryKey, guildId, 'mention-roles', query] as const
+}
+
+export function guildMentionRolesQueryOptions(guildId: string, query: string) {
+  return queryOptions({
+    queryFn: () => searchGuildMentionRoles(guildId, query),
+    queryKey: guildMentionRolesQueryKey(guildId, query),
     staleTime: 30_000,
   })
 }

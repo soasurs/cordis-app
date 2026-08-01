@@ -3,10 +3,27 @@ import { assertIdentifier } from '@/api/guild/internal'
 import { optionalIdempotencyKey } from '@/api/idempotency'
 import type { GuildRole, GuildRoleDetails, GuildRolePosition } from '@/api/guild/types'
 
+const GUILD_MENTION_SEARCH_LIMIT = 25
+
 export async function listGuildRoles(guildId: string): Promise<GuildRole[]> {
   assertIdentifier(guildId, 'guild')
 
   const response = await guildClient.listGuildRoles({ guildId: BigInt(guildId) })
+
+  return response.roles.map(toGuildRole)
+}
+
+export async function searchGuildMentionRoles(
+  guildId: string,
+  query: string,
+): Promise<GuildRole[]> {
+  assertIdentifier(guildId, 'guild')
+
+  const response = await guildClient.searchGuildMentionRoles({
+    guildId: BigInt(guildId),
+    limit: GUILD_MENTION_SEARCH_LIMIT,
+    query,
+  })
 
   return response.roles.map(toGuildRole)
 }

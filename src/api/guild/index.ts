@@ -19,6 +19,7 @@ export type {
   GuildInvitePreview,
   GuildMember,
   GuildMemberPage,
+  GuildMentionUser,
   GuildRole,
   GuildRoleDetails,
   GuildRolePosition,
@@ -58,6 +59,7 @@ export {
   listGuildRoleMembers,
   removeGuildMemberRole,
   removeGuildRoleMembers,
+  searchGuildMentionUsers,
 } from '@/api/guild/members'
 export {
   createGuildRole,
@@ -65,5 +67,6 @@ export {
   listGuildMemberRoles,
   listGuildRoles,
   reorderGuildRoles,
+  searchGuildMentionRoles,
   updateGuildRole,
 } from '@/api/guild/roles'

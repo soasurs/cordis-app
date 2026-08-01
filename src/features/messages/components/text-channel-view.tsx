@@ -53,11 +53,17 @@ function scrollToAbsoluteBottom(element: HTMLDivElement) {
 
 interface TextChannelViewProps {
   canManageMessages: boolean
+  canMentionRolesAndEveryone: boolean
   canSend: boolean
   channel: GuildChannelSummary
 }
 
-export function TextChannelView({ canManageMessages, canSend, channel }: TextChannelViewProps) {
+export function TextChannelView({
+  canManageMessages,
+  canMentionRolesAndEveryone,
+  canSend,
+  channel,
+}: TextChannelViewProps) {
   const queryClient = useQueryClient()
   const { data: session } = useQuery(authSessionQueryOptions)
   const { data: readStates = {} } = useQuery({
@@ -79,7 +85,8 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
   ]
   const mentionCandidatesQuery = useGuildMentionCandidates(
     channel.guildId,
-    canSend || hasMentions,
+    channel.id,
+    hasMentions,
     directMentionUserIds,
   )
   const loadMoreMentionCandidates = mentionCandidatesQuery.fetchNextMembersPage
@@ -456,12 +463,14 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
                 >
                   <MessageItem
                     canManageMessages={canManageMessages}
+                    canMentionRolesAndEveryone={canMentionRolesAndEveryone}
                     message={message}
                     currentUserId={currentUserId}
                     mentionCandidates={mentionCandidatesQuery.candidates}
                     onJumpToMessage={jumpToMessage}
                     onLoadMoreMentionCandidates={loadMoreMentionCandidates}
                     onReply={canSend ? startReply : undefined}
+                    onSearchMentionCandidates={mentionCandidatesQuery.searchMentionCandidates}
                   />
                 </div>
               ))}
@@ -484,6 +493,7 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
       </div>
 
       <MessageComposer
+        canMentionRolesAndEveryone={canMentionRolesAndEveryone}
         canSend={canSend}
         channelId={channel.id}
         channelName={channel.name}
@@ -491,6 +501,7 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
         replyTo={replyTo}
         onLoadMoreMentionCandidates={loadMoreMentionCandidates}
         onClearReply={() => setReplyTo(undefined)}
+        onSearchMentionCandidates={mentionCandidatesQuery.searchMentionCandidates}
       />
     </div>
   )

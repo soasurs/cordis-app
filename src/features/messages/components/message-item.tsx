@@ -41,20 +41,24 @@ import {
 import { toMessageContentPreview } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
 import {
+  containsRoleOrEveryoneMention,
   renderMessageContent,
   useMentionInput,
   type MentionCandidate,
+  type MentionCandidateSearch,
 } from '@/features/messages/mentions'
 
 interface MessageItemProps {
   /** Guild-level manageMessages (owner / admin / role); channel overwrites come later. */
   canManageMessages?: boolean
+  canMentionRolesAndEveryone?: boolean
   currentUserId?: string
   message: ChannelMessageSummary
   mentionCandidates?: MentionCandidate[]
   onJumpToMessage?: (messageId: string) => void
   onLoadMoreMentionCandidates?: () => void
   onReply?: (message: ChannelMessageSummary) => void
+  onSearchMentionCandidates?: MentionCandidateSearch
 }
 
 interface ContextMenuPosition {
@@ -66,12 +70,14 @@ const CONTEXT_MENU_WIDTH = 168
 
 export function MessageItem({
   canManageMessages = false,
+  canMentionRolesAndEveryone = true,
   currentUserId,
   message,
   mentionCandidates = [],
   onJumpToMessage,
   onLoadMoreMentionCandidates,
   onReply,
+  onSearchMentionCandidates,
 }: MessageItemProps) {
   const queryClient = useQueryClient()
   const fileInputId = useId()
@@ -92,6 +98,8 @@ export function MessageItem({
     mentionCandidates,
     onLoadMoreMentionCandidates,
     textareaRef,
+    onSearchMentionCandidates,
+    canMentionRolesAndEveryone,
   )
   const isOwn = Boolean(currentUserId && message.author?.userId === currentUserId)
   const canEdit = isOwn
@@ -215,6 +223,11 @@ export function MessageItem({
   const submitEdit = (event?: FormEvent) => {
     event?.preventDefault()
     if (!canSave) return
+
+    if (!canMentionRolesAndEveryone && containsRoleOrEveryoneMention(trimmed)) {
+      setError('You do not have permission to mention roles or everyone in this channel.')
+      return
+    }
 
     const previousIds = message.attachments.map((attachment) => attachment.assetId)
     const contentUnchanged = trimmed === message.content
@@ -446,7 +459,7 @@ export function MessageItem({
                   </Button>
                   <MentionTextarea
                     ref={textareaRef}
-                    mentionCandidates={mentionCandidates}
+                    mentionCandidates={mentionInput.mentionCandidates}
                     value={draft}
                     rows={3}
                     disabled={updateMutation.isPending}
@@ -499,7 +512,7 @@ export function MessageItem({
             <>
               {message.content ? (
                 <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-ink">
-                  {renderMessageContent(message, mentionCandidates)}
+                  {renderMessageContent(message, mentionInput.mentionCandidates)}
                 </p>
               ) : null}
               {message.attachments.length > 0 ? (

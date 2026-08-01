@@ -31,6 +31,7 @@ const guildApi = vi.hoisted(() => ({
     manageMembers: '8',
     manageMessages: '256',
     manageRoles: '4',
+    mentionEveryone: '2048',
     sendMessages: '64',
     viewChannel: '32',
   },

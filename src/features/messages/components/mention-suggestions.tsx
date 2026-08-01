@@ -16,6 +16,9 @@ export function MentionSuggestions({ input, listId, onLoadMore }: MentionSuggest
       aria-label="Mention suggestions"
       className="border-t border-line bg-surface-raised p-1.5"
     >
+      {input.isMentionSearchPending ? (
+        <p className="px-2.5 py-2 text-xs text-muted">Searching…</p>
+      ) : null}
       {input.mentionSuggestions.map((candidate, index) => (
         <button
           aria-selected={index === input.activeMentionIndex}
@@ -36,10 +39,12 @@ export function MentionSuggestions({ input, listId, onLoadMore }: MentionSuggest
           ) : null}
         </button>
       ))}
-      {input.mentionSuggestions.length === 0 && onLoadMore ? (
-        <p className="px-2.5 py-2 text-xs text-muted">No matches on this page.</p>
+      {!input.isMentionSearchPending && input.mentionSuggestions.length === 0 ? (
+        <p className="px-2.5 py-2 text-xs text-muted">
+          {input.isRemoteSearch ? 'No matches.' : 'No matches on this page.'}
+        </p>
       ) : null}
-      {onLoadMore ? (
+      {onLoadMore && !input.isRemoteSearch ? (
         <button
           className="w-full rounded-control px-2.5 py-2 text-left text-xs text-muted hover:bg-surface-hover"
           type="button"
