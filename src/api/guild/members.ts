@@ -1,9 +1,14 @@
-import type { GuildMember as GuildMemberMessage } from '@/gen/api/v1/guild_pb'
+import type {
+  GuildMember as GuildMemberMessage,
+  GuildMentionUser as GuildMentionUserMessage,
+} from '@/gen/api/v1/guild_pb'
 
 import { toPublicUserProfile } from '@/api/user'
 import { guildClient } from '@/api/guild/client'
 import { assertIdentifier } from '@/api/guild/internal'
-import type { GuildMember, GuildMemberPage } from '@/api/guild/types'
+import type { GuildMember, GuildMemberPage, GuildMentionUser } from '@/api/guild/types'
+
+const GUILD_MENTION_SEARCH_LIMIT = 25
 
 export async function listGuildMembers(guildId: string, cursor?: string): Promise<GuildMemberPage> {
   assertIdentifier(guildId, 'guild')
@@ -20,6 +25,24 @@ export async function listGuildMembers(guildId: string, cursor?: string): Promis
     // (or an empty string) means there is no next page.
     nextCursor: response.nextCursor || undefined,
   }
+}
+
+export async function searchGuildMentionUsers(
+  guildId: string,
+  channelId: string,
+  query: string,
+): Promise<GuildMentionUser[]> {
+  assertIdentifier(guildId, 'guild')
+  assertIdentifier(channelId, 'channel')
+
+  const response = await guildClient.searchGuildMentionUsers({
+    channelId: BigInt(channelId),
+    guildId: BigInt(guildId),
+    limit: GUILD_MENTION_SEARCH_LIMIT,
+    query,
+  })
+
+  return response.users.map(toGuildMentionUser)
 }
 
 export async function listGuildRoleMembers(
@@ -84,6 +107,16 @@ function toGuildMember(member: GuildMemberMessage): GuildMember {
     revision: Number(member.revision),
     updatedAt: Number(member.updatedAt),
     userId: member.userId.toString(),
+  }
+}
+
+function toGuildMentionUser(user: GuildMentionUserMessage): GuildMentionUser {
+  return {
+    avatarAssetId: user.avatarAssetId.toString(),
+    name: user.name,
+    nickname: user.nickname,
+    userId: user.userId.toString(),
+    username: user.username,
   }
 }
 

@@ -46,6 +46,9 @@ const sampleMessage: ChannelMessageSummary = {
   editedAt: 0,
   flags: 0,
   id: '102',
+  mentionEveryone: false,
+  mentionRoleIds: [],
+  mentionUserIds: [],
   revision: 1,
   type: 1,
   updatedAt: 2_000,
@@ -87,6 +90,134 @@ describe('MessageComposer', () => {
       }),
     )
     expect(screen.getByLabelText('Message #general')).toHaveValue('')
+  })
+
+  it('converts a selected member into server-side mention markup', async () => {
+    const user = userEvent.setup()
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '<@7> welcome',
+      id: '203',
+    })
+    const queryClient = createQueryClient()
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, '@ale')
+    await user.click(screen.getByRole('option', { name: '@Alex Chen' }))
+    await user.type(composer, ' welcome')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: '<@7> welcome',
+        idempotencyKey: expect.any(String),
+      }),
+    )
+  })
+
+  it('blocks role and everyone mentions before sending without permission', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          canMentionRolesAndEveryone={false}
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[
+            { id: 'everyone', kind: 'everyone', label: 'everyone', token: '@everyone' },
+            { id: '50', kind: 'role', label: 'Designers', token: '<@&50>' },
+            { id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' },
+          ]}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, 'hello @everyone')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageApi.createMessage).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('You do not have permission to mention roles or everyone in this channel.'),
+    ).toBeInTheDocument()
+    expect(composer).toHaveValue('hello @everyone')
+  })
+
+  it('uses the server mention search when local candidates are not provided', async () => {
+    const user = userEvent.setup()
+    const onSearchMentionCandidates = vi
+      .fn()
+      .mockResolvedValue([{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }])
+    messageApi.createMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '<@7> welcome',
+      id: '204',
+    })
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          onSearchMentionCandidates={onSearchMentionCandidates}
+        />
+      </QueryClientProvider>,
+    )
+
+    const composer = screen.getByLabelText('Message #general')
+    await user.type(composer, '@ale')
+    await waitFor(() => expect(onSearchMentionCandidates).toHaveBeenCalledWith('ale'))
+    await user.click(await screen.findByRole('option', { name: '@Alex Chen' }))
+    await user.type(composer, ' welcome')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(messageApi.createMessage).toHaveBeenCalledWith({
+        attachmentAssetIds: [],
+        channelId: '43',
+        content: '<@7> welcome',
+        idempotencyKey: expect.any(String),
+      }),
+    )
+  })
+
+  it('keeps the load-more action available when the current page has no match', async () => {
+    const user = userEvent.setup()
+    const onLoadMore = vi.fn()
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+          onLoadMoreMentionCandidates={onLoadMore}
+        />
+      </QueryClientProvider>,
+    )
+
+    await user.type(screen.getByLabelText('Message #general'), '@zzz')
+
+    expect(screen.getByText('No matches on this page.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Load more members…' }))
+    expect(onLoadMore).toHaveBeenCalledOnce()
   })
 
   it('sends a reply with both reference ids and clears the reply bar', async () => {
@@ -351,6 +482,117 @@ describe('MessageComposer', () => {
 })
 
 describe('MessageItem', () => {
+  it('supports mention selection while editing', async () => {
+    const user = userEvent.setup()
+    messageApi.updateMessage.mockResolvedValue({
+      ...sampleMessage,
+      content: '<@7>',
+      editedAt: 3_000,
+      revision: 2,
+      updatedAt: 3_000,
+    })
+    const message = {
+      ...sampleMessage,
+      content: 'Hello room',
+    }
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={message}
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+        />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    const editor = screen.getByDisplayValue('Hello room')
+    await user.clear(editor)
+    await user.type(editor, '@ale')
+    await user.click(screen.getByRole('option', { name: '@Alex Chen' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(messageApi.updateMessage).toHaveBeenCalledWith('102', {
+        attachmentAssetIds: [],
+        content: '<@7>',
+      }),
+    )
+  })
+
+  it('blocks role mentions before saving an edit without permission', async () => {
+    const user = userEvent.setup()
+    const message = {
+      ...sampleMessage,
+      content: 'Hello room',
+    }
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem canMentionRolesAndEveryone={false} currentUserId="7" message={message} />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    const editor = screen.getByDisplayValue('Hello room')
+    await user.clear(editor)
+    await user.type(editor, '<@&50> hello')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(messageApi.updateMessage).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('You do not have permission to mention roles or everyone in this channel.'),
+    ).toBeInTheDocument()
+  })
+
+  it('allows attachment-only edits for an existing restricted mention', async () => {
+    const user = userEvent.setup()
+    const message: ChannelMessageSummary = {
+      ...sampleMessage,
+      attachments: [
+        {
+          assetId: '1',
+          contentType: 'image/png',
+          filename: 'old.png',
+          height: 10,
+          size: 12,
+          url: 'https://cdn.example.com/old.png',
+          urlExpiresAt: 0,
+          width: 20,
+        },
+      ],
+      content: 'Hello <@&50>',
+      mentionRoleIds: ['50'],
+    }
+    messageApi.updateMessage.mockResolvedValue({
+      ...message,
+      attachments: [],
+      editedAt: 3_000,
+      revision: 2,
+      updatedAt: 3_000,
+    })
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem canMentionRolesAndEveryone={false} currentUserId="7" message={message} />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.contextMenu(screen.getByRole('article'))
+    await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
+    await user.click(screen.getByRole('button', { name: 'Remove old.png' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(messageApi.updateMessage).toHaveBeenCalledWith('102', {
+        attachmentAssetIds: [],
+      }),
+    )
+  })
+
   it('edits and deletes the current user message', async () => {
     const user = userEvent.setup()
     messageApi.updateMessage.mockResolvedValue({
@@ -679,7 +921,6 @@ describe('MessageItem', () => {
     await waitFor(() =>
       expect(messageApi.updateMessage).toHaveBeenCalledWith('102', {
         attachmentAssetIds: ['2'],
-        content: 'With file',
       }),
     )
   })

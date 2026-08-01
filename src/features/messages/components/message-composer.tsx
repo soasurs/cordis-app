@@ -21,23 +21,39 @@ import {
   PendingAttachmentChip,
   type PendingAttachmentDraft,
 } from '@/features/messages/components/pending-attachment-chip'
+import { MentionSuggestions } from '@/features/messages/components/mention-suggestions'
+import { MentionTextarea } from '@/features/messages/components/mention-textarea'
 import { upsertChannelMessageFromApi } from '@/features/messages/message-queries'
 import { markChannelReadThrough } from '@/features/messages/read-state-queries'
 import type { MessageReplyTarget } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
+import {
+  containsRoleOrEveryoneMention,
+  useMentionInput,
+  type MentionCandidate,
+  type MentionCandidateSearch,
+} from '@/features/messages/mentions'
 
 interface MessageComposerProps {
   canSend: boolean
+  canMentionRolesAndEveryone?: boolean
   channelId: string
   channelName: string
+  mentionCandidates?: MentionCandidate[]
   onClearReply?: () => void
+  onLoadMoreMentionCandidates?: () => void
+  onSearchMentionCandidates?: MentionCandidateSearch
   replyTo?: MessageReplyTarget
 }
 
 export function MessageComposer({
   canSend,
+  canMentionRolesAndEveryone = true,
   channelId,
   channelName,
+  mentionCandidates = [],
+  onLoadMoreMentionCandidates,
+  onSearchMentionCandidates,
   onClearReply,
   replyTo,
 }: MessageComposerProps) {
@@ -50,6 +66,15 @@ export function MessageComposer({
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState<PendingAttachmentDraft[]>([])
   const [error, setError] = useState<string>()
+  const mentionInput = useMentionInput(
+    draft,
+    setDraft,
+    mentionCandidates,
+    onLoadMoreMentionCandidates,
+    textareaRef,
+    onSearchMentionCandidates,
+    canMentionRolesAndEveryone,
+  )
 
   const focusComposer = () => {
     textareaRef.current?.focus()
@@ -122,11 +147,15 @@ export function MessageComposer({
     !sendMutation.isPending &&
     !hasUploading &&
     (trimmed.length > 0 || readyAttachments.length > 0)
-
   const submit = (event?: FormEvent) => {
     event?.preventDefault()
     if (!canSubmit) return
     const content = trimmed
+    if (!canMentionRolesAndEveryone && containsRoleOrEveryoneMention(content)) {
+      setError('You do not have permission to mention roles or everyone in this channel.')
+      queueMicrotask(focusComposer)
+      return
+    }
     const attachmentAssetIds = readyAttachments.map((attachment) => attachment.assetId)
     const referencedChannelId = replyTo?.channelId
     const referencedMessageId = replyTo?.id
@@ -143,6 +172,7 @@ export function MessageComposer({
     sendIntentRef.current = intent
     // Clear the text immediately so the next message can be typed while this send is in flight.
     setDraft('')
+    mentionInput.reset()
     setError(undefined)
     sendMutation.mutate(
       {
@@ -163,6 +193,7 @@ export function MessageComposer({
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionInput.handleKeyDown(event)) return
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       submit()
@@ -310,7 +341,7 @@ export function MessageComposer({
       className="border-t border-line px-3 pt-2 pb-3 sm:px-4 sm:pt-2.5 sm:pb-4"
       onSubmit={submit}
     >
-      <div className="rounded-control border border-line bg-surface-raised focus-within:border-brand">
+      <div className="relative rounded-control border border-line bg-surface-raised focus-within:border-brand">
         {replyTo ? (
           <div className="flex items-center gap-2 border-b border-line px-3 py-2">
             <span
@@ -378,14 +409,29 @@ export function MessageComposer({
           <label className="sr-only" htmlFor={`message-composer-${channelId}`}>
             Message #{channelName}
           </label>
-          <textarea
+          <MentionTextarea
             ref={textareaRef}
+            mentionCandidates={mentionInput.draftMentionCandidates}
             id={`message-composer-${channelId}`}
             rows={1}
             value={draft}
             placeholder={replyTo ? `Reply to ${replyTo.authorName}` : `Message #${channelName}`}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) =>
+              mentionInput.updateDraft(
+                event.target.value,
+                event.target.selectionStart ?? event.target.value.length,
+              )
+            }
             onKeyDown={onKeyDown}
+            onSelect={(event) => {
+              const target = event.currentTarget
+              mentionInput.handleSelect(target.value, target.selectionStart, target.selectionEnd)
+            }}
+            aria-autocomplete="list"
+            aria-controls={
+              mentionInput.showMentionSuggestions ? `mention-suggestions-${channelId}` : undefined
+            }
+            aria-expanded={mentionInput.showMentionSuggestions}
             className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-ink outline-none placeholder:text-subtle"
           />
           <Button
@@ -398,6 +444,11 @@ export function MessageComposer({
             Send
           </Button>
         </div>
+        <MentionSuggestions
+          input={mentionInput}
+          listId={`mention-suggestions-${channelId}`}
+          onLoadMore={onLoadMoreMentionCandidates}
+        />
       </div>
       {error ? (
         <p role="alert" className="mt-2 text-xs text-negative">

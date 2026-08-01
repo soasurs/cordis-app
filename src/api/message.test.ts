@@ -65,6 +65,7 @@ describe('message API', () => {
           attachments: [sampleAttachment],
           author: {
             avatarAssetId: 11n,
+            bio: '',
             createdAt: 1_000n,
             name: 'Alex Chen',
             updatedAt: 1_000n,
@@ -77,6 +78,9 @@ describe('message API', () => {
           editedAt: 0n,
           flags: 0,
           id: 102n,
+          mentionEveryone: true,
+          mentionRoleIds: [50n],
+          mentionUserIds: [7n],
           referencedChannelId: 0n,
           referencedMessageId: 0n,
           revision: 1n,
@@ -87,6 +91,7 @@ describe('message API', () => {
           attachments: [],
           author: {
             avatarAssetId: 0n,
+            bio: '',
             createdAt: 1_000n,
             name: 'Maya',
             updatedAt: 1_000n,
@@ -127,6 +132,7 @@ describe('message API', () => {
           ],
           author: {
             avatarAssetId: '11',
+            bio: '',
             createdAt: 1_000,
             name: 'Alex Chen',
             updatedAt: 1_000,
@@ -139,6 +145,9 @@ describe('message API', () => {
           editedAt: 0,
           flags: 0,
           id: '102',
+          mentionEveryone: true,
+          mentionRoleIds: ['50'],
+          mentionUserIds: ['7'],
           referencedChannelId: undefined,
           referencedMessageId: undefined,
           revision: 1,
@@ -149,6 +158,7 @@ describe('message API', () => {
           attachments: [],
           author: {
             avatarAssetId: '0',
+            bio: '',
             createdAt: 1_000,
             name: 'Maya',
             updatedAt: 1_000,
@@ -161,6 +171,9 @@ describe('message API', () => {
           editedAt: 0,
           flags: 0,
           id: '101',
+          mentionEveryone: false,
+          mentionRoleIds: [],
+          mentionUserIds: [],
           referencedChannelId: undefined,
           referencedMessageId: undefined,
           revision: 1,
@@ -389,6 +402,32 @@ describe('message API', () => {
     )
     expect(messageClient.updateMessage).toHaveBeenCalledWith({
       content: 'Edited',
+      messageId: 200n,
+    })
+
+    messageClient.updateMessage.mockResolvedValue({
+      message: {
+        attachments: [sampleAttachment],
+        author: sampleAuthor,
+        channelId: 43n,
+        content: 'Edited',
+        createdAt: 3_000n,
+        editedAt: 4_000n,
+        flags: 0,
+        id: 200n,
+        referencedChannelId: 0n,
+        referencedMessageId: 0n,
+        revision: 2n,
+        type: 1,
+        updatedAt: 4_000n,
+      },
+    })
+
+    await expect(updateMessage('200', { attachmentAssetIds: ['900'] })).resolves.toEqual(
+      expect.objectContaining({ content: 'Edited', revision: 2 }),
+    )
+    expect(messageClient.updateMessage).toHaveBeenLastCalledWith({
+      attachments: { attachments: [{ assetId: 900n }] },
       messageId: 200n,
     })
 

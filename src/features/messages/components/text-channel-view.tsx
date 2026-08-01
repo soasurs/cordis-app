@@ -10,6 +10,10 @@ import type { GuildChannelSummary } from '@/features/guilds/guild-queries'
 import { MessageComposer } from '@/features/messages/components/message-composer'
 import { MessageItem } from '@/features/messages/components/message-item'
 import {
+  extractDirectMentionUserIds,
+  useGuildMentionCandidates,
+} from '@/features/messages/mentions'
+import {
   channelHasNewerMessages,
   channelMessagesInfiniteQueryOptions,
   findChannelMessageInCache,
@@ -49,11 +53,17 @@ function scrollToAbsoluteBottom(element: HTMLDivElement) {
 
 interface TextChannelViewProps {
   canManageMessages: boolean
+  canMentionRolesAndEveryone: boolean
   canSend: boolean
   channel: GuildChannelSummary
 }
 
-export function TextChannelView({ canManageMessages, canSend, channel }: TextChannelViewProps) {
+export function TextChannelView({
+  canManageMessages,
+  canMentionRolesAndEveryone,
+  canSend,
+  channel,
+}: TextChannelViewProps) {
   const queryClient = useQueryClient()
   const { data: session } = useQuery(authSessionQueryOptions)
   const { data: readStates = {} } = useQuery({
@@ -64,6 +74,24 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
   })
   const messagesQuery = useInfiniteQuery(channelMessagesInfiniteQueryOptions(channel.id))
   const messages = flattenMessagesChronological(messagesQuery.data)
+  const hasMentions = messages.some(
+    (message) =>
+      message.mentionEveryone ||
+      message.mentionRoleIds.length > 0 ||
+      message.mentionUserIds.length > 0,
+  )
+  const directMentionUserIds = [
+    ...new Set(messages.flatMap((message) => extractDirectMentionUserIds(message.content))),
+  ]
+  const mentionCandidatesQuery = useGuildMentionCandidates(
+    channel.guildId,
+    channel.id,
+    hasMentions,
+    directMentionUserIds,
+  )
+  const loadMoreMentionCandidates = mentionCandidatesQuery.fetchNextMembersPage
+    ? () => void mentionCandidatesQuery.fetchNextMembersPage?.()
+    : undefined
   const pageCount = messagesQuery.data?.pages.length ?? 0
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -435,10 +463,14 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
                 >
                   <MessageItem
                     canManageMessages={canManageMessages}
+                    canMentionRolesAndEveryone={canMentionRolesAndEveryone}
                     message={message}
                     currentUserId={currentUserId}
+                    mentionCandidates={mentionCandidatesQuery.candidates}
                     onJumpToMessage={jumpToMessage}
+                    onLoadMoreMentionCandidates={loadMoreMentionCandidates}
                     onReply={canSend ? startReply : undefined}
+                    onSearchMentionCandidates={mentionCandidatesQuery.searchMentionCandidates}
                   />
                 </div>
               ))}
@@ -461,11 +493,15 @@ export function TextChannelView({ canManageMessages, canSend, channel }: TextCha
       </div>
 
       <MessageComposer
+        canMentionRolesAndEveryone={canMentionRolesAndEveryone}
         canSend={canSend}
         channelId={channel.id}
         channelName={channel.name}
+        mentionCandidates={mentionCandidatesQuery.candidates}
         replyTo={replyTo}
+        onLoadMoreMentionCandidates={loadMoreMentionCandidates}
         onClearReply={() => setReplyTo(undefined)}
+        onSearchMentionCandidates={mentionCandidatesQuery.searchMentionCandidates}
       />
     </div>
   )

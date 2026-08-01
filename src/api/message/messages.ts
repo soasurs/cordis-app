@@ -115,20 +115,23 @@ export async function updateMessage(
   details: UpdateChannelMessageDetails,
 ): Promise<ChannelMessage> {
   assertIdentifier(messageId, 'message')
-  const content = details.content.trim()
+  const content = details.content?.trim()
   const attachmentAssetIds = details.attachmentAssetIds
   if (attachmentAssetIds) {
     for (const assetId of attachmentAssetIds) {
       assertIdentifier(assetId, 'attachment asset')
     }
   }
-  if (!content && (!attachmentAssetIds || attachmentAssetIds.length === 0)) {
+  if (
+    (content === undefined && attachmentAssetIds === undefined) ||
+    (content === '' && (!attachmentAssetIds || attachmentAssetIds.length === 0))
+  ) {
     throw new Error('message content or attachments are required')
   }
 
   const response = await messageClient.updateMessage({
     messageId: BigInt(messageId),
-    content,
+    ...(content !== undefined ? { content } : {}),
     ...(attachmentAssetIds
       ? {
           attachments: {
@@ -163,6 +166,9 @@ export function toChannelMessage(message: ProtoMessage): ChannelMessage {
     editedAt: Number(message.editedAt),
     flags: message.flags,
     id: message.id.toString(),
+    mentionEveryone: message.mentionEveryone ?? false,
+    mentionRoleIds: (message.mentionRoleIds ?? []).map((id) => id.toString()),
+    mentionUserIds: (message.mentionUserIds ?? []).map((id) => id.toString()),
     referencedChannelId: optionalId(message.referencedChannelId),
     referencedMessageId: optionalId(message.referencedMessageId),
     revision: Number(message.revision),

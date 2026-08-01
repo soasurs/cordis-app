@@ -24,6 +24,8 @@ import {
   validateMessageAttachmentFile,
 } from '@/features/messages/attachment-validation'
 import { MessageVideoPlayer } from '@/features/messages/components/message-video-player'
+import { MentionSuggestions } from '@/features/messages/components/mention-suggestions'
+import { MentionTextarea } from '@/features/messages/components/mention-textarea'
 import {
   ExistingAttachmentChip,
   PendingAttachmentChip,
@@ -38,14 +40,25 @@ import {
 } from '@/features/messages/message-queries'
 import { toMessageContentPreview } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
+import {
+  containsNewRoleOrEveryoneMention,
+  renderMessageContent,
+  useMentionInput,
+  type MentionCandidate,
+  type MentionCandidateSearch,
+} from '@/features/messages/mentions'
 
 interface MessageItemProps {
   /** Guild-level manageMessages (owner / admin / role); channel overwrites come later. */
   canManageMessages?: boolean
+  canMentionRolesAndEveryone?: boolean
   currentUserId?: string
   message: ChannelMessageSummary
+  mentionCandidates?: MentionCandidate[]
   onJumpToMessage?: (messageId: string) => void
+  onLoadMoreMentionCandidates?: () => void
   onReply?: (message: ChannelMessageSummary) => void
+  onSearchMentionCandidates?: MentionCandidateSearch
 }
 
 interface ContextMenuPosition {
@@ -57,14 +70,19 @@ const CONTEXT_MENU_WIDTH = 168
 
 export function MessageItem({
   canManageMessages = false,
+  canMentionRolesAndEveryone = true,
   currentUserId,
   message,
+  mentionCandidates = [],
   onJumpToMessage,
+  onLoadMoreMentionCandidates,
   onReply,
+  onSearchMentionCandidates,
 }: MessageItemProps) {
   const queryClient = useQueryClient()
   const fileInputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingRef = useRef<PendingAttachmentDraft[]>([])
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(message.content)
@@ -74,6 +92,15 @@ export function MessageItem({
   const [menu, setMenu] = useState<ContextMenuPosition | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const mentionInput = useMentionInput(
+    draft,
+    setDraft,
+    mentionCandidates,
+    onLoadMoreMentionCandidates,
+    textareaRef,
+    onSearchMentionCandidates,
+    canMentionRolesAndEveryone,
+  )
   const isOwn = Boolean(currentUserId && message.author?.userId === currentUserId)
   const canEdit = isOwn
   const canDelete = isOwn || canManageMessages
@@ -87,10 +114,10 @@ export function MessageItem({
   const initials = getInitials(displayName, username)
 
   const updateMutation = useMutation({
-    mutationFn: (input: { content: string; attachmentAssetIds: string[] }) =>
+    mutationFn: (input: { content?: string; attachmentAssetIds: string[] }) =>
       updateMessage(message.id, {
         attachmentAssetIds: input.attachmentAssetIds,
-        content: input.content,
+        ...(input.content !== undefined ? { content: input.content } : {}),
       }),
     onSuccess: (updated) => {
       upsertChannelMessageFromApi(queryClient, updated)
@@ -163,6 +190,7 @@ export function MessageItem({
   const startEdit = () => {
     clearPending()
     setDraft(message.content)
+    mentionInput.reset()
     setKeptAttachments(message.attachments)
     setEditing(true)
     setMenu(null)
@@ -173,6 +201,7 @@ export function MessageItem({
     clearPending()
     setEditing(false)
     setDraft(message.content)
+    mentionInput.reset()
     setKeptAttachments([])
     setError(undefined)
   }
@@ -205,13 +234,19 @@ export function MessageItem({
       return
     }
 
+    if (!canMentionRolesAndEveryone && containsNewRoleOrEveryoneMention(message.content, trimmed)) {
+      setError('You do not have permission to mention roles or everyone in this channel.')
+      return
+    }
+
     updateMutation.mutate({
       attachmentAssetIds: nextAttachmentIds,
-      content: trimmed,
+      ...(contentUnchanged ? {} : { content: trimmed }),
     })
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionInput.handleKeyDown(event)) return
     if (event.key === 'Escape') {
       event.preventDefault()
       cancelEdit()
@@ -370,7 +405,7 @@ export function MessageItem({
 
           {editing ? (
             <form className="mt-1.5" onSubmit={submitEdit}>
-              <div className="rounded-control border border-line bg-surface-raised focus-within:border-brand">
+              <div className="relative rounded-control border border-line bg-surface-raised focus-within:border-brand">
                 {keptAttachments.length > 0 || pending.length > 0 ? (
                   <ul
                     className="flex flex-wrap gap-2 border-b border-line px-2 pt-2.5 pb-2"
@@ -422,15 +457,42 @@ export function MessageItem({
                   >
                     +
                   </Button>
-                  <textarea
+                  <MentionTextarea
+                    ref={textareaRef}
+                    mentionCandidates={mentionInput.draftMentionCandidates}
                     value={draft}
                     rows={3}
                     disabled={updateMutation.isPending}
-                    onChange={(event) => setDraft(event.target.value)}
+                    onChange={(event) =>
+                      mentionInput.updateDraft(
+                        event.target.value,
+                        event.target.selectionStart ?? event.target.value.length,
+                      )
+                    }
                     onKeyDown={onKeyDown}
+                    onSelect={(event) => {
+                      const target = event.currentTarget
+                      mentionInput.handleSelect(
+                        target.value,
+                        target.selectionStart,
+                        target.selectionEnd,
+                      )
+                    }}
+                    aria-autocomplete="list"
+                    aria-controls={
+                      mentionInput.showMentionSuggestions
+                        ? `mention-suggestions-${message.id}`
+                        : undefined
+                    }
+                    aria-expanded={mentionInput.showMentionSuggestions}
                     className="max-h-48 min-h-16 min-w-0 flex-1 resize-y bg-transparent py-2 text-sm leading-5 text-ink outline-none"
                   />
                 </div>
+                <MentionSuggestions
+                  input={mentionInput}
+                  listId={`mention-suggestions-${message.id}`}
+                  onLoadMore={onLoadMoreMentionCandidates}
+                />
               </div>
               <div className="mt-2 flex gap-2">
                 <Button
@@ -450,7 +512,7 @@ export function MessageItem({
             <>
               {message.content ? (
                 <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-ink">
-                  {message.content}
+                  {renderMessageContent(message, mentionInput.mentionCandidates)}
                 </p>
               ) : null}
               {message.attachments.length > 0 ? (

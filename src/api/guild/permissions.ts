@@ -11,6 +11,7 @@ export const guildPermission = {
   manageMembers: String(GuildPermission.MANAGE_MEMBERS),
   manageMessages: String(GuildPermission.MANAGE_MESSAGES),
   manageRoles: String(GuildPermission.MANAGE_ROLES),
+  mentionEveryone: String(GuildPermission.MENTION_EVERYONE),
   sendMessages: String(GuildPermission.SEND_MESSAGES),
   viewChannel: String(GuildPermission.VIEW_CHANNEL),
 } as const

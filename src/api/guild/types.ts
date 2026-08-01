@@ -75,6 +75,15 @@ export interface GuildMemberPage {
   nextCursor?: string
 }
 
+/** A member returned by the channel-aware mention search endpoint. */
+export interface GuildMentionUser {
+  avatarAssetId: string
+  name: string
+  nickname: string
+  userId: string
+  username: string
+}
+
 export interface GuildInvite {
   code: string
   createdAt: number

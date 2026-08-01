@@ -7,6 +7,7 @@ import {
   getChannelOverwritePermissionState,
   guildPermissionGroups,
   memberHasGuildPermission,
+  resolveEffectiveGuildChannelPermissions,
   resolveHeldGuildRoles,
   setChannelOverwritePermissionState,
 } from '@/features/guilds/components/guild-permissions'
@@ -51,6 +52,80 @@ describe('combineGuildRolePermissions', () => {
   })
 })
 
+describe('resolveEffectiveGuildChannelPermissions', () => {
+  it('applies default role, assigned role, then member overwrites', () => {
+    const permissions = resolveEffectiveGuildChannelPermissions({
+      guildId: '42',
+      isOwner: false,
+      memberRoles: [everyone, moderators],
+      overwrites: [
+        {
+          allow: '0',
+          appliesTo: 'role',
+          appliesToId: '42',
+          channelId: '43',
+          createdAt: 1,
+          deny: guildPermission.mentionEveryone,
+          guildId: '42',
+          revision: 1,
+          updatedAt: 1,
+        },
+        {
+          allow: guildPermission.mentionEveryone,
+          appliesTo: 'role',
+          appliesToId: '50',
+          channelId: '43',
+          createdAt: 1,
+          deny: '0',
+          guildId: '42',
+          revision: 1,
+          updatedAt: 1,
+        },
+        {
+          allow: '0',
+          appliesTo: 'member',
+          appliesToId: '7',
+          channelId: '43',
+          createdAt: 1,
+          deny: guildPermission.mentionEveryone,
+          guildId: '42',
+          revision: 1,
+          updatedAt: 1,
+        },
+      ],
+      permissions: `2080`,
+      userId: '7',
+    })
+
+    expect(permissions).toBe('32')
+  })
+
+  it('does not apply role overwrites for roles the member does not hold', () => {
+    expect(
+      resolveEffectiveGuildChannelPermissions({
+        guildId: '42',
+        isOwner: false,
+        memberRoles: [everyone],
+        overwrites: [
+          {
+            allow: '0',
+            appliesTo: 'role',
+            appliesToId: '50',
+            channelId: '43',
+            createdAt: 1,
+            deny: guildPermission.mentionEveryone,
+            guildId: '42',
+            revision: 1,
+            updatedAt: 1,
+          },
+        ],
+        permissions: '2080',
+        userId: '7',
+      }),
+    ).toBe('2080')
+  })
+})
+
 describe('memberHasGuildPermission', () => {
   it('grants Manage Channels from the flag or Administrator', () => {
     expect(memberHasGuildPermission('32', guildPermission.manageChannels)).toBe(false)
@@ -78,6 +153,7 @@ describe('channelPermissionGroups', () => {
       guildPermission.manageRoles,
       guildPermission.createInvite,
       guildPermission.sendMessages,
+      guildPermission.mentionEveryone,
       guildPermission.manageMessages,
     ])
   })
