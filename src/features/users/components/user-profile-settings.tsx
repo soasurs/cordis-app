@@ -80,6 +80,7 @@ export function UserProfileSettings({ session }: { session: CurrentUser }) {
     }) => {
       let uploadId: string | undefined
       let shouldAbortUpload = false
+      let completionStarted = false
       const clearIntent = () => {
         const currentIntent = avatarIntentRef.current
         if (currentIntent && currentIntent.file === avatarFile && currentIntent.userId === userId) {
@@ -103,6 +104,7 @@ export function UserProfileSettings({ session }: { session: CurrentUser }) {
             await putToPresignedUrl(avatarFile, upload)
           }
           details.avatarAssetId = upload.uploadId
+          completionStarted = true
         }
         return await updateUserProfile(details)
       } catch (error) {
@@ -110,7 +112,7 @@ export function UserProfileSettings({ session }: { session: CurrentUser }) {
           clearIntent()
           throw error
         }
-        if (uploadId && shouldAbortUpload) {
+        if (uploadId && shouldAbortUpload && !completionStarted) {
           let abortSucceeded = false
           try {
             await abortAvatarUpload(uploadId)

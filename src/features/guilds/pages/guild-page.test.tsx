@@ -118,6 +118,7 @@ const channels: GuildChannelSummary[] = [
 
 beforeEach(() => {
   vi.clearAllMocks()
+  guildApi.listGuildChannels.mockResolvedValue(channels)
   guildApi.listGuildRoles.mockResolvedValue([everyoneRole])
   guildApi.listGuildMemberRoles.mockResolvedValue([])
   messageApi.getReadStatesForGuild.mockResolvedValue([])
@@ -230,6 +231,7 @@ describe('GuildPage', () => {
 
   it('creates only text or voice channels inside a category and selects the result', async () => {
     const queryClient = createQueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
     const onSelectChannel = vi.fn()
     const createdChannel: GuildChannelSummary = {
       guildId: '42',
@@ -241,6 +243,7 @@ describe('GuildPage', () => {
       topic: '',
       type: 3,
     }
+    guildApi.listGuildChannels.mockResolvedValue([...channels, createdChannel])
     guildApi.createGuildChannel.mockResolvedValue({
       channel: createdChannel,
       channelLayoutRevision: 1,
@@ -274,6 +277,11 @@ describe('GuildPage', () => {
     })
     expect(queryClient.getQueryData(guildChannelsQueryKey('42'))).toContainEqual(createdChannel)
     expect(onSelectChannel).toHaveBeenCalledWith('47')
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      exact: true,
+      queryKey: guildChannelsQueryKey('42'),
+      refetchType: 'all',
+    })
   })
 
   it('creates and selects a top-level channel from the community menu', async () => {
@@ -288,6 +296,7 @@ describe('GuildPage', () => {
       topic: '',
       type: 1,
     }
+    guildApi.listGuildChannels.mockResolvedValue([...channels, createdChannel])
     guildApi.createGuildChannel.mockResolvedValue({
       channel: createdChannel,
       channelLayoutRevision: 1,
@@ -353,6 +362,7 @@ describe('GuildPage', () => {
       topic: '',
       type: 2,
     }
+    guildApi.listGuildChannels.mockResolvedValue([...channels, createdCategory])
     guildApi.createGuildChannel.mockResolvedValue({
       channel: createdCategory,
       channelLayoutRevision: 1,

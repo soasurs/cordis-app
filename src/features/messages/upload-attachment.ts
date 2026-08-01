@@ -6,7 +6,7 @@ import {
   type MessageAttachment,
 } from '@/api/message'
 
-/** Upload one file through create → PUT → complete; abort on failure after create. */
+/** Upload one file through create → PUT → complete; abort only before completion starts. */
 export async function uploadMessageAttachment(
   channelId: string,
   file: File,
@@ -23,6 +23,7 @@ export async function uploadMessageAttachment(
     throw new UploadIntentRetiredError(upload.status)
   }
 
+  let completionStarted = false
   try {
     if (upload.status === 'created') {
       if (!upload.presignedUrl) {
@@ -30,10 +31,11 @@ export async function uploadMessageAttachment(
       }
       await putToPresignedUrl(file, upload)
     }
+    completionStarted = true
     return await completeAttachmentUpload(channelId, upload.uploadId)
   } catch (error) {
     let abortSucceeded = false
-    if (upload.status === 'created' && upload.presignedUrl) {
+    if (!completionStarted && upload.status === 'created' && upload.presignedUrl) {
       try {
         await abortAttachmentUpload(channelId, upload.uploadId)
         abortSucceeded = true

@@ -290,18 +290,33 @@ describe('GuildSettingsPage', () => {
     )
   })
 
-  it('aborts an upload when completion fails after a successful PUT', async () => {
-    guildApi.createGuildIconUpload.mockResolvedValue({
-      expiresAt: 1_800_000,
-      idempotentReplay: false,
-      presignedUrl: 'https://storage.example/upload',
-      requestHeaders: { 'Content-Type': 'image/png' },
-      status: 'created',
-      uploadId: '99',
-    })
+  it('keeps the upload intent and retries completion after a successful PUT', async () => {
+    guildApi.createGuildIconUpload
+      .mockResolvedValueOnce({
+        expiresAt: 1_800_000,
+        idempotentReplay: false,
+        presignedUrl: 'https://storage.example/upload',
+        requestHeaders: { 'Content-Type': 'image/png' },
+        status: 'created',
+        uploadId: '99',
+      })
+      .mockResolvedValueOnce({
+        expiresAt: 1_800_000,
+        idempotentReplay: true,
+        presignedUrl: '',
+        requestHeaders: {},
+        status: 'completing',
+        uploadId: '99',
+      })
     assetsApi.putToPresignedUrl.mockResolvedValue(undefined)
-    guildApi.completeGuildIconUpload.mockRejectedValue(new Error('complete failed'))
-    guildApi.abortGuildIconUpload.mockResolvedValue(undefined)
+    guildApi.completeGuildIconUpload
+      .mockRejectedValueOnce(new Error('complete failed'))
+      .mockResolvedValueOnce({
+        ...guild,
+        iconAssetId: '99',
+        revision: 2,
+        updatedAt: 2_000,
+      })
     renderSettings(createQueryClient())
     const user = userEvent.setup()
     const file = new File(['icon-bytes'], 'icon.png', { type: 'image/png' })
@@ -309,11 +324,23 @@ describe('GuildSettingsPage', () => {
     await user.upload(screen.getByLabelText('Upload community icon'), file)
     await user.click(await screen.findByRole('button', { name: 'Upload' }))
 
-    await waitFor(() => expect(guildApi.abortGuildIconUpload).toHaveBeenCalledWith('42', '99'))
-    expect(assetsApi.putToPresignedUrl).toHaveBeenCalledOnce()
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Unable to update the community icon. Please try again.',
     )
+    expect(guildApi.abortGuildIconUpload).not.toHaveBeenCalled()
+    expect(assetsApi.putToPresignedUrl).toHaveBeenCalledOnce()
+    const retryButton = screen.getByRole('button', { name: 'Retry icon upload' })
+    await user.click(retryButton)
+
+    await waitFor(() => expect(guildApi.completeGuildIconUpload).toHaveBeenCalledTimes(2))
+    expect(guildApi.createGuildIconUpload).toHaveBeenCalledTimes(2)
+    expect(assetsApi.putToPresignedUrl).toHaveBeenCalledOnce()
+    expect(guildApi.createGuildIconUpload.mock.calls[1]?.[1]).toEqual(
+      expect.objectContaining({
+        idempotencyKey: guildApi.createGuildIconUpload.mock.calls[0]?.[1].idempotencyKey,
+      }),
+    )
+    expect(guildApi.abortGuildIconUpload).not.toHaveBeenCalled()
   })
 
   it('cancels cropping without starting an upload', async () => {

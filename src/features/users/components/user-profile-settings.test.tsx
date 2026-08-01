@@ -111,7 +111,12 @@ describe('UserProfileSettings', () => {
     })
   })
 
-  it('uploads the cropped avatar and aborts the unpublished upload when saving fails', async () => {
+  it('keeps the avatar intent when saving fails after the upload has started', async () => {
+    const updatedProfile = {
+      ...profile,
+      avatarAssetId: 19n,
+      updatedAt: 3_000n,
+    }
     userApi.createAvatarUpload.mockResolvedValue({
       expiresAt: 8_000,
       idempotentReplay: false,
@@ -120,7 +125,9 @@ describe('UserProfileSettings', () => {
       status: 'created',
       uploadId: '19',
     })
-    userApi.updateUserProfile.mockRejectedValue(new Error('update failed'))
+    userApi.updateUserProfile
+      .mockRejectedValueOnce(new Error('update failed'))
+      .mockResolvedValueOnce(updatedProfile)
     renderSettings()
     const user = userEvent.setup()
     const file = new File(['avatar'], 'avatar.png', { type: 'image/png' })
@@ -140,7 +147,41 @@ describe('UserProfileSettings', () => {
       expect.objectContaining({ uploadId: '19' }),
     )
     expect(userApi.updateUserProfile).toHaveBeenCalledWith({ avatarAssetId: '19' })
+    expect(userApi.abortAvatarUpload).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Profile saved.')
+    expect(userApi.createAvatarUpload).toHaveBeenCalledTimes(2)
+    expect(userApi.createAvatarUpload.mock.calls[1]?.[1]).toEqual(
+      expect.objectContaining({
+        idempotencyKey: userApi.createAvatarUpload.mock.calls[0]?.[1].idempotencyKey,
+      }),
+    )
+    expect(userApi.abortAvatarUpload).not.toHaveBeenCalled()
+  })
+
+  it('aborts the avatar upload when the direct PUT fails', async () => {
+    userApi.createAvatarUpload.mockResolvedValue({
+      expiresAt: 8_000,
+      idempotentReplay: false,
+      presignedUrl: 'https://upload.example/avatar',
+      requestHeaders: { 'content-type': 'image/png' },
+      status: 'created',
+      uploadId: '19',
+    })
+    assetsApi.putToPresignedUrl.mockRejectedValue(new Error('upload failed'))
+    userApi.abortAvatarUpload.mockResolvedValue(undefined)
+    renderSettings()
+    const user = userEvent.setup()
+    const file = new File(['avatar'], 'avatar.png', { type: 'image/png' })
+
+    await waitFor(() => expect(screen.getByLabelText('Upload profile photo')).toBeEnabled())
+    await user.upload(screen.getByLabelText('Upload profile photo'), file)
+    await user.click(screen.getByRole('button', { name: 'Use cropped image' }))
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+
     await waitFor(() => expect(userApi.abortAvatarUpload).toHaveBeenCalledWith('19'))
+    expect(userApi.updateUserProfile).not.toHaveBeenCalled()
   })
 
   it('completes an already-terminal avatar replay without uploading again', async () => {

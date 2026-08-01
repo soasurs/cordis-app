@@ -80,6 +80,26 @@ describe('uploadMessageAttachment', () => {
     expect(messageApi.completeAttachmentUpload).not.toHaveBeenCalled()
   })
 
+  it('keeps the upload intent when completion fails after the PUT', async () => {
+    messageApi.createAttachmentUpload.mockResolvedValue({
+      expiresAt: 9_000,
+      idempotentReplay: false,
+      presignedUrl: 'https://upload.example.com/put',
+      requestHeaders: {},
+      status: 'created',
+      uploadId: '55',
+    })
+    assetsApi.putToPresignedUrl.mockResolvedValue(undefined)
+    messageApi.completeAttachmentUpload.mockRejectedValue(new Error('complete failed'))
+
+    const file = new File(['abcd'], 'shot.png', { type: 'image/png' })
+    await expect(uploadMessageAttachment('43', file, 'attachment-intent')).rejects.toThrow(
+      'complete failed',
+    )
+    expect(messageApi.completeAttachmentUpload).toHaveBeenCalledWith('43', '55')
+    expect(messageApi.abortAttachmentUpload).not.toHaveBeenCalled()
+  })
+
   it('skips the PUT when an idempotent replay is already terminal', async () => {
     messageApi.createAttachmentUpload.mockResolvedValue({
       expiresAt: 9_000,
