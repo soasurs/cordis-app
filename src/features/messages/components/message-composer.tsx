@@ -411,7 +411,7 @@ export function MessageComposer({
           </label>
           <MentionTextarea
             ref={textareaRef}
-            mentionCandidates={mentionInput.mentionCandidates}
+            mentionCandidates={mentionInput.draftMentionCandidates}
             id={`message-composer-${channelId}`}
             rows={1}
             value={draft}

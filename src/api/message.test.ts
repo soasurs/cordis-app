@@ -410,6 +410,32 @@ describe('message API', () => {
         attachments: [sampleAttachment],
         author: sampleAuthor,
         channelId: 43n,
+        content: 'Edited',
+        createdAt: 3_000n,
+        editedAt: 4_000n,
+        flags: 0,
+        id: 200n,
+        referencedChannelId: 0n,
+        referencedMessageId: 0n,
+        revision: 2n,
+        type: 1,
+        updatedAt: 4_000n,
+      },
+    })
+
+    await expect(updateMessage('200', { attachmentAssetIds: ['900'] })).resolves.toEqual(
+      expect.objectContaining({ content: 'Edited', revision: 2 }),
+    )
+    expect(messageClient.updateMessage).toHaveBeenLastCalledWith({
+      attachments: { attachments: [{ assetId: 900n }] },
+      messageId: 200n,
+    })
+
+    messageClient.updateMessage.mockResolvedValue({
+      message: {
+        attachments: [sampleAttachment],
+        author: sampleAuthor,
+        channelId: 43n,
         content: '',
         createdAt: 3_000n,
         editedAt: 5_000n,

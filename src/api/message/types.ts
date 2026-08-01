@@ -70,7 +70,8 @@ export interface UpdateChannelMessageDetails {
    * Omit to leave existing attachments unchanged.
    */
   attachmentAssetIds?: string[]
-  content: string
+  /** When set, replaces the content; omit to leave existing content unchanged. */
+  content?: string
 }
 
 export interface ListChannelMessagesOptions {

@@ -115,20 +115,23 @@ export async function updateMessage(
   details: UpdateChannelMessageDetails,
 ): Promise<ChannelMessage> {
   assertIdentifier(messageId, 'message')
-  const content = details.content.trim()
+  const content = details.content?.trim()
   const attachmentAssetIds = details.attachmentAssetIds
   if (attachmentAssetIds) {
     for (const assetId of attachmentAssetIds) {
       assertIdentifier(assetId, 'attachment asset')
     }
   }
-  if (!content && (!attachmentAssetIds || attachmentAssetIds.length === 0)) {
+  if (
+    (content === undefined && attachmentAssetIds === undefined) ||
+    (content === '' && (!attachmentAssetIds || attachmentAssetIds.length === 0))
+  ) {
     throw new Error('message content or attachments are required')
   }
 
   const response = await messageClient.updateMessage({
     messageId: BigInt(messageId),
-    content,
+    ...(content !== undefined ? { content } : {}),
     ...(attachmentAssetIds
       ? {
           attachments: {

@@ -1,10 +1,11 @@
 import { createElement } from 'react'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, render, renderHook, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createMentionCandidates,
   createMentionCandidatesFromSearch,
+  containsNewRoleOrEveryoneMention,
   containsRoleOrEveryoneMention,
   extractDirectMentionUserIds,
   filterMentionCandidatesByPermission,
@@ -14,7 +15,12 @@ import {
   renderMessageContent,
   replaceMentionTrigger,
   type MentionCandidate,
+  useMentionInput,
 } from '@/features/messages/mentions'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 const candidates: MentionCandidate[] = [
   {
@@ -59,11 +65,36 @@ describe('message mentions', () => {
     expect(filterMentionCandidatesByPermission(candidates, true)).toEqual(candidates)
   })
 
+  it('keeps full candidates for rendering but filters draft candidates', () => {
+    const { result } = renderHook(() => useMentionInputForTest(false))
+
+    expect(result.current.mentionCandidates).toEqual(candidates)
+    expect(result.current.draftMentionCandidates).toEqual([candidates[2]])
+  })
+
   it('detects unescaped role and everyone markup for submit validation', () => {
     expect(containsRoleOrEveryoneMention('<@&50>')).toBe(true)
     expect(containsRoleOrEveryoneMention('hello @everyone')).toBe(true)
     expect(containsRoleOrEveryoneMention('hello \\@everyone \\<@&50>')).toBe(false)
     expect(containsRoleOrEveryoneMention('hello @everyones')).toBe(false)
+    expect(containsNewRoleOrEveryoneMention('hello <@&50>', 'hello <@&50>')).toBe(false)
+    expect(containsNewRoleOrEveryoneMention('hello <@&50>', 'hello <@&50> @everyone')).toBe(true)
+  })
+
+  it('debounces remote mention searches', () => {
+    vi.useFakeTimers()
+    const search = vi.fn().mockResolvedValue([])
+    const { result } = renderHook(() => useMentionInputForTest(true, search))
+
+    act(() => result.current.updateDraft('@ale', 4))
+    expect(search).not.toHaveBeenCalled()
+
+    act(() => vi.advanceTimersByTime(199))
+    expect(search).not.toHaveBeenCalled()
+
+    act(() => vi.advanceTimersByTime(1))
+    expect(search).toHaveBeenCalledOnce()
+    expect(search).toHaveBeenCalledWith('ale')
   })
 
   it('maps server mention search results into user and role candidates', () => {
@@ -178,3 +209,18 @@ describe('message mentions', () => {
     ).toHaveLength(1)
   })
 })
+
+function useMentionInputForTest(
+  canMentionRolesAndEveryone: boolean,
+  onSearch?: (query: string) => Promise<MentionCandidate[]>,
+) {
+  return useMentionInput(
+    '',
+    vi.fn(),
+    candidates,
+    undefined,
+    undefined,
+    onSearch,
+    canMentionRolesAndEveryone,
+  )
+}

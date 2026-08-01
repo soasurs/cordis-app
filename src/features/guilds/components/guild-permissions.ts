@@ -1,8 +1,4 @@
-import {
-  guildPermission,
-  type GuildChannelPermissionOverwrite,
-  type GuildRole,
-} from '@/api/guild'
+import { guildPermission, type GuildChannelPermissionOverwrite, type GuildRole } from '@/api/guild'
 
 export interface GuildPermissionItem {
   description: string
@@ -232,18 +228,13 @@ export function resolveEffectiveGuildChannelPermissions(input: {
   permissions: string
   userId: string
 }) {
-  if (
-    input.isOwner ||
-    hasGuildPermission(input.permissions, guildPermission.administrator)
-  ) {
+  if (input.isOwner || hasGuildPermission(input.permissions, guildPermission.administrator)) {
     return input.permissions
   }
 
   let permissions = BigInt(input.permissions)
   const defaultOverwrite = input.overwrites.find(
-    (overwrite) =>
-      overwrite.appliesTo === 'role' &&
-      overwrite.appliesToId === input.guildId,
+    (overwrite) => overwrite.appliesTo === 'role' && overwrite.appliesToId === input.guildId,
   )
   if (defaultOverwrite) {
     permissions = applyChannelOverwrite(permissions, defaultOverwrite)
@@ -261,30 +252,23 @@ export function resolveEffectiveGuildChannelPermissions(input: {
     roleDeny |= BigInt(overwrite.deny)
     roleAllow |= BigInt(overwrite.allow)
   }
-  permissions = permissions & ~roleDeny | roleAllow
+  permissions = (permissions & ~roleDeny) | roleAllow
 
   const memberOverwrite = input.overwrites.find(
-    (overwrite) =>
-      overwrite.appliesTo === 'member' &&
-      overwrite.appliesToId === input.userId,
+    (overwrite) => overwrite.appliesTo === 'member' && overwrite.appliesToId === input.userId,
   )
   if (memberOverwrite) {
     permissions = applyChannelOverwrite(permissions, memberOverwrite)
   }
 
   if (!hasGuildPermission(permissions.toString(), guildPermission.viewChannel)) {
-    permissions &= ~(
-      BigInt(guildPermission.sendMessages) | BigInt(guildPermission.manageMessages)
-    )
+    permissions &= ~(BigInt(guildPermission.sendMessages) | BigInt(guildPermission.manageMessages))
   }
   return permissions.toString()
 }
 
-function applyChannelOverwrite(
-  permissions: bigint,
-  overwrite: GuildChannelPermissionOverwrite,
-) {
-  return permissions & ~BigInt(overwrite.deny) | BigInt(overwrite.allow)
+function applyChannelOverwrite(permissions: bigint, overwrite: GuildChannelPermissionOverwrite) {
+  return (permissions & ~BigInt(overwrite.deny)) | BigInt(overwrite.allow)
 }
 
 export function toggleGuildPermission(

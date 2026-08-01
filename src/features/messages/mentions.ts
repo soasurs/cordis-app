@@ -61,11 +61,14 @@ export interface MentionInputState {
   isRemoteSearch: boolean
   isMentionSearchPending: boolean
   mentionCandidates: MentionCandidate[]
+  draftMentionCandidates: MentionCandidate[]
   mentionSuggestions: MentionCandidate[]
   showMentionSuggestions: boolean
   reset: () => void
   updateDraft: (value: string, cursor: number | null) => void
 }
+
+const MENTION_SEARCH_DEBOUNCE_MS = 200
 
 /**
  * Loads known member and role labels for rendering existing messages and
@@ -229,13 +232,13 @@ export function extractDirectMentionUserIds(content: string): string[] {
 
 /** Whether content contains an unescaped role or @everyone mention. */
 export function containsRoleOrEveryoneMention(content: string) {
-  const pattern = /<@&[0-9]+>|@everyone(?![\p{L}\p{N}_])/gu
-  let match: RegExpExecArray | null
-  while ((match = pattern.exec(content))) {
-    if (!isEscaped(content, match.index)) {
-      if (match[0] === '@everyone' && !isMentionBoundary(content, match.index)) continue
-      return true
-    }
+  return extractRoleOrEveryoneMentionTokens(content).size > 0
+}
+
+export function containsNewRoleOrEveryoneMention(previousContent: string, nextContent: string) {
+  const previousTokens = extractRoleOrEveryoneMentionTokens(previousContent)
+  for (const token of extractRoleOrEveryoneMentionTokens(nextContent)) {
+    if (!previousTokens.has(token)) return true
   }
   return false
 }
@@ -325,24 +328,31 @@ export function useMentionInput(
 
     const query = mentionQuery
     let active = true
-    void onSearch(query)
-      .then((nextResults) => {
-        if (!active) return
-        setSearchResults(nextResults)
-        setResolvedSearchQuery(query)
-      })
-      .catch(() => {
-        if (!active) return
-        setSearchResults([])
-        setResolvedSearchQuery(query)
-      })
+    const timeoutId = window.setTimeout(() => {
+      void onSearch(query)
+        .then((nextResults) => {
+          if (!active) return
+          setSearchResults(nextResults)
+          setResolvedSearchQuery(query)
+        })
+        .catch(() => {
+          if (!active) return
+          setSearchResults([])
+          setResolvedSearchQuery(query)
+        })
+    }, MENTION_SEARCH_DEBOUNCE_MS)
 
     return () => {
       active = false
+      window.clearTimeout(timeoutId)
     }
   }, [mentionQuery, onSearch])
 
   const mentionCandidates = mergeMentionCandidates(candidates, searchResults)
+  const draftMentionCandidates = filterMentionCandidatesByPermission(
+    mentionCandidates,
+    canMentionRolesAndEveryone,
+  )
   const selectableCandidates = filterMentionCandidatesByPermission(
     candidates,
     canMentionRolesAndEveryone,
@@ -445,6 +455,7 @@ export function useMentionInput(
 
   return {
     activeMentionIndex,
+    draftMentionCandidates,
     handleKeyDown,
     handleSelect,
     insertMention,
@@ -456,6 +467,18 @@ export function useMentionInput(
     showMentionSuggestions,
     updateDraft,
   }
+}
+
+function extractRoleOrEveryoneMentionTokens(content: string) {
+  const tokens = new Set<string>()
+  const pattern = /<@&[0-9]+>|@everyone(?![\p{L}\p{N}_])/gu
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(content))) {
+    if (isEscaped(content, match.index)) continue
+    if (match[0] === '@everyone' && !isMentionBoundary(content, match.index)) continue
+    tokens.add(match[0])
+  }
+  return tokens
 }
 
 function createEveryoneCandidate(): MentionCandidate {

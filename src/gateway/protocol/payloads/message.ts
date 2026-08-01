@@ -26,9 +26,6 @@ export interface MessagePayload {
   mention_user_ids: string[]
   mention_role_ids?: string[]
   mention_everyone?: boolean
-  previous_mention_user_ids?: string[]
-  previous_mention_role_ids?: string[]
-  previous_mention_everyone?: boolean
   edited_at: number
   created_at: number
   updated_at: number

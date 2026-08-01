@@ -41,7 +41,7 @@ import {
 import { toMessageContentPreview } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
 import {
-  containsRoleOrEveryoneMention,
+  containsNewRoleOrEveryoneMention,
   renderMessageContent,
   useMentionInput,
   type MentionCandidate,
@@ -114,10 +114,10 @@ export function MessageItem({
   const initials = getInitials(displayName, username)
 
   const updateMutation = useMutation({
-    mutationFn: (input: { content: string; attachmentAssetIds: string[] }) =>
+    mutationFn: (input: { content?: string; attachmentAssetIds: string[] }) =>
       updateMessage(message.id, {
         attachmentAssetIds: input.attachmentAssetIds,
-        content: input.content,
+        ...(input.content !== undefined ? { content: input.content } : {}),
       }),
     onSuccess: (updated) => {
       upsertChannelMessageFromApi(queryClient, updated)
@@ -224,11 +224,6 @@ export function MessageItem({
     event?.preventDefault()
     if (!canSave) return
 
-    if (!canMentionRolesAndEveryone && containsRoleOrEveryoneMention(trimmed)) {
-      setError('You do not have permission to mention roles or everyone in this channel.')
-      return
-    }
-
     const previousIds = message.attachments.map((attachment) => attachment.assetId)
     const contentUnchanged = trimmed === message.content
     const attachmentsUnchanged =
@@ -239,9 +234,14 @@ export function MessageItem({
       return
     }
 
+    if (!canMentionRolesAndEveryone && containsNewRoleOrEveryoneMention(message.content, trimmed)) {
+      setError('You do not have permission to mention roles or everyone in this channel.')
+      return
+    }
+
     updateMutation.mutate({
       attachmentAssetIds: nextAttachmentIds,
-      content: trimmed,
+      ...(contentUnchanged ? {} : { content: trimmed }),
     })
   }
 
@@ -459,7 +459,7 @@ export function MessageItem({
                   </Button>
                   <MentionTextarea
                     ref={textareaRef}
-                    mentionCandidates={mentionInput.mentionCandidates}
+                    mentionCandidates={mentionInput.draftMentionCandidates}
                     value={draft}
                     rows={3}
                     disabled={updateMutation.isPending}

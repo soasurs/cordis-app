@@ -103,14 +103,11 @@ export function useGuildMentionCapability(guildId: string, channelId?: string) {
   const userId = session?.user.userId.toString()
   const overwritesQuery = useQuery({
     ...guildChannelOverwritesQueryOptions(guildId, channelId ?? ''),
-    enabled: Boolean(channelId) && guildPermissions.status === 'ready',
+    enabled: Boolean(channelId) && guildPermissions.status === 'ready' && !guildPermissions.isOwner,
   })
   const memberRolesQuery = useQuery({
     ...guildMemberRolesQueryOptions(guildId, userId ?? ''),
-    enabled:
-      Boolean(userId) &&
-      guildPermissions.status === 'ready' &&
-      !guildPermissions.isOwner,
+    enabled: Boolean(userId) && guildPermissions.status === 'ready' && !guildPermissions.isOwner,
   })
 
   if (!channelId || guildPermissions.status !== 'ready') return false
