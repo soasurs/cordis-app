@@ -1,8 +1,9 @@
 import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 
-import { syncGatewayDispatch } from '@/app/gateway-query-sync'
+import { clearGatewayQueries, syncGatewayDispatch } from '@/app/gateway-query-sync'
 import { gatewayReadyQueryKey } from '@/app/gateway-context'
+import { dmChannelsQueryKey, flattenDmChannels } from '@/features/dm/dm-queries'
 import {
   guildChannelOverwritesQueryKey,
   guildChannelLayoutRevisionQueryKey,
@@ -790,5 +791,136 @@ describe('syncGatewayDispatch messages', () => {
       queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
         ?.mentionCount,
     ).toBe(3)
+  })
+})
+
+describe('syncGatewayDispatch DM channels', () => {
+  it('seeds the DM list from the ready snapshot', () => {
+    const queryClient = new QueryClient()
+
+    syncGatewayDispatch(queryClient, {
+      type: 'ready',
+      sequence: 1,
+      data: {
+        access_token_expires_at: 9_000,
+        auth_session_id: 'auth',
+        dm_channels: [
+          {
+            created_at: 2_000,
+            id: '43',
+            recipient: {
+              avatar_asset_id: '0',
+              bio: '',
+              created_at: 1_000,
+              name: 'Alex Chen',
+              updated_at: 2_000,
+              user_id: '7',
+              username: 'alex_chen',
+            },
+            recipient_id: '7',
+          },
+        ],
+        guilds: [],
+        presence_preference: { status: 'online', version: '1' },
+        presences: [],
+        read_states: [],
+        session_id: 'session',
+        session_node_id: 'node',
+        user_id: '8',
+      },
+    })
+
+    expect(flattenDmChannels(queryClient.getQueryData(dmChannelsQueryKey))).toEqual([
+      expect.objectContaining({ channelId: '43' }),
+    ])
+  })
+
+  it('upserts a DM channel created while the list is loaded', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(dmChannelsQueryKey, {
+      pageParams: [undefined],
+      pages: [{ channels: [], nextCursor: undefined }],
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'dm.channel.created',
+      sequence: 2,
+      data: {
+        channel_id: '44',
+        created_at: 3_000,
+        recipient: {
+          avatar_asset_id: '0',
+          bio: '',
+          created_at: 1_000,
+          name: 'Maya',
+          updated_at: 1_000,
+          user_id: '9',
+          username: 'maya',
+        },
+        recipient_id: '9',
+        user_id: '8',
+      },
+    })
+
+    expect(
+      flattenDmChannels(queryClient.getQueryData(dmChannelsQueryKey)).map((item) => item.channelId),
+    ).toEqual(['44'])
+  })
+
+  it('clears DM queries with the rest of the gateway cache', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(dmChannelsQueryKey, {
+      pageParams: [undefined],
+      pages: [{ channels: [], nextCursor: undefined }],
+    })
+
+    clearGatewayQueries(queryClient)
+
+    expect(queryClient.getQueryData(dmChannelsQueryKey)).toBeUndefined()
+  })
+
+  it('patches DM recipient profiles on user profile updates', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(dmChannelsQueryKey, {
+      pageParams: [undefined],
+      pages: [
+        {
+          channels: [
+            {
+              channelId: '43',
+              createdAt: 1_000,
+              recipient: {
+                avatarAssetId: '0',
+                bio: '',
+                createdAt: 1_000,
+                name: 'Old name',
+                updatedAt: 1_000,
+                userId: '7',
+                username: 'alex_chen',
+              },
+            },
+          ],
+          nextCursor: undefined,
+        },
+      ],
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'user.profile.updated',
+      sequence: 3,
+      data: {
+        avatar_asset_id: '0',
+        bio: '',
+        created_at: 1_000,
+        name: 'Alex Chen Updated',
+        updated_at: 3_000,
+        user_id: '7',
+        username: 'alex_chen',
+      },
+    })
+
+    expect(flattenDmChannels(queryClient.getQueryData(dmChannelsQueryKey))[0]?.recipient.name).toBe(
+      'Alex Chen Updated',
+    )
   })
 })

@@ -26,6 +26,7 @@ import {
   createMessage,
   deleteMessage,
   getMessage,
+  getReadStatesForDm,
   getReadStatesForGuild,
   listMessages,
   updateMessage,
@@ -518,6 +519,32 @@ describe('message API', () => {
     expect(messageClient.getReadStates).toHaveBeenCalledWith({
       guildId: 42n,
       scope: 1,
+    })
+  })
+
+  it('loads all DM read states with the ALL_DMS scope', async () => {
+    messageClient.getReadStates.mockResolvedValue({
+      dmChannels: [],
+      readStates: [
+        {
+          channelId: 43n,
+          lastMessageId: 200n,
+          lastReadMessageId: 150n,
+          mentionCount: 1,
+        },
+      ],
+    })
+
+    await expect(getReadStatesForDm()).resolves.toEqual([
+      {
+        channelId: '43',
+        lastMessageId: '200',
+        lastReadMessageId: '150',
+        mentionCount: 1,
+      },
+    ])
+    expect(messageClient.getReadStates).toHaveBeenCalledWith({
+      scope: 2,
     })
   })
 })

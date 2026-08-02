@@ -1,6 +1,10 @@
-import { queryOptions, type QueryClient } from '@tanstack/react-query'
+import { queryOptions, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 
-import { getReadStatesForGuild, type ChannelReadStateSummary } from '@/api/message'
+import {
+  getReadStatesForDm,
+  getReadStatesForGuild,
+  type ChannelReadStateSummary,
+} from '@/api/message'
 import type { MessageReadUpdatedPayload } from '@/gateway/protocol/payloads/message'
 import type { ReadyReadState } from '@/gateway/protocol/payloads/ready'
 
@@ -10,10 +14,28 @@ export function channelReadStatesQueryKey() {
   return ['read-states'] as const
 }
 
+export function useChannelReadStates() {
+  const queryClient = useQueryClient()
+  return useQuery({
+    queryFn: () =>
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey()) ?? {},
+    queryKey: channelReadStatesQueryKey(),
+    staleTime: Infinity,
+  })
+}
+
 export function guildReadStatesQueryOptions(guildId: string) {
   return queryOptions({
     queryFn: () => getReadStatesForGuild(guildId),
     queryKey: ['read-states', 'guild', guildId] as const,
+    staleTime: 30_000,
+  })
+}
+
+export function dmReadStatesQueryOptions() {
+  return queryOptions({
+    queryFn: () => getReadStatesForDm(),
+    queryKey: ['read-states', 'dm'] as const,
     staleTime: 30_000,
   })
 }

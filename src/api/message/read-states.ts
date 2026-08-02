@@ -37,6 +37,14 @@ export async function getReadStatesForGuild(guildId: string): Promise<ChannelRea
   return response.readStates.map(toChannelReadState)
 }
 
+export async function getReadStatesForDm(): Promise<ChannelReadStateSummary[]> {
+  const response = await messageClient.getReadStates({
+    scope: ReadStateScopeType.ALL_DMS,
+  })
+
+  return response.readStates.map(toChannelReadState)
+}
+
 export function toChannelReadState(state: ProtoChannelReadState): ChannelReadStateSummary {
   return {
     channelId: state.channelId.toString(),

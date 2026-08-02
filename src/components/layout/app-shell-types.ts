@@ -16,12 +16,15 @@ export interface AppGuildSummary {
 }
 
 export interface AppShellProps extends PropsWithChildren {
+  activeDmChannelId?: string
   activeGuildId?: string
-  activePersonalSection?: 'friends' | 'home'
+  activePersonalSection?: 'dm' | 'friends' | 'home'
   gatewayStatus?: GatewayStatus
   guilds?: AppGuildSummary[]
   onCreateCommunity?: () => void
+  onOpenNewDm?: () => void
   onOpenUserSettings?: () => void
+  onSelectDm?: (channelId?: string) => void
   onSelectFriends?: () => void
   onSelectGuild?: (guildId: string) => void
   onSelectHome?: () => void
