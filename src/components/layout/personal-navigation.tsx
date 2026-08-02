@@ -1,16 +1,19 @@
 const personalNavigationItems = [
   { icon: '⌂', id: 'home', label: 'Home' },
   { icon: '◎', id: 'friends', label: 'Friends' },
+  { icon: '✉', id: 'dm', label: 'Messages' },
 ] as const
 
 export function PersonalNavigation({
   activeSection,
   compact = false,
+  onSelectDm,
   onSelectFriends,
   onSelectHome,
 }: {
-  activeSection: 'friends' | 'home'
+  activeSection: 'dm' | 'friends' | 'home'
   compact?: boolean
+  onSelectDm?: () => void
   onSelectFriends?: () => void
   onSelectHome?: () => void
 }) {
@@ -25,7 +28,8 @@ export function PersonalNavigation({
     >
       {personalNavigationItems.map((item) => {
         const active = item.id === activeSection
-        const onSelect = item.id === 'home' ? onSelectHome : onSelectFriends
+        const onSelect =
+          item.id === 'home' ? onSelectHome : item.id === 'friends' ? onSelectFriends : onSelectDm
 
         return (
           <button

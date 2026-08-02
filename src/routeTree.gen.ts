@@ -13,12 +13,15 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as DesignRouteImport } from './routes/[_]design'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppDmRouteImport } from './routes/_app.dm'
 import { Route as AppFriendsRouteImport } from './routes/_app.friends'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth.reset-password'
 import { Route as AuthVerifyEmailRouteImport } from './routes/_auth.verify-email'
+import { Route as AppDmIndexRouteImport } from './routes/_app.dm.index'
+import { Route as AppDmChannelIdRouteImport } from './routes/_app.dm.$channelId'
 import { Route as AppFriendsIndexRouteImport } from './routes/_app.friends.index'
 import { Route as AppFriendsBlockedRouteImport } from './routes/_app.friends.blocked'
 import { Route as AppFriendsPendingRouteImport } from './routes/_app.friends.pending'
@@ -52,6 +55,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDmRoute = AppDmRouteImport.update({
+  id: '/dm',
+  path: '/dm',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFriendsRoute = AppFriendsRouteImport.update({
   id: '/friends',
   path: '/friends',
@@ -81,6 +89,16 @@ const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
   getParentRoute: () => AuthRoute,
+} as any)
+const AppDmIndexRoute = AppDmIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppDmRoute,
+} as any)
+const AppDmChannelIdRoute = AppDmChannelIdRouteImport.update({
+  id: '/$channelId',
+  path: '/$channelId',
+  getParentRoute: () => AppDmRoute,
 } as any)
 const AppFriendsIndexRoute = AppFriendsIndexRouteImport.update({
   id: '/',
@@ -160,12 +178,14 @@ const AppGuildsGuildIdChannelsChannelIdSettingsTabRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/_design': typeof DesignRoute
+  '/dm': typeof AppDmRouteWithChildren
   '/friends': typeof AppFriendsRouteWithChildren
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
+  '/dm/$channelId': typeof AppDmChannelIdRoute
   '/friends/blocked': typeof AppFriendsBlockedRoute
   '/friends/pending': typeof AppFriendsPendingRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
@@ -173,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/dm/': typeof AppDmIndexRoute
   '/friends/': typeof AppFriendsIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
@@ -189,12 +210,14 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
+  '/dm/$channelId': typeof AppDmChannelIdRoute
   '/friends/blocked': typeof AppFriendsBlockedRoute
   '/friends/pending': typeof AppFriendsPendingRoute
   '/invite/$code': typeof AppInviteCodeRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/dm': typeof AppDmIndexRoute
   '/friends': typeof AppFriendsIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/guilds/$guildId': typeof AppGuildsGuildIdIndexRoute
@@ -207,6 +230,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_design': typeof DesignRoute
+  '/_app/dm': typeof AppDmRouteWithChildren
   '/_app/friends': typeof AppFriendsRouteWithChildren
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -214,6 +238,7 @@ export interface FileRoutesById {
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/dm/$channelId': typeof AppDmChannelIdRoute
   '/_app/friends/blocked': typeof AppFriendsBlockedRoute
   '/_app/friends/pending': typeof AppFriendsPendingRoute
   '/_app/guilds/$guildId': typeof AppGuildsGuildIdRouteWithChildren
@@ -221,6 +246,7 @@ export interface FileRoutesById {
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/profile': typeof AppSettingsProfileRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
+  '/_app/dm/': typeof AppDmIndexRoute
   '/_app/friends/': typeof AppFriendsIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/guilds/$guildId/': typeof AppGuildsGuildIdIndexRoute
@@ -234,12 +260,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/_design'
+    | '/dm'
     | '/friends'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/dm/$channelId'
     | '/friends/blocked'
     | '/friends/pending'
     | '/guilds/$guildId'
@@ -247,6 +275,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/profile'
     | '/settings/security'
+    | '/dm/'
     | '/friends/'
     | '/settings/'
     | '/guilds/$guildId/'
@@ -263,12 +292,14 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/dm/$channelId'
     | '/friends/blocked'
     | '/friends/pending'
     | '/invite/$code'
     | '/settings/account'
     | '/settings/profile'
     | '/settings/security'
+    | '/dm'
     | '/friends'
     | '/settings'
     | '/guilds/$guildId'
@@ -280,6 +311,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_design'
+    | '/_app/dm'
     | '/_app/friends'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -287,6 +319,7 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/_auth/verify-email'
     | '/_app/'
+    | '/_app/dm/$channelId'
     | '/_app/friends/blocked'
     | '/_app/friends/pending'
     | '/_app/guilds/$guildId'
@@ -294,6 +327,7 @@ export interface FileRouteTypes {
     | '/_app/settings/account'
     | '/_app/settings/profile'
     | '/_app/settings/security'
+    | '/_app/dm/'
     | '/_app/friends/'
     | '/_app/settings/'
     | '/_app/guilds/$guildId/'
@@ -339,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/dm': {
+      id: '/_app/dm'
+      path: '/dm'
+      fullPath: '/dm'
+      preLoaderRoute: typeof AppDmRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/friends': {
       id: '/_app/friends'
       path: '/friends'
@@ -380,6 +421,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/verify-email'
       preLoaderRoute: typeof AuthVerifyEmailRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_app/dm/': {
+      id: '/_app/dm/'
+      path: '/'
+      fullPath: '/dm/'
+      preLoaderRoute: typeof AppDmIndexRouteImport
+      parentRoute: typeof AppDmRoute
+    }
+    '/_app/dm/$channelId': {
+      id: '/_app/dm/$channelId'
+      path: '/$channelId'
+      fullPath: '/dm/$channelId'
+      preLoaderRoute: typeof AppDmChannelIdRouteImport
+      parentRoute: typeof AppDmRoute
     }
     '/_app/friends/': {
       id: '/_app/friends/'
@@ -482,6 +537,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppDmRouteChildren {
+  AppDmChannelIdRoute: typeof AppDmChannelIdRoute
+  AppDmIndexRoute: typeof AppDmIndexRoute
+}
+
+const AppDmRouteChildren: AppDmRouteChildren = {
+  AppDmChannelIdRoute: AppDmChannelIdRoute,
+  AppDmIndexRoute: AppDmIndexRoute,
+}
+
+const AppDmRouteWithChildren = AppDmRoute._addFileChildren(AppDmRouteChildren)
+
 interface AppFriendsRouteChildren {
   AppFriendsBlockedRoute: typeof AppFriendsBlockedRoute
   AppFriendsPendingRoute: typeof AppFriendsPendingRoute
@@ -533,6 +600,7 @@ const AppGuildsGuildIdRouteWithChildren =
   AppGuildsGuildIdRoute._addFileChildren(AppGuildsGuildIdRouteChildren)
 
 interface AppRouteChildren {
+  AppDmRoute: typeof AppDmRouteWithChildren
   AppFriendsRoute: typeof AppFriendsRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppGuildsGuildIdRoute: typeof AppGuildsGuildIdRouteWithChildren
@@ -544,6 +612,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppDmRoute: AppDmRouteWithChildren,
   AppFriendsRoute: AppFriendsRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppGuildsGuildIdRoute: AppGuildsGuildIdRouteWithChildren,

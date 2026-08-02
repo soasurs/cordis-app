@@ -9,6 +9,7 @@ import type { RelationshipPage, RelationshipSummary, RelationshipType } from '@/
 import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
 import { AddFriendDialog } from '@/features/friends/components/add-friend-dialog'
+import { CreateDmDialog } from '@/features/dm/components/create-dm-dialog'
 import { FriendRelationshipRow } from '@/features/friends/components/friend-relationship-row'
 import {
   flattenRelationships,
@@ -16,6 +17,7 @@ import {
 } from '@/features/friends/relationship-queries'
 import { friendsTabs, type FriendsTab } from '@/features/friends/friends-types'
 import { useResolvePresenceBatches } from '@/features/presence/presence-queries'
+import type { PublicUserProfile } from '@/api/user'
 
 type RelationshipListQuery = UseInfiniteQueryResult<InfiniteData<RelationshipPage>, Error>
 
@@ -31,6 +33,7 @@ export function FriendsPage({
   const outgoingQuery = useRelationshipList('outgoing', tab === 'pending')
   const blockedQuery = useRelationshipList('blocked', tab === 'blocked')
   const [addingFriend, setAddingFriend] = useState(false)
+  const [messageTarget, setMessageTarget] = useState<PublicUserProfile>()
   const friendPresenceBatches = useMemo(
     () =>
       tab === 'all'
@@ -85,6 +88,9 @@ export function FriendsPage({
             <RelationshipListState
               emptyCopy="Friends you add will appear here."
               emptyTitle="No friends yet"
+              onMessage={(relationship) => {
+                if (relationship.type === 'friend') setMessageTarget(relationship.profile)
+              }}
               queries={[friendsQuery]}
             />
           ) : null}
@@ -101,6 +107,9 @@ export function FriendsPage({
         </div>
       </div>
       {addingFriend ? <AddFriendDialog onClose={() => setAddingFriend(false)} /> : null}
+      {messageTarget ? (
+        <CreateDmDialog open profile={messageTarget} onClose={() => setMessageTarget(undefined)} />
+      ) : null}
     </main>
   )
 }
@@ -169,10 +178,12 @@ function PendingRelationships({
 function RelationshipListState({
   emptyCopy,
   emptyTitle,
+  onMessage,
   queries,
 }: {
   emptyCopy: string
   emptyTitle: string
+  onMessage?: (relationship: RelationshipSummary) => void
   queries: RelationshipListQuery[]
 }) {
   if (queries.some((query) => query.isPending)) {
@@ -198,7 +209,7 @@ function RelationshipListState({
 
   return (
     <div>
-      <RelationshipRows relationships={relationships} />
+      <RelationshipRows onMessage={onMessage} relationships={relationships} />
       {queries.map((query, index) => (
         <LoadMoreButton key={index} query={query} />
       ))}
@@ -231,11 +242,21 @@ function RelationshipSection({
   )
 }
 
-function RelationshipRows({ relationships }: { relationships: RelationshipSummary[] }) {
+function RelationshipRows({
+  onMessage,
+  relationships,
+}: {
+  onMessage?: (relationship: RelationshipSummary) => void
+  relationships: RelationshipSummary[]
+}) {
   return (
     <ul className="overflow-hidden rounded-panel border border-line bg-surface-raised shadow-panel">
       {relationships.map((relationship) => (
-        <FriendRelationshipRow key={relationship.targetId} relationship={relationship} />
+        <FriendRelationshipRow
+          key={relationship.targetId}
+          onMessage={onMessage}
+          relationship={relationship}
+        />
       ))}
     </ul>
   )

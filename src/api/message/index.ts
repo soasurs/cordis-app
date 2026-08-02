@@ -6,6 +6,7 @@ export type {
   ChannelReadStateSummary,
   CreateAttachmentUploadDetails,
   CreateChannelMessageDetails,
+  DmReadStateSnapshot,
   ListChannelMessagesOptions,
   MessageAttachment,
   UpdateChannelMessageDetails,
@@ -24,4 +25,9 @@ export {
   toChannelMessage,
   updateMessage,
 } from '@/api/message/messages'
-export { ackMessage, getReadStatesForGuild, toChannelReadState } from '@/api/message/read-states'
+export {
+  ackMessage,
+  getReadStatesForDm,
+  getReadStatesForGuild,
+  toChannelReadState,
+} from '@/api/message/read-states'

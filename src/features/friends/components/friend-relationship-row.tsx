@@ -20,7 +20,13 @@ import {
 type RelationshipAction = 'accept' | 'block' | 'decline' | 'remove' | 'unblock'
 type ConfirmedAction = Extract<RelationshipAction, 'block' | 'remove'>
 
-export function FriendRelationshipRow({ relationship }: { relationship: RelationshipSummary }) {
+export function FriendRelationshipRow({
+  onMessage,
+  relationship,
+}: {
+  onMessage?: (relationship: RelationshipSummary) => void
+  relationship: RelationshipSummary
+}) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState<ConfirmedAction>()
   const mutation = useMutation({
@@ -79,6 +85,7 @@ export function FriendRelationshipRow({ relationship }: { relationship: Relation
               disabled={mutation.isPending}
               pendingAction={mutation.variables}
               relationship={relationship}
+              onMessage={onMessage}
               onAction={(action) => {
                 mutation.reset()
                 if (action === 'block' || (action === 'remove' && relationship.type === 'friend')) {
@@ -103,11 +110,13 @@ export function FriendRelationshipRow({ relationship }: { relationship: Relation
 function RelationshipButtons({
   disabled,
   onAction,
+  onMessage,
   pendingAction,
   relationship,
 }: {
   disabled: boolean
   onAction: (action: RelationshipAction) => void
+  onMessage?: (relationship: RelationshipSummary) => void
   pendingAction?: RelationshipAction
   relationship: RelationshipSummary
 }) {
@@ -149,6 +158,16 @@ function RelationshipButtons({
     case 'friend':
       return (
         <>
+          {onMessage ? (
+            <Button
+              disabled={disabled}
+              size="small"
+              variant="secondary"
+              onClick={() => onMessage(relationship)}
+            >
+              Message
+            </Button>
+          ) : null}
           <Button
             disabled={disabled}
             size="small"

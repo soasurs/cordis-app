@@ -7,13 +7,16 @@ import { SpaceRail } from '@/components/layout/space-rail'
 export type { AppGuildSummary, AppUserSummary } from '@/components/layout/app-shell-types'
 
 export function AppShell({
+  activeDmChannelId,
   activeGuildId,
   activePersonalSection = 'home',
   children,
   gatewayStatus = { errorCode: null, state: 'idle' },
   guilds = [],
   onCreateCommunity,
+  onOpenNewDm,
   onOpenUserSettings,
+  onSelectDm,
   onSelectFriends,
   onSelectGuild,
   onSelectHome,
@@ -35,9 +38,12 @@ export function AppShell({
       />
       {!activeGuildId && !userSettingsOpen ? (
         <HomeSidebar
+          activeDmChannelId={activeDmChannelId}
           activeSection={activePersonalSection}
           gatewayStatus={gatewayStatus}
+          onOpenNewDm={onOpenNewDm}
           onOpenUserSettings={onOpenUserSettings}
+          onSelectDm={onSelectDm}
           onSelectFriends={onSelectFriends}
           onSelectHome={onSelectHome}
           user={user}
@@ -52,7 +58,9 @@ export function AppShell({
                 ? 'Community'
                 : activePersonalSection === 'friends'
                   ? 'Friends'
-                  : 'Home')
+                  : activePersonalSection === 'dm'
+                    ? 'Messages'
+                    : 'Home')
             }
             gatewayStatus={gatewayStatus}
             user={user}
@@ -63,6 +71,7 @@ export function AppShell({
           <PersonalNavigation
             compact
             activeSection={activePersonalSection}
+            onSelectDm={onSelectDm}
             onSelectFriends={onSelectFriends}
             onSelectHome={onSelectHome}
           />

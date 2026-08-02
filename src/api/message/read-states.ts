@@ -3,9 +3,10 @@ import {
   type ChannelReadState as ProtoChannelReadState,
 } from '@/gen/api/v1/message_pb'
 
+import { toDmChannelSummary } from '@/api/dm'
 import { assertIdentifier } from '@/api/message/internal'
 import { messageClient } from '@/api/message/client'
-import type { ChannelReadStateSummary } from '@/api/message/types'
+import type { ChannelReadStateSummary, DmReadStateSnapshot } from '@/api/message/types'
 
 export async function ackMessage(
   channelId: string,
@@ -35,6 +36,17 @@ export async function getReadStatesForGuild(guildId: string): Promise<ChannelRea
   })
 
   return response.readStates.map(toChannelReadState)
+}
+
+export async function getReadStatesForDm(): Promise<DmReadStateSnapshot> {
+  const response = await messageClient.getReadStates({
+    scope: ReadStateScopeType.ALL_DMS,
+  })
+
+  return {
+    channels: response.dmChannels.map(toDmChannelSummary),
+    readStates: response.readStates.map(toChannelReadState),
+  }
 }
 
 export function toChannelReadState(state: ProtoChannelReadState): ChannelReadStateSummary {

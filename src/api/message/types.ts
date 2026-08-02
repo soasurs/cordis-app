@@ -1,4 +1,5 @@
 import type { PresignedUploadContract } from '@/api/assets'
+import type { DmChannelSummary } from '@/api/dm'
 import type { PublicUserProfile } from '@/api/user'
 
 // Domain models use decimal strings for snowflake IDs (JSON cannot carry bigint).
@@ -7,6 +8,11 @@ export interface ChannelReadStateSummary {
   lastMessageId: string
   lastReadMessageId: string
   mentionCount: number
+}
+
+export interface DmReadStateSnapshot {
+  channels: DmChannelSummary[]
+  readStates: ChannelReadStateSummary[]
 }
 
 export interface MessageAttachment {

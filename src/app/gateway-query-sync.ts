@@ -8,6 +8,12 @@ import {
   upsertRelationshipFromGateway,
 } from '@/features/friends/relationship-queries'
 import {
+  clearDmChannelQueries,
+  patchDmChannelRecipientFromGateway,
+  replaceDmChannelsFromReady,
+  upsertDmChannelFromGateway,
+} from '@/features/dm/dm-queries'
+import {
   guildsQueryKey,
   guildMemberRolesQueryKey,
   invalidateGuildChannelOverwritesFromGateway,
@@ -69,7 +75,13 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
       dispatch.data.user_id,
       dispatch.data.presence_preference,
     )
+    replaceDmChannelsFromReady(queryClient, dispatch.data.dm_channels ?? [])
     refreshRelationshipsFromReady(queryClient)
+    return
+  }
+
+  if (isGatewayDispatch(dispatch, 'dm.channel.created')) {
+    upsertDmChannelFromGateway(queryClient, dispatch.data)
     return
   }
 
@@ -194,6 +206,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
 
   if (isGatewayDispatch(dispatch, 'user.profile.updated')) {
     patchRelationshipProfileFromGateway(queryClient, dispatch.data)
+    patchDmChannelRecipientFromGateway(queryClient, dispatch.data)
     patchUserProfileFromGateway(queryClient, dispatch.data)
     return
   }
@@ -243,4 +256,5 @@ export function clearGatewayQueries(queryClient: QueryClient) {
   clearPresences(queryClient)
   clearPresencePreferences(queryClient)
   clearRelationshipQueries(queryClient)
+  clearDmChannelQueries(queryClient)
 }
