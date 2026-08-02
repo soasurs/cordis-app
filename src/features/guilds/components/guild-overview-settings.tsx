@@ -2,20 +2,8 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 
-import {
-  isTerminalUploadStatus,
-  isUploadIntentRetiredError,
-  putToPresignedUrl,
-  UploadIntentRetiredError,
-} from '@/api/assets'
 import { getApiErrorMessage } from '@/api/errors'
-import {
-  abortGuildIconUpload,
-  completeGuildIconUpload,
-  createGuildIconUpload,
-  updateGuild,
-  type UpdateGuildDetails,
-} from '@/api/guild'
+import { updateGuild, type UpdateGuildDetails } from '@/api/guild'
 import { createIdempotencyKey } from '@/api/idempotency'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,6 +19,7 @@ import {
 } from '@/features/guilds/validation'
 import { GuildIcon } from '@/features/guilds/components/guild-icon'
 import { GuildIconCropDialog } from '@/features/guilds/components/guild-icon-crop-dialog'
+import { uploadGuildIcon } from '@/features/guilds/upload-guild-icon'
 
 function buildGuildUpdate(guild: GuildSummary, values: UpdateGuildFormValues): UpdateGuildDetails {
   const patch: UpdateGuildDetails = {}
@@ -55,60 +44,18 @@ export function GuildOverviewSettings({ guild }: { guild: GuildSummary }) {
   })
   const iconMutation = useMutation({
     mutationFn: async ({ file, idempotencyKey }: { file: File; idempotencyKey: string }) => {
-      const validationError = validateGuildIconFile(file)
-      if (validationError) {
-        throw new Error(validationError)
-      }
-
-      const upload = await createGuildIconUpload(guild.id, {
-        contentType: file.type,
-        expectedSize: file.size,
-        idempotencyKey,
-      })
-
       const clearIntent = () => {
         const currentIntent = iconIntentRef.current
         if (currentIntent?.file === file && currentIntent.guildId === guild.id) {
           iconIntentRef.current = undefined
         }
       }
-
-      if (isTerminalUploadStatus(upload.status)) {
-        clearIntent()
-        throw new UploadIntentRetiredError(upload.status)
-      }
-
-      let completionStarted = false
-      try {
-        if (upload.status === 'created') {
-          if (!upload.presignedUrl) {
-            throw new Error('upload response is missing a presigned URL')
-          }
-          await putToPresignedUrl(file, upload)
-        }
-        completionStarted = true
-        return await completeGuildIconUpload(guild.id, upload.uploadId)
-      } catch (error) {
-        if (isUploadIntentRetiredError(error)) {
-          clearIntent()
-          throw error
-        }
-
-        let abortSucceeded = false
-        if (!completionStarted && upload.status === 'created' && upload.presignedUrl) {
-          try {
-            await abortGuildIconUpload(guild.id, upload.uploadId)
-            abortSucceeded = true
-          } catch {
-            // Best-effort cleanup; surface the original upload failure below.
-          }
-        }
-        if (abortSucceeded) {
-          clearIntent()
-          throw new UploadIntentRetiredError('aborted', error)
-        }
-        throw error
-      }
+      return uploadGuildIcon({
+        file,
+        guildId: guild.id,
+        idempotencyKey,
+        onIntentRetired: clearIntent,
+      })
     },
   })
   const form = useForm({

@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   useEffect,
   useId,
@@ -23,23 +23,18 @@ import {
   messageAttachmentValidationMessage,
   validateMessageAttachmentFile,
 } from '@/features/messages/attachment-validation'
-import { MessageVideoPlayer } from '@/features/messages/components/message-video-player'
-import { MentionSuggestions } from '@/features/messages/components/mention-suggestions'
-import { MentionTextarea } from '@/features/messages/components/mention-textarea'
+import {
+  MessageAttachments,
+  MessageReplyReference,
+} from '@/features/messages/components/message-item-parts'
+import { MessageEditForm } from '@/features/messages/components/message-edit-form'
 import { formatMessageTime } from '@/features/messages/message-time'
+import type { PendingAttachmentDraft } from '@/features/messages/components/pending-attachment-chip'
 import {
-  ExistingAttachmentChip,
-  PendingAttachmentChip,
-  type PendingAttachmentDraft,
-} from '@/features/messages/components/pending-attachment-chip'
-import {
-  findChannelMessageInCache,
-  referencedMessageQueryOptions,
   removeChannelMessageFromApi,
   upsertChannelMessageFromApi,
   type ChannelMessageSummary,
 } from '@/features/messages/message-queries'
-import { toMessageContentPreview } from '@/features/messages/reply-target'
 import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
 import {
   containsNewRoleOrEveryoneMention,
@@ -406,102 +401,36 @@ export function MessageItem({
           </div>
 
           {editing ? (
-            <form className="mt-1.5" onSubmit={submitEdit}>
-              <div className="relative rounded-control border border-line bg-surface-raised focus-within:border-brand">
-                {keptAttachments.length > 0 || pending.length > 0 ? (
-                  <ul
-                    className="flex flex-wrap gap-2 border-b border-line px-2 pt-2.5 pb-2"
-                    aria-label="Message attachments"
-                  >
-                    {keptAttachments.map((attachment) => (
-                      <li key={attachment.assetId}>
-                        <ExistingAttachmentChip
-                          attachment={attachment}
-                          onRemove={() =>
-                            setKeptAttachments((current) =>
-                              current.filter((item) => item.assetId !== attachment.assetId),
-                            )
-                          }
-                        />
-                      </li>
-                    ))}
-                    {pending.map((item) => (
-                      <li key={item.id}>
-                        <PendingAttachmentChip
-                          item={item}
-                          onRemove={() => removePending(item.id)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                <div className="flex items-start gap-2 px-2 py-1.5">
-                  <input
-                    ref={fileInputRef}
-                    id={fileInputId}
-                    type="file"
-                    multiple
-                    className="sr-only"
-                    onChange={(event) => addFiles(event.target.files)}
-                  />
-                  <Button
-                    size="small"
-                    variant="ghost"
-                    type="button"
-                    className="mt-0.5 h-9 w-9 shrink-0 px-0"
-                    aria-label="Attach files"
-                    disabled={
-                      updateMutation.isPending ||
-                      attachmentSlotsUsed >= MESSAGE_ATTACHMENT_MAX_COUNT
-                    }
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    +
-                  </Button>
-                  <MentionTextarea
-                    ref={textareaRef}
-                    mentionCandidates={mentionInput.draftMentionCandidates}
-                    value={draft}
-                    disabled={updateMutation.isPending}
-                    aria-label="Edit message"
-                    onRawChange={(value, selectionStart) =>
-                      mentionInput.updateDraft(value, selectionStart)
-                    }
-                    onKeyDown={onKeyDown}
-                    onRawSelect={(value, selectionStart, selectionEnd) =>
-                      mentionInput.handleSelect(value, selectionStart, selectionEnd)
-                    }
-                    aria-autocomplete="list"
-                    aria-controls={
-                      mentionInput.showMentionSuggestions
-                        ? `mention-suggestions-${message.id}`
-                        : undefined
-                    }
-                    aria-expanded={mentionInput.showMentionSuggestions}
-                    className="max-h-48 min-h-16 min-w-0 flex-1 resize-y bg-transparent py-2 text-sm leading-5 text-ink outline-none"
-                  />
-                </div>
-                <MentionSuggestions
-                  input={mentionInput}
-                  listId={`mention-suggestions-${message.id}`}
-                  onLoadMore={onLoadMoreMentionCandidates}
-                />
-              </div>
-              <div className="mt-2 flex gap-2">
-                <Button
-                  size="small"
-                  type="submit"
-                  disabled={!canSave}
-                  loading={updateMutation.isPending}
-                >
-                  Save
-                </Button>
-                <Button size="small" variant="secondary" type="button" onClick={cancelEdit}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
+            <MessageEditForm
+              attachmentSlotsUsed={attachmentSlotsUsed}
+              canSave={canSave}
+              draft={draft}
+              fileInputId={fileInputId}
+              fileInputRef={fileInputRef}
+              isSaving={updateMutation.isPending}
+              keptAttachments={keptAttachments}
+              mentionInput={mentionInput}
+              messageId={message.id}
+              onAddFiles={addFiles}
+              onCancel={cancelEdit}
+              onKeyDown={onKeyDown}
+              onLoadMoreMentionCandidates={onLoadMoreMentionCandidates}
+              onRemoveKeptAttachment={(assetId) =>
+                setKeptAttachments((current) =>
+                  current.filter((attachment) => attachment.assetId !== assetId),
+                )
+              }
+              onRemovePending={removePending}
+              onRawChange={(value, selectionStart) =>
+                mentionInput.updateDraft(value, selectionStart)
+              }
+              onRawSelect={(value, selectionStart, selectionEnd) =>
+                mentionInput.handleSelect(value, selectionStart, selectionEnd)
+              }
+              onSubmit={submitEdit}
+              pending={pending}
+              textareaRef={textareaRef}
+            />
           ) : (
             <>
               {message.content ? (
@@ -627,181 +556,4 @@ export function MessageItem({
       </Dialog.Root>
     </article>
   )
-}
-
-function MessageReplyReference({
-  channelId,
-  onJumpToMessage,
-  referencedMessageId,
-}: {
-  channelId: string
-  onJumpToMessage?: (messageId: string) => void
-  referencedMessageId: string
-}) {
-  const queryClient = useQueryClient()
-  const cached = findChannelMessageInCache(queryClient, channelId, referencedMessageId)
-  const referencedQuery = useQuery({
-    ...referencedMessageQueryOptions(referencedMessageId),
-    enabled: !cached,
-  })
-  const referenced = cached ?? referencedQuery.data
-  const canJump = Boolean(onJumpToMessage && referenced)
-
-  if (referencedQuery.isError && !cached) {
-    return (
-      <div className="mb-0.5 flex items-end gap-1.5">
-        <ReplyConnector />
-        <p className="min-w-0 truncate pb-0.5 text-[0.72rem] text-muted">
-          Original message was deleted
-        </p>
-      </div>
-    )
-  }
-
-  if (!referenced) {
-    return (
-      <div className="mb-0.5 flex items-end gap-1.5">
-        <ReplyConnector />
-        <p className="min-w-0 truncate pb-0.5 text-[0.72rem] text-muted" role="status">
-          Loading reply…
-        </p>
-      </div>
-    )
-  }
-
-  const authorName =
-    referenced.author?.name ||
-    referenced.author?.username ||
-    `User ${referenced.author?.userId ?? ''}`
-  const preview = toMessageContentPreview(referenced)
-  const avatarUrl =
-    referenced.author && resolveAvatarUrl(referenced.author.userId, referenced.author.avatarAssetId)
-  const initials = getInitials(authorName, referenced.author?.username ?? '')
-
-  const body = (
-    <>
-      <span
-        aria-hidden="true"
-        className="grid size-4 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-hover text-[0.5rem] font-bold text-muted"
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="size-full object-cover" />
-        ) : (
-          initials.slice(0, 2)
-        )}
-      </span>
-      <span className="shrink-0 font-semibold text-ink/80">{authorName}</span>
-      <span className="min-w-0 truncate text-muted">{preview}</span>
-    </>
-  )
-
-  const rowClassName =
-    'flex min-w-0 flex-1 items-center gap-1.5 rounded-control px-1.5 py-0.5 text-left text-[0.72rem] leading-4 transition'
-
-  return (
-    <div className="mb-0.5 flex items-end gap-1">
-      <ReplyConnector />
-      {canJump ? (
-        <button
-          type="button"
-          className={`${rowClassName} hover:bg-brand-soft/70`}
-          onClick={() => onJumpToMessage?.(referencedMessageId)}
-        >
-          {body}
-        </button>
-      ) : (
-        <div className={rowClassName}>{body}</div>
-      )}
-    </div>
-  )
-}
-
-/** Soft L-rail from the avatar gutter into the reply chip (Discord-inspired, not identical). */
-function ReplyConnector() {
-  return (
-    <span aria-hidden="true" className="relative mb-[7px] ml-[18px] h-2.5 w-[22px] shrink-0">
-      <span className="absolute inset-0 rounded-tl-[7px] border-t border-l border-line-strong group-hover:border-brand/45" />
-    </span>
-  )
-}
-
-function MessageAttachments({ attachments }: { attachments: MessageAttachment[] }) {
-  return (
-    <ul className="mt-2 grid max-w-md justify-items-start gap-2">
-      {attachments.map((attachment) => (
-        <li key={attachment.assetId}>
-          {isImageAttachmentContentType(attachment.contentType) && attachment.url ? (
-            <a href={attachment.url} target="_blank" rel="noreferrer" className="inline-block">
-              <img
-                src={attachment.url}
-                alt={attachment.filename}
-                className="max-h-80 max-w-full rounded-control border border-line object-contain"
-              />
-            </a>
-          ) : isVideoAttachmentContentType(attachment.contentType) && attachment.url ? (
-            <MessageVideoPlayer
-              src={attachment.url}
-              filename={attachment.filename}
-              height={attachment.height}
-              width={attachment.width}
-            />
-          ) : (
-            <FileAttachmentCard attachment={attachment} />
-          )}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function FileAttachmentCard({ attachment }: { attachment: MessageAttachment }) {
-  const extension = fileExtension(attachment.filename)
-  const meta = [formatFileSize(attachment.size), extension?.toUpperCase()]
-    .filter(Boolean)
-    .join(' · ')
-  const body = (
-    <>
-      <span
-        aria-hidden="true"
-        className="grid size-10 shrink-0 place-items-center rounded-control bg-brand-soft text-[0.65rem] font-bold tracking-wide text-brand-text"
-      >
-        {extension?.slice(0, 4).toUpperCase() || 'FILE'}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-ink">{attachment.filename}</span>
-        {meta ? <span className="mt-0.5 block text-[0.7rem] text-subtle">{meta}</span> : null}
-      </span>
-    </>
-  )
-
-  if (!attachment.url) {
-    return (
-      <div className="flex max-w-full items-center gap-3 rounded-control border border-line bg-surface-raised px-3 py-2.5">
-        {body}
-      </div>
-    )
-  }
-
-  return (
-    <a
-      href={attachment.url}
-      target="_blank"
-      rel="noreferrer"
-      className="flex max-w-full items-center gap-3 rounded-control border border-line bg-surface-raised px-3 py-2.5 transition hover:border-line-strong hover:bg-surface-hover"
-    >
-      {body}
-    </a>
-  )
-}
-
-function fileExtension(filename: string) {
-  const match = /\.([a-z0-9]{1,8})$/i.exec(filename.trim())
-  return match?.[1]
-}
-
-function formatFileSize(bytes: number) {
-  if (!Number.isFinite(bytes) || bytes < 0) return undefined
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`
 }

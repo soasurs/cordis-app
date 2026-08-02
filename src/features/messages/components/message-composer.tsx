@@ -1,32 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 
-import { isUploadIntentRetiredError } from '@/api/assets'
 import { getApiErrorMessage } from '@/api/errors'
-import {
-  createIdempotencyKey,
-  getIdempotencyKeyForIntent,
-  type IdempotencyIntent,
-} from '@/api/idempotency'
+import { getIdempotencyKeyForIntent, type IdempotencyIntent } from '@/api/idempotency'
 import { createMessage } from '@/api/message'
 import { Button } from '@/components/ui/button'
-import {
-  isImageAttachmentContentType,
-  isVideoAttachmentContentType,
-  MESSAGE_ATTACHMENT_MAX_COUNT,
-  messageAttachmentValidationMessage,
-  validateMessageAttachmentFile,
-} from '@/features/messages/attachment-validation'
-import {
-  PendingAttachmentChip,
-  type PendingAttachmentDraft,
-} from '@/features/messages/components/pending-attachment-chip'
+import { MESSAGE_ATTACHMENT_MAX_COUNT } from '@/features/messages/attachment-validation'
 import { MentionSuggestions } from '@/features/messages/components/mention-suggestions'
 import { MentionTextarea } from '@/features/messages/components/mention-textarea'
-import { upsertChannelMessageFromApi } from '@/features/messages/message-queries'
-import { markChannelReadThrough } from '@/features/messages/read-state-queries'
-import type { MessageReplyTarget } from '@/features/messages/reply-target'
-import { uploadMessageAttachment } from '@/features/messages/upload-attachment'
+import { PendingAttachmentChip } from '@/features/messages/components/pending-attachment-chip'
 import {
   containsRoleOrEveryoneMention,
   useMentionInput,
@@ -34,6 +16,10 @@ import {
   type MentionCandidateSearch,
   type MentionEditorHandle,
 } from '@/features/messages/mentions'
+import { upsertChannelMessageFromApi } from '@/features/messages/message-queries'
+import { markChannelReadThrough } from '@/features/messages/read-state-queries'
+import type { MessageReplyTarget } from '@/features/messages/reply-target'
+import { useMessageAttachments } from '@/features/messages/use-message-attachments'
 
 interface MessageComposerProps {
   canSend: boolean
@@ -63,10 +49,9 @@ export function MessageComposer({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendIntentRef = useRef<IdempotencyIntent | undefined>(undefined)
   const textareaRef = useRef<MentionEditorHandle>(null)
-  const pendingRef = useRef<PendingAttachmentDraft[]>([])
   const [draft, setDraft] = useState('')
-  const [pending, setPending] = useState<PendingAttachmentDraft[]>([])
   const [error, setError] = useState<string>()
+  const attachments = useMessageAttachments(channelId)
   const mentionInput = useMentionInput(
     draft,
     setDraft,
@@ -79,15 +64,6 @@ export function MessageComposer({
 
   const focusComposer = () => {
     textareaRef.current?.focus()
-  }
-
-  const clearPending = () => {
-    setPending((current) => {
-      for (const item of current) {
-        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
-      }
-      return []
-    })
   }
 
   const sendMutation = useMutation({
@@ -110,8 +86,9 @@ export function MessageComposer({
       upsertChannelMessageFromApi(queryClient, message)
       markChannelReadThrough(queryClient, channelId, message.id)
       setError(undefined)
+      attachments.clearError()
       sendIntentRef.current = undefined
-      clearPending()
+      attachments.clearPending()
       onClearReply?.()
       queueMicrotask(focusComposer)
     },
@@ -122,32 +99,17 @@ export function MessageComposer({
   })
 
   useEffect(() => {
-    pendingRef.current = pending
-  }, [pending])
-
-  useEffect(() => {
-    return () => {
-      for (const item of pendingRef.current) {
-        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     if (!replyTo) return
     focusComposer()
   }, [replyTo])
 
   const trimmed = draft.trim()
-  const readyAttachments = pending.flatMap((item) =>
-    item.status === 'ready' && item.attachment ? [item.attachment] : [],
-  )
-  const hasUploading = pending.some((item) => item.status === 'uploading')
+  const attachmentAssetIds = attachments.readyAttachments.map((attachment) => attachment.assetId)
   const canSubmit =
     canSend &&
     !sendMutation.isPending &&
-    !hasUploading &&
-    (trimmed.length > 0 || readyAttachments.length > 0)
+    !attachments.hasUploading &&
+    (trimmed.length > 0 || attachmentAssetIds.length > 0)
   const submit = (event?: FormEvent) => {
     event?.preventDefault()
     if (!canSubmit) return
@@ -157,7 +119,6 @@ export function MessageComposer({
       queueMicrotask(focusComposer)
       return
     }
-    const attachmentAssetIds = readyAttachments.map((attachment) => attachment.assetId)
     const referencedChannelId = replyTo?.channelId
     const referencedMessageId = replyTo?.id
     const intent = getIdempotencyKeyForIntent(
@@ -175,6 +136,7 @@ export function MessageComposer({
     setDraft('')
     mentionInput.reset()
     setError(undefined)
+    attachments.clearError()
     sendMutation.mutate(
       {
         attachmentAssetIds,
@@ -201,131 +163,16 @@ export function MessageComposer({
     }
   }
 
-  const startAttachmentUpload = (id: string, file: File, idempotencyKey: string) => {
-    setPending((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              channelId,
-              errorMessage: undefined,
-              idempotencyKey,
-              status: 'uploading' as const,
-            }
-          : item,
-      ),
-    )
-
-    void uploadMessageAttachment(channelId, file, idempotencyKey)
-      .then((attachment) => {
-        setPending((current) =>
-          current.map((item) =>
-            item.id === id ? { ...item, attachment, status: 'ready' as const } : item,
-          ),
-        )
-      })
-      .catch((uploadError) => {
-        setPending((current) =>
-          current.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  errorMessage: getApiErrorMessage(
-                    uploadError,
-                    'Unable to upload this file. Please try again.',
-                  ),
-                  idempotencyKey: isUploadIntentRetiredError(uploadError)
-                    ? undefined
-                    : idempotencyKey,
-                  status: 'error' as const,
-                }
-              : item,
-          ),
-        )
-      })
-  }
-
   const addFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return
-
-    const selected = [...files]
-    const remaining = MESSAGE_ATTACHMENT_MAX_COUNT - pending.length
-    if (remaining <= 0) {
-      setError(messageAttachmentValidationMessage.count)
-      return
-    }
-
-    const accepted = selected.slice(0, remaining)
-    if (selected.length > remaining) {
-      setError(messageAttachmentValidationMessage.count)
-    } else {
-      setError(undefined)
-    }
-
-    for (const file of accepted) {
-      const validationError = validateMessageAttachmentFile(file)
-      const id = crypto.randomUUID()
-      const idempotencyKey = createIdempotencyKey()
-      const contentType = file.type.trim().toLowerCase()
-      const previewUrl =
-        isImageAttachmentContentType(contentType) || isVideoAttachmentContentType(contentType)
-          ? URL.createObjectURL(file)
-          : undefined
-
-      if (validationError) {
-        setPending((current) => [
-          ...current,
-          {
-            id,
-            contentType,
-            errorMessage: validationError,
-            filename: file.name,
-            previewUrl,
-            status: 'error',
-          },
-        ])
-        continue
-      }
-
-      setPending((current) => [
-        ...current,
-        {
-          id,
-          channelId,
-          contentType,
-          file,
-          filename: file.name,
-          idempotencyKey,
-          previewUrl,
-          status: 'uploading',
-        },
-      ])
-      startAttachmentUpload(id, file, idempotencyKey)
-    }
-
+    setError(undefined)
+    attachments.addFiles(files)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
-  const removePending = (id: string) => {
-    setPending((current) => {
-      const target = current.find((item) => item.id === id)
-      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
-      return current.filter((item) => item.id !== id)
-    })
-  }
-
-  const retryPending = (id: string) => {
-    const item = pending.find((candidate) => candidate.id === id)
-    if (!item?.file) return
-
-    const idempotencyKey =
-      item.channelId === channelId && item.idempotencyKey
-        ? item.idempotencyKey
-        : createIdempotencyKey()
-    startAttachmentUpload(id, item.file, idempotencyKey)
-  }
+  const displayError = error ?? attachments.selectionError
 
   if (!canSend) {
     return (
@@ -370,17 +217,17 @@ export function MessageComposer({
           </div>
         ) : null}
 
-        {pending.length > 0 ? (
+        {attachments.pending.length > 0 ? (
           <ul
             className="flex flex-wrap gap-2 border-b border-line px-2 pt-2.5 pb-2"
             aria-label="Pending attachments"
           >
-            {pending.map((item) => (
+            {attachments.pending.map((item) => (
               <li key={item.id}>
                 <PendingAttachmentChip
                   item={item}
-                  onRemove={() => removePending(item.id)}
-                  onRetry={item.file ? () => retryPending(item.id) : undefined}
+                  onRemove={() => attachments.removePending(item.id)}
+                  onRetry={item.file ? () => attachments.retryPending(item.id) : undefined}
                 />
               </li>
             ))}
@@ -402,7 +249,9 @@ export function MessageComposer({
             type="button"
             className="h-9 w-9 shrink-0 px-0"
             aria-label="Attach files"
-            disabled={sendMutation.isPending || pending.length >= MESSAGE_ATTACHMENT_MAX_COUNT}
+            disabled={
+              sendMutation.isPending || attachments.pending.length >= MESSAGE_ATTACHMENT_MAX_COUNT
+            }
             onClick={() => fileInputRef.current?.click()}
           >
             +
@@ -445,9 +294,9 @@ export function MessageComposer({
           onLoadMore={onLoadMoreMentionCandidates}
         />
       </div>
-      {error ? (
+      {displayError ? (
         <p role="alert" className="mt-2 text-xs text-negative">
-          {error}
+          {displayError}
         </p>
       ) : null}
     </form>
