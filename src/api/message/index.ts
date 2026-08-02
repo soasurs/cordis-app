@@ -6,6 +6,7 @@ export type {
   ChannelReadStateSummary,
   CreateAttachmentUploadDetails,
   CreateChannelMessageDetails,
+  DmReadStateSnapshot,
   ListChannelMessagesOptions,
   MessageAttachment,
   UpdateChannelMessageDetails,

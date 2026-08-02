@@ -524,7 +524,22 @@ describe('message API', () => {
 
   it('loads all DM read states with the ALL_DMS scope', async () => {
     messageClient.getReadStates.mockResolvedValue({
-      dmChannels: [],
+      dmChannels: [
+        {
+          createdAt: 2_000n,
+          id: 43n,
+          recipient: {
+            avatarAssetId: 0n,
+            bio: '',
+            createdAt: 1_000n,
+            name: 'Alex Chen',
+            updatedAt: 1_000n,
+            userId: 8n,
+            username: 'alex_chen',
+          },
+          recipientId: 8n,
+        },
+      ],
       readStates: [
         {
           channelId: 43n,
@@ -535,14 +550,31 @@ describe('message API', () => {
       ],
     })
 
-    await expect(getReadStatesForDm()).resolves.toEqual([
-      {
-        channelId: '43',
-        lastMessageId: '200',
-        lastReadMessageId: '150',
-        mentionCount: 1,
-      },
-    ])
+    await expect(getReadStatesForDm()).resolves.toEqual({
+      channels: [
+        {
+          channelId: '43',
+          createdAt: 2_000,
+          recipient: {
+            avatarAssetId: '0',
+            bio: '',
+            createdAt: 1_000,
+            name: 'Alex Chen',
+            updatedAt: 1_000,
+            userId: '8',
+            username: 'alex_chen',
+          },
+        },
+      ],
+      readStates: [
+        {
+          channelId: '43',
+          lastMessageId: '200',
+          lastReadMessageId: '150',
+          mentionCount: 1,
+        },
+      ],
+    })
     expect(messageClient.getReadStates).toHaveBeenCalledWith({
       scope: 2,
     })

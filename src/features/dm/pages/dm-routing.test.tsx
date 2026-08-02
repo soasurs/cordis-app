@@ -53,7 +53,7 @@ beforeEach(() => {
     ],
     nextCursor: undefined,
   })
-  vi.mocked(getReadStatesForDm).mockResolvedValue([])
+  vi.mocked(getReadStatesForDm).mockResolvedValue({ channels: [], readStates: [] })
   vi.mocked(listMessages).mockResolvedValue({
     afterCursor: undefined,
     beforeCursor: undefined,

@@ -6,6 +6,7 @@ import {
   clearDmChannelQueries,
   dmChannelsQueryKey,
   flattenDmChannels,
+  mergeDmChannelsFromReconciliation,
   patchDmChannelRecipientFromGateway,
   replaceDmChannelsFromReady,
   toDmChannelSummaryFromGateway,
@@ -50,6 +51,59 @@ describe('dm query helpers', () => {
         },
       },
     ])
+  })
+
+  it('merges a complete reconciliation snapshot into the loaded DM list', () => {
+    const queryClient = new QueryClient()
+    seedChannels(queryClient, [
+      {
+        channelId: '43',
+        createdAt: 1_000,
+        recipient: {
+          avatarAssetId: '0',
+          bio: '',
+          createdAt: 1_000,
+          name: 'Alex Chen',
+          updatedAt: 1_000,
+          userId: '7',
+          username: 'alex_chen',
+        },
+      },
+    ])
+
+    mergeDmChannelsFromReconciliation(queryClient, [
+      {
+        channelId: '44',
+        createdAt: 2_000,
+        recipient: {
+          avatarAssetId: '0',
+          bio: '',
+          createdAt: 1_000,
+          name: 'Maya',
+          updatedAt: 1_000,
+          userId: '8',
+          username: 'maya',
+        },
+      },
+      {
+        channelId: '43',
+        createdAt: 1_000,
+        recipient: {
+          avatarAssetId: '0',
+          bio: '',
+          createdAt: 1_000,
+          name: 'Alex Chen',
+          updatedAt: 1_000,
+          userId: '7',
+          username: 'alex_chen',
+        },
+      },
+    ])
+
+    const data = queryClient.getQueryData<InfiniteData<DmChannelPage>>(dmChannelsQueryKey)
+    expect(flattenDmChannels(data).map((channel) => channel.channelId)).toEqual(['44', '43'])
+    expect(data?.pages).toHaveLength(1)
+    expect(data?.pages[0]?.nextCursor).toBeUndefined()
   })
 
   it('upserts gateway-created channels into the loaded first page', () => {

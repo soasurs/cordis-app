@@ -14,8 +14,8 @@ import { PresenceIndicator } from '@/features/presence/components/presence-indic
 import { useResolvePresenceBatches, useUserPresence } from '@/features/presence/presence-queries'
 
 export function DmChannelPage({ channelId, onBack }: { channelId: string; onBack?: () => void }) {
-  useMergeDmReadStates()
   const channelsQuery = useInfiniteQuery(dmChannelsInfiniteQueryOptions())
+  useMergeDmReadStates(channelsQuery.data)
   const channels = flattenDmChannels(channelsQuery.data)
   const channel = channels.find((item) => item.channelId === channelId)
   const presenceBatches = useMemo(() => (channel ? [[channel.recipient.userId]] : []), [channel])
@@ -31,7 +31,7 @@ export function DmChannelPage({ channelId, onBack }: { channelId: string; onBack
       {channelsQuery.isSuccess && channel ? (
         <>
           <DmChannelHeader channel={channel} onBack={onBack} />
-          <DmChannelView channel={channel} />
+          <DmChannelView key={channel.channelId} channel={channel} />
         </>
       ) : null}
     </main>

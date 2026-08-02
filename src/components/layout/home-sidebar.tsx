@@ -8,6 +8,7 @@ import { CurrentUserPanel } from '@/components/layout/current-user-panel'
 import { PersonalNavigation } from '@/components/layout/personal-navigation'
 import { DmChannelRow } from '@/features/dm/components/dm-channel-row'
 import { dmChannelsInfiniteQueryOptions, flattenDmChannels } from '@/features/dm/dm-queries'
+import { useMergeDmReadStates } from '@/features/dm/use-dm-read-states'
 import { useResolvePresenceBatches } from '@/features/presence/presence-queries'
 import { useChannelReadStates } from '@/features/messages/read-state-queries'
 
@@ -32,8 +33,9 @@ export function HomeSidebar({
   onSelectHome?: () => void
   user: AppUserSummary
 }) {
-  const { data: readStates = {} } = useChannelReadStates()
   const channelsQuery = useInfiniteQuery(dmChannelsInfiniteQueryOptions())
+  useMergeDmReadStates(channelsQuery.data)
+  const { data: readStates = {} } = useChannelReadStates()
   const channels = flattenDmChannels(channelsQuery.data)
   const presenceBatches = useMemo(
     () => [channels.map((channel) => channel.recipient.userId)],

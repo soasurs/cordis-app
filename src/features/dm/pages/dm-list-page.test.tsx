@@ -51,7 +51,7 @@ const page: DmChannelPage = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(getReadStatesForDm).mockResolvedValue([])
+  vi.mocked(getReadStatesForDm).mockResolvedValue({ channels: [], readStates: [] })
 })
 
 describe('DmListPage', () => {
@@ -103,6 +103,29 @@ describe('DmListPage', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: 'No conversations yet' }),
     ).toBeInTheDocument()
+  })
+
+  it('repairs a missing conversation from the reconciliation snapshot', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData<InfiniteData<DmChannelPage>>(dmChannelsQueryKey, {
+      pageParams: [undefined],
+      pages: [{ channels: [], nextCursor: 'older' }],
+    })
+    vi.mocked(getReadStatesForDm).mockResolvedValue({
+      channels: [page.channels[0]!],
+      readStates: [],
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DmListPage onSelectChannel={vi.fn()} />
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Alex Chen')).toBeInTheDocument()
+    expect(
+      queryClient.getQueryData<InfiniteData<DmChannelPage>>(dmChannelsQueryKey)?.pages,
+    ).toEqual([{ channels: [page.channels[0]], nextCursor: undefined }])
   })
 })
 

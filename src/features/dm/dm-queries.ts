@@ -43,6 +43,30 @@ export function upsertDmChannelFromApi(queryClient: QueryClient, channel: DmChan
   patchDmChannelPages(queryClient, (pages) => upsertDmChannelPages(pages, channel))
 }
 
+/** Merge the complete DM snapshot returned by read-state reconciliation. */
+export function mergeDmChannelsFromReconciliation(
+  queryClient: QueryClient,
+  channels: DmChannelSummary[],
+) {
+  queryClient.setQueryData<InfiniteData<DmChannelPage>>(dmChannelsQueryKey, (current) => {
+    const currentChannels = flattenDmChannels(current)
+    const reconciledIds = new Set(channels.map((channel) => channel.channelId))
+    const currentOnlyChannels = currentChannels.filter(
+      (channel) => !reconciledIds.has(channel.channelId),
+    )
+
+    return {
+      pageParams: [undefined],
+      pages: [
+        {
+          channels: [...currentOnlyChannels, ...channels],
+          nextCursor: undefined,
+        },
+      ],
+    }
+  })
+}
+
 export function upsertDmChannelFromGateway(
   queryClient: QueryClient,
   payload: DmChannelCreatedPayload,

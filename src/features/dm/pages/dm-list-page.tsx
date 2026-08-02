@@ -18,9 +18,9 @@ export function DmListPage({
   onOpenNewDm?: () => void
   onSelectChannel: (channelId: string) => void
 }) {
-  useMergeDmReadStates()
-  const { data: readStates = {} } = useChannelReadStates()
   const channelsQuery = useInfiniteQuery(dmChannelsInfiniteQueryOptions())
+  useMergeDmReadStates(channelsQuery.data)
+  const { data: readStates = {} } = useChannelReadStates()
   const channels = flattenDmChannels(channelsQuery.data)
   const presenceBatches = useMemo(
     () => [channels.map((channel) => channel.recipient.userId)],
