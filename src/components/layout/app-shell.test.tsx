@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { HomePage } from '@/features/home/pages/home-page'
 import type { DmChannelPage } from '@/api/dm'
 import { dmChannelsQueryKey } from '@/features/dm/dm-queries'
+import type { RelationshipPage } from '@/api/relationship'
+import { relationshipListQueryKey } from '@/features/friends/relationship-queries'
 
 import { GatewayPresencePreferenceContext } from '@/app/gateway-context'
 import { AppShell } from '@/components/layout/app-shell'
@@ -15,6 +17,17 @@ describe('AppShell', () => {
     const queryClient = createQueryClient()
     const onSelectFriends = vi.fn()
     const onSelectGuild = vi.fn()
+    queryClient.setQueryData<InfiniteData<DmChannelPage>>(dmChannelsQueryKey, {
+      pageParams: [undefined],
+      pages: [{ channels: [], nextCursor: undefined }],
+    })
+    queryClient.setQueryData<InfiniteData<RelationshipPage>>(
+      relationshipListQueryKey('incoming'),
+      {
+        pageParams: [undefined],
+        pages: [{ relationships: [], nextCursor: undefined }],
+      },
+    )
     render(
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
