@@ -327,8 +327,12 @@ describe('MessageComposer', () => {
           replyTo={{
             authorName: 'Alex Chen',
             channelId: '43',
+            content: 'Hello room',
             contentPreview: 'Hello room',
             id: '102',
+            mentionEveryone: false,
+            mentionRoleIds: [],
+            mentionUserIds: [],
           }}
           onClearReply={onClearReply}
         />
@@ -350,6 +354,32 @@ describe('MessageComposer', () => {
       }),
     )
     await waitFor(() => expect(onClearReply).toHaveBeenCalled())
+  })
+
+  it('renders mention markup in the reply preview', () => {
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageComposer
+          canSend
+          channelId="43"
+          channelName="general"
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
+          replyTo={{
+            authorName: 'Alex Chen',
+            channelId: '43',
+            content: '<@7> please check',
+            contentPreview: '<@7> please check',
+            id: '102',
+            mentionEveryone: false,
+            mentionRoleIds: [],
+            mentionUserIds: ['7'],
+          }}
+        />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByText('@Alex Chen')).toBeInTheDocument()
+    expect(screen.queryByText(/<@7>/)).not.toBeInTheDocument()
   })
 
   it('uploads an attachment and sends its asset id', async () => {
@@ -607,6 +637,23 @@ describe('MessageItem', () => {
     )
   })
 
+  it('highlights messages that mention the current user', () => {
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <MessageItem
+          currentUserId="7"
+          message={{
+            ...sampleMessage,
+            content: 'Hi <@7>',
+            mentionUserIds: ['7'],
+          }}
+        />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByRole('article')).toHaveClass('bg-brand-soft/70')
+  })
+
   it('blocks role mentions before saving an edit without permission', async () => {
     const user = userEvent.setup()
     const message = {
@@ -830,8 +877,9 @@ describe('MessageItem', () => {
     const queryClient = createQueryClient()
     const original: ChannelMessageSummary = {
       ...sampleMessage,
-      content: 'Original thought',
+      content: '<@7> original thought',
       id: '101',
+      mentionUserIds: ['7'],
     }
     queryClient.setQueryData(channelMessagesQueryKey('43'), {
       pageParams: [undefined],
@@ -850,12 +898,15 @@ describe('MessageItem', () => {
             referencedMessageId: '101',
             type: 19,
           }}
+          mentionCandidates={[{ id: '7', kind: 'user', label: 'Alex Chen', token: '<@7>' }]}
         />
       </QueryClientProvider>,
     )
 
-    expect(screen.getByText('Original thought')).toBeInTheDocument()
+    expect(screen.getByText('@Alex Chen')).toBeInTheDocument()
+    expect(screen.queryByText(/<@7>/)).not.toBeInTheDocument()
     expect(screen.getByText('Agreed')).toBeInTheDocument()
+    expect(screen.getByRole('article')).toHaveClass('bg-brand-soft/70')
     expect(messageApi.getMessage).not.toHaveBeenCalled()
   })
 

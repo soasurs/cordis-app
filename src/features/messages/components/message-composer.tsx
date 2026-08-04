@@ -6,6 +6,7 @@ import { getIdempotencyKeyForIntent, type IdempotencyIntent } from '@/api/idempo
 import { createMessage } from '@/api/message'
 import { Button } from '@/components/ui/button'
 import { MESSAGE_ATTACHMENT_MAX_COUNT } from '@/features/messages/attachment-validation'
+import { MessageContentPreview } from '@/features/messages/components/message-content-preview'
 import { MentionSuggestions } from '@/features/messages/components/mention-suggestions'
 import { MentionTextarea } from '@/features/messages/components/mention-textarea'
 import { PendingAttachmentChip } from '@/features/messages/components/pending-attachment-chip'
@@ -201,7 +202,15 @@ export function MessageComposer({
                 <span className="font-semibold text-brand-text">
                   Replying to {replyTo.authorName}
                 </span>
-                <span className="text-muted"> · {replyTo.contentPreview}</span>
+                <span className="text-muted"> · </span>
+                <MessageContentPreview
+                  content={replyTo.content}
+                  contentPreview={replyTo.contentPreview}
+                  mentionEveryone={replyTo.mentionEveryone}
+                  mentionCandidates={mentionCandidates}
+                  mentionRoleIds={replyTo.mentionRoleIds}
+                  mentionUserIds={replyTo.mentionUserIds}
+                />
               </p>
             </div>
             <Button

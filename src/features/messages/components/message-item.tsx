@@ -29,6 +29,7 @@ import {
 } from '@/features/messages/components/message-item-parts'
 import { MessageEditForm } from '@/features/messages/components/message-edit-form'
 import { formatMessageTime } from '@/features/messages/message-time'
+import { useReferencedMessage } from '@/features/messages/message-reference'
 import type { PendingAttachmentDraft } from '@/features/messages/components/pending-attachment-chip'
 import {
   removeChannelMessageFromApi,
@@ -50,6 +51,7 @@ interface MessageItemProps {
   canManageMessages?: boolean
   canMentionRolesAndEveryone?: boolean
   currentUserId?: string
+  currentUserRoleIds?: string[]
   message: ChannelMessageSummary
   mentionCandidates?: MentionCandidate[]
   onJumpToMessage?: (messageId: string) => void
@@ -69,6 +71,7 @@ export function MessageItem({
   canManageMessages = false,
   canMentionRolesAndEveryone = true,
   currentUserId,
+  currentUserRoleIds = [],
   message,
   mentionCandidates = [],
   onJumpToMessage,
@@ -98,7 +101,21 @@ export function MessageItem({
     onSearchMentionCandidates,
     canMentionRolesAndEveryone,
   )
+  const { referenced: referencedMessage } = useReferencedMessage(
+    message.referencedChannelId ?? message.channelId,
+    message.referencedMessageId ?? '',
+  )
   const isOwn = Boolean(currentUserId && message.author?.userId === currentUserId)
+  const isMentioned = Boolean(
+    currentUserId &&
+    (message.mentionEveryone ||
+      message.mentionUserIds.includes(currentUserId) ||
+      message.mentionRoleIds.some((roleId) => currentUserRoleIds.includes(roleId))),
+  )
+  const isReplyToCurrentUser = Boolean(
+    currentUserId && referencedMessage?.author?.userId === currentUserId,
+  )
+  const isHighlighted = isMentioned || isReplyToCurrentUser
   const canEdit = isOwn
   const canDelete = isOwn || canManageMessages
   const canReply = Boolean(onReply)
@@ -368,12 +385,17 @@ export function MessageItem({
   return (
     <article
       data-message-id={message.id}
-      className="group px-1 py-1.5 hover:bg-surface-hover/60"
+      className={
+        isHighlighted
+          ? 'group rounded-control bg-brand-soft/70 px-1 py-1.5 transition-colors'
+          : 'group px-1 py-1.5 hover:bg-surface-hover/60'
+      }
       onContextMenu={onContextMenu}
     >
       {message.referencedMessageId ? (
         <MessageReplyReference
           channelId={message.channelId}
+          mentionCandidates={mentionCandidates}
           referencedMessageId={message.referencedMessageId}
           onJumpToMessage={onJumpToMessage}
         />

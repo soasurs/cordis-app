@@ -1,5 +1,3 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-
 import { resolveAvatarUrl } from '@/api/assets'
 import type { MessageAttachment } from '@/api/message'
 import { getInitials } from '@/components/layout/app-shell-types'
@@ -8,31 +6,26 @@ import {
   isVideoAttachmentContentType,
 } from '@/features/messages/attachment-validation'
 import { MessageVideoPlayer } from '@/features/messages/components/message-video-player'
-import {
-  findChannelMessageInCache,
-  referencedMessageQueryOptions,
-} from '@/features/messages/message-queries'
+import { MessageContentPreview } from '@/features/messages/components/message-content-preview'
+import type { MentionCandidate } from '@/features/messages/mention-types'
+import { useReferencedMessage } from '@/features/messages/message-reference'
 import { toMessageContentPreview } from '@/features/messages/reply-target'
 
 export function MessageReplyReference({
   channelId,
+  mentionCandidates = [],
   onJumpToMessage,
   referencedMessageId,
 }: {
   channelId: string
+  mentionCandidates?: MentionCandidate[]
   onJumpToMessage?: (messageId: string) => void
   referencedMessageId: string
 }) {
-  const queryClient = useQueryClient()
-  const cached = findChannelMessageInCache(queryClient, channelId, referencedMessageId)
-  const referencedQuery = useQuery({
-    ...referencedMessageQueryOptions(referencedMessageId),
-    enabled: !cached,
-  })
-  const referenced = cached ?? referencedQuery.data
+  const { isError, referenced } = useReferencedMessage(channelId, referencedMessageId)
   const canJump = Boolean(onJumpToMessage && referenced)
 
-  if (referencedQuery.isError && !cached) {
+  if (isError) {
     return (
       <div className="mb-0.5 flex items-end gap-1.5">
         <ReplyConnector />
@@ -76,7 +69,16 @@ export function MessageReplyReference({
         )}
       </span>
       <span className="shrink-0 font-semibold text-ink/80">{authorName}</span>
-      <span className="min-w-0 truncate text-muted">{preview}</span>
+      <span className="min-w-0 truncate text-muted">
+        <MessageContentPreview
+          content={referenced.content}
+          contentPreview={preview}
+          mentionEveryone={referenced.mentionEveryone}
+          mentionCandidates={mentionCandidates}
+          mentionRoleIds={referenced.mentionRoleIds}
+          mentionUserIds={referenced.mentionUserIds}
+        />
+      </span>
     </>
   )
 
