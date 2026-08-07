@@ -4,6 +4,7 @@ import { type ReactNode } from 'react'
 import { getApiErrorMessage } from '@/api/errors'
 import { Button } from '@/components/ui/button'
 import { authSessionQueryOptions } from '@/features/auth/auth-session'
+import { guildMemberRolesQueryOptions } from '@/features/guilds/guild-queries'
 import { MessageComposer } from '@/features/messages/components/message-composer'
 import { MessageItem } from '@/features/messages/components/message-item'
 import {
@@ -46,6 +47,12 @@ export function ChannelMessageView({
   onSearchMentionCandidates,
 }: ChannelMessageViewProps) {
   const { data: session } = useQuery(authSessionQueryOptions)
+  const currentUserId = session?.user.userId.toString()
+  const memberRolesQuery = useQuery({
+    ...guildMemberRolesQueryOptions(guildId ?? '', currentUserId ?? ''),
+    enabled: Boolean(guildId && currentUserId),
+  })
+  const currentUserRoleIds = memberRolesQuery.data?.map((role) => role.id) ?? []
   const {
     bottomRef,
     clearReply,
@@ -160,7 +167,8 @@ export function ChannelMessageView({
                     canManageMessages={canManageMessages}
                     canMentionRolesAndEveryone={canMentionRolesAndEveryone}
                     message={message}
-                    currentUserId={session?.user.userId.toString()}
+                    currentUserId={currentUserId}
+                    currentUserRoleIds={currentUserRoleIds}
                     mentionCandidates={resolvedMentionCandidates}
                     onJumpToMessage={jumpToMessage}
                     onLoadMoreMentionCandidates={resolvedLoadMoreMentionCandidates}

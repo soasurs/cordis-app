@@ -33,9 +33,12 @@ import {
 } from '@/features/guilds/guild-queries'
 import {
   clearChannelMessageQueries,
+  findChannelMessageInCache,
   patchChannelMessageFromGateway,
+  referencedMessageQueryKey,
   removeChannelMessageFromGateway,
   upsertChannelMessageFromGateway,
+  type ChannelMessageSummary,
 } from '@/features/messages/message-queries'
 import {
   bumpChannelLastMessageId,
@@ -173,7 +176,7 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
       queryClient,
       dispatch.data.channel_id,
       dispatch.data.id,
-      messageMentionsCurrentUser(queryClient, dispatch.data, ready),
+      messageNotifiesCurrentUser(queryClient, dispatch.data, ready),
     )
     return
   }
@@ -221,12 +224,24 @@ export function syncGatewayDispatch(queryClient: QueryClient, dispatch: GatewayD
   }
 }
 
-function messageMentionsCurrentUser(
+function messageNotifiesCurrentUser(
   queryClient: QueryClient,
   message: MessagePayload,
   ready: GatewayReadyData | undefined,
 ) {
   if (!ready) return false
+  if (message.referenced_message_id) {
+    const referenced =
+      findChannelMessageInCache(
+        queryClient,
+        message.referenced_channel_id ?? message.channel_id,
+        message.referenced_message_id,
+      ) ??
+      queryClient.getQueryData<ChannelMessageSummary>(
+        referencedMessageQueryKey(message.referenced_message_id),
+      )
+    if (referenced?.author?.userId === ready.user_id) return true
+  }
   if (message.mention_user_ids?.includes(ready.user_id)) return true
   if (message.mention_everyone) return true
 

@@ -13,6 +13,7 @@ import {
   type GuildChannelSummary,
   type GuildRoleSummary,
 } from '@/features/guilds/guild-queries'
+import { channelMessagesQueryKey } from '@/features/messages/message-queries'
 import {
   channelReadStatesQueryKey,
   mergeChannelReadStates,
@@ -791,6 +792,73 @@ describe('syncGatewayDispatch messages', () => {
       queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43']
         ?.mentionCount,
     ).toBe(3)
+  })
+
+  it('increments the mention count for replies to the current user', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(gatewayReadyQueryKey, {
+      guilds: [],
+      user_id: '7',
+    })
+    queryClient.setQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey(), {
+      '43': {
+        channelId: '43',
+        lastMessageId: '100',
+        lastReadMessageId: '100',
+        mentionCount: 0,
+      },
+    })
+    queryClient.setQueryData(channelMessagesQueryKey('43'), {
+      pageParams: [undefined],
+      pages: [
+        {
+          messages: [
+            {
+              author: { userId: '7' },
+              channelId: '43',
+              id: '50',
+            },
+          ],
+        },
+      ],
+    })
+
+    syncGatewayDispatch(queryClient, {
+      type: 'message.created',
+      sequence: 1,
+      data: {
+        attachments: [],
+        author: {
+          avatar_asset_id: '0',
+          created_at: 1_000,
+          name: 'Alex',
+          updated_at: 1_000,
+          user_id: '8',
+          username: 'alex',
+        },
+        channel_id: '43',
+        content: 'Replying to you',
+        created_at: 2_000,
+        edited_at: 0,
+        flags: 0,
+        id: '101',
+        mention_user_ids: [],
+        referenced_channel_id: '43',
+        referenced_message_id: '50',
+        revision: 1,
+        type: 19,
+        updated_at: 2_000,
+      },
+    })
+
+    expect(
+      queryClient.getQueryData<ChannelReadStatesMap>(channelReadStatesQueryKey())?.['43'],
+    ).toEqual({
+      channelId: '43',
+      lastMessageId: '101',
+      lastReadMessageId: '100',
+      mentionCount: 1,
+    })
   })
 })
 

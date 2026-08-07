@@ -1,8 +1,12 @@
 export interface MessageReplyTarget {
   authorName: string
   channelId: string
+  content: string
   contentPreview: string
   id: string
+  mentionEveryone: boolean
+  mentionRoleIds: string[]
+  mentionUserIds: string[]
 }
 
 const PREVIEW_MAX = 120
@@ -27,6 +31,9 @@ export function toMessageReplyTarget(message: {
   channelId: string
   content: string
   id: string
+  mentionEveryone: boolean
+  mentionRoleIds: string[]
+  mentionUserIds: string[]
 }): MessageReplyTarget {
   const authorName =
     message.author?.name ||
@@ -36,7 +43,11 @@ export function toMessageReplyTarget(message: {
   return {
     authorName,
     channelId: message.channelId,
+    content: message.content,
     contentPreview: toMessageContentPreview(message),
     id: message.id,
+    mentionEveryone: message.mentionEveryone,
+    mentionRoleIds: message.mentionRoleIds,
+    mentionUserIds: message.mentionUserIds,
   }
 }

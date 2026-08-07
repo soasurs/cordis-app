@@ -11,12 +11,19 @@ describe('reply target helpers', () => {
         channelId: '43',
         content: 'Hello there',
         id: '102',
+        mentionEveryone: false,
+        mentionRoleIds: [],
+        mentionUserIds: [],
       }),
     ).toEqual({
       authorName: 'Alex Chen',
       channelId: '43',
+      content: 'Hello there',
       contentPreview: 'Hello there',
       id: '102',
+      mentionEveryone: false,
+      mentionRoleIds: [],
+      mentionUserIds: [],
     })
   })
 
