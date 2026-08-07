@@ -23,6 +23,8 @@ const authenticationApi = vi.hoisted(() => ({
   requestPasswordReset: vi.fn(),
 }))
 const userApi = vi.hoisted(() => ({
+  checkEmailAvailability: vi.fn(),
+  checkUsernameAvailability: vi.fn(),
   getCurrentUser: vi.fn(),
 }))
 
@@ -36,6 +38,8 @@ vi.mock('@/api/user', () => userApi)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  userApi.checkEmailAvailability.mockResolvedValue(true)
+  userApi.checkUsernameAvailability.mockResolvedValue(true)
   userApi.getCurrentUser.mockResolvedValue(testSession)
 })
 

@@ -1,12 +1,23 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { checkEmailAvailability, checkUsernameAvailability } from '@/api/user'
 import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form'
 import { LoginForm } from '@/features/auth/components/login-form'
 import { PasswordResetSent } from '@/features/auth/components/password-reset-sent'
 import { RegisterForm } from '@/features/auth/components/register-form'
 import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
+
+vi.mock('@/api/user', () => ({
+  checkEmailAvailability: vi.fn(),
+  checkUsernameAvailability: vi.fn(),
+}))
+
+beforeEach(() => {
+  vi.mocked(checkEmailAvailability).mockResolvedValue(true)
+  vi.mocked(checkUsernameAvailability).mockResolvedValue(true)
+})
 
 describe('LoginForm', () => {
   it('collects credentials and toggles password visibility', async () => {
@@ -144,7 +155,58 @@ describe('RegisterForm', () => {
     expect(await screen.findByText('Passwords do not match')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
   })
+
+  it('blocks registration when the username is already taken', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    vi.mocked(checkUsernameAvailability).mockResolvedValue(false)
+    render(<RegisterForm onSubmit={onSubmit} />)
+
+    await fillRegistrationFields(user)
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    expect(checkUsernameAvailability).toHaveBeenCalledWith('alex_chen', expect.any(AbortSignal))
+    expect(await screen.findByText('This username is already taken')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('blocks registration when the email address is already in use', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    vi.mocked(checkEmailAvailability).mockResolvedValue(false)
+    render(<RegisterForm onSubmit={onSubmit} />)
+
+    await fillRegistrationFields(user)
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    expect(checkEmailAvailability).toHaveBeenCalledWith('alex@example.com', expect.any(AbortSignal))
+    expect(await screen.findByText('This email address is already in use')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('registers even when availability checks fail', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    vi.mocked(checkUsernameAvailability).mockRejectedValue(new Error('offline'))
+    vi.mocked(checkEmailAvailability).mockRejectedValue(new Error('offline'))
+    render(<RegisterForm onSubmit={onSubmit} />)
+
+    await fillRegistrationFields(user)
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(screen.queryByText('This username is already taken')).not.toBeInTheDocument()
+    expect(screen.queryByText('This email address is already in use')).not.toBeInTheDocument()
+  })
 })
+
+async function fillRegistrationFields(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText('Display name'), 'Alex Chen')
+  await user.type(screen.getByLabelText(/^Username/), 'alex_chen')
+  await user.type(screen.getByLabelText('Email address'), 'alex@example.com')
+  await user.type(screen.getByLabelText(/^Password/), 'cordis-password')
+  await user.type(screen.getByLabelText(/^Confirm password/), 'cordis-password')
+}
 
 describe('ResetPasswordForm', () => {
   it('submits a matching new password', async () => {

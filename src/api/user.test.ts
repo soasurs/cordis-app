@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const userClient = vi.hoisted(() => ({
   abortAvatarUpload: vi.fn(),
   changePassword: vi.fn(),
+  checkEmailAvailability: vi.fn(),
   checkUsernameAvailability: vi.fn(),
   createAvatarUpload: vi.fn(),
   getAvatarUploadConstraints: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('./client', () => ({ apiTransport: {} }))
 import {
   abortAvatarUpload,
   changePassword,
+  checkEmailAvailability,
   checkUsernameAvailability,
   createAvatarUpload,
   getAvatarUploadConstraints,
@@ -138,16 +140,23 @@ describe('user API', () => {
   it('updates account identifiers and checks username availability', async () => {
     const updatedProfile = { username: 'alex_rivera' }
     const updatedUser = { email: 'alex.rivera@example.com' }
+    userClient.checkEmailAvailability.mockResolvedValue({ available: false })
     userClient.checkUsernameAvailability.mockResolvedValue({ available: true })
     userClient.updateUsername.mockResolvedValue({ profile: updatedProfile })
     userClient.updateEmail.mockResolvedValue({ user: updatedUser })
 
+    await expect(checkEmailAvailability('alex.rivera@example.com')).resolves.toBe(false)
     await expect(checkUsernameAvailability('alex_rivera')).resolves.toBe(true)
     await expect(updateUsername('alex_rivera')).resolves.toBe(updatedProfile)
     await expect(updateEmail('alex.rivera@example.com')).resolves.toBe(updatedUser)
-    expect(userClient.checkUsernameAvailability).toHaveBeenCalledWith({
-      username: 'alex_rivera',
-    })
+    expect(userClient.checkEmailAvailability).toHaveBeenCalledWith(
+      { email: 'alex.rivera@example.com' },
+      {},
+    )
+    expect(userClient.checkUsernameAvailability).toHaveBeenCalledWith(
+      { username: 'alex_rivera' },
+      {},
+    )
     expect(userClient.updateUsername).toHaveBeenCalledWith({ username: 'alex_rivera' })
     expect(userClient.updateEmail).toHaveBeenCalledWith({ email: 'alex.rivera@example.com' })
   })
