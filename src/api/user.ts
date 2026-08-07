@@ -87,8 +87,19 @@ export async function getAvatarUploadConstraints(): Promise<AvatarUploadConstrai
   }
 }
 
-export async function checkUsernameAvailability(username: string): Promise<boolean> {
-  const response = await userClient.checkUsernameAvailability({ username })
+export async function checkUsernameAvailability(
+  username: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const response = await userClient.checkUsernameAvailability({ username }, { signal })
+  return response.available
+}
+
+export async function checkEmailAvailability(
+  email: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const response = await userClient.checkEmailAvailability({ email }, { signal })
   return response.available
 }
 

@@ -1,6 +1,12 @@
 import { z } from 'zod'
 
-const emailSchema = z
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Choose a username')
+  .regex(/^[a-z0-9_]+$/, 'Use only lowercase letters, numbers, and underscores')
+
+export const emailSchema = z
   .string()
   .trim()
   .min(1, 'Enter your email address')
@@ -20,11 +26,7 @@ export const registerSchema = z
     inviteCode: z.string().trim(),
     name: z.string().trim().min(1, 'Enter your display name'),
     password: z.string().min(8, 'Password must contain at least 8 characters'),
-    username: z
-      .string()
-      .trim()
-      .min(1, 'Choose a username')
-      .regex(/^[a-z0-9_]+$/, 'Use only lowercase letters, numbers, and underscores'),
+    username: usernameSchema,
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: 'Passwords do not match',

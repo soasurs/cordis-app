@@ -1,11 +1,55 @@
 import { useForm } from '@tanstack/react-form'
 
+import { checkEmailAvailability, checkUsernameAvailability } from '@/api/user'
 import { Button } from '@/components/ui/button'
 import { TextInput } from '@/components/ui/text-input'
 
-import { getFieldError, registerSchema, type RegisterFormValues } from '@/features/auth/validation'
 import { FormAlert } from '@/features/auth/components/form-alert'
 import { PasswordInput } from '@/features/auth/components/password-input'
+import {
+  emailSchema,
+  getFieldError,
+  registerSchema,
+  usernameSchema,
+  type RegisterFormValues,
+} from '@/features/auth/validation'
+
+const usernameTakenMessage = 'This username is already taken'
+const emailInUseMessage = 'This email address is already in use'
+
+async function probeAvailability(check: Promise<boolean>): Promise<boolean> {
+  try {
+    return (await check) !== false
+  } catch {
+    return true
+  }
+}
+
+async function checkRegistrationAvailability(
+  value: RegisterFormValues,
+  signal?: AbortSignal,
+): Promise<{ fields: { email?: string[]; username?: string[] } } | undefined> {
+  const usernameValid = usernameSchema.safeParse(value.username).success
+  const emailValid = emailSchema.safeParse(value.email).success
+
+  const [usernameAvailable, emailAvailable] = await Promise.all([
+    usernameValid
+      ? probeAvailability(checkUsernameAvailability(value.username.trim(), signal))
+      : Promise.resolve(true),
+    emailValid ? probeAvailability(checkEmailAvailability(value.email.trim(), signal)) : Promise.resolve(true),
+  ])
+
+  if (usernameAvailable && emailAvailable) {
+    return undefined
+  }
+
+  return {
+    fields: {
+      ...(usernameAvailable ? {} : { username: [usernameTakenMessage] }),
+      ...(emailAvailable ? {} : { email: [emailInUseMessage] }),
+    },
+  }
+}
 
 interface RegisterFormProps {
   error?: string
@@ -25,6 +69,7 @@ export function RegisterForm({ error, loading = false, onSubmit }: RegisterFormP
     } satisfies RegisterFormValues,
     validators: {
       onSubmit: registerSchema,
+      onSubmitAsync: ({ signal, value }) => checkRegistrationAvailability(value, signal),
     },
     onSubmit: async ({ value }) => onSubmit(registerSchema.parse(value)),
   })
